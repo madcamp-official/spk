@@ -40,8 +40,12 @@ export function encodeLife(l) {
 }
 
 /* URL 파라미터는 남이 아무거나 넣을 수 있다. 하나라도 이상하면 통째로 버리고
-   null을 돌려준다 — 그러면 호출부가 평소대로 새 생을 뽑는다. */
-export function decodeLife(s) {
+   null을 돌려준다 — 그러면 호출부가 평소대로 새 생을 뽑는다.
+   여기서 하는 건 "형식·범위가 맞는가"뿐이다. "정말 뽑힌 생인가"는 값만 보고는 알 수 없다
+   (모나코·IQ150을 손으로 적어도 전부 범위 안이다). 그건 서버 서명이 답한다 → lifepool.js
+   shared: 이 생이 남이 뽑아 보내준 것이면 true. 내 도감·통계에 넣지 않는 근거가 된다.
+           서버가 나에게 뽑아준 생도 같은 문자열을 거쳐 오므로 반드시 구분해야 한다. */
+export function decodeLife(s, shared) {
   if (!s || typeof s !== "string" || s.length > 64) return null;
   const p = s.split(SEP);
   if (p.length !== 11) return null;
@@ -83,6 +87,6 @@ export function decodeLife(s) {
     bmi: weight / Math.pow(height / 100, 2),
     top: incomeTopPct(income),
     prob: pC * pG * pU,
-    shared: true,   /* 이 생은 남이 뽑은 것이다. 내 도감·통계에 넣으면 안 된다 */
+    shared: !!shared,   /* true면 남이 뽑은 것 — 내 도감·최고기록·환생 횟수에 넣으면 안 된다 */
   };
 }

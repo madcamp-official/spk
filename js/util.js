@@ -1,6 +1,9 @@
 /* 공용 헬퍼: DOM 단축, 난수원, 숫자 포맷 */
 export const $=id=>document.getElementById(id);
-export const reduceMotion=matchMedia("(prefers-reduced-motion: reduce)").matches;
+/* 서버(node)도 roll.js를 import해서 생을 뽑는다 — roll.js가 이 파일을 거치므로
+   여기서 matchMedia를 맨몸으로 부르면 서버가 뜨다가 죽는다. $는 화살표 함수라
+   import 시점에 실행되지 않아 괜찮지만, 이 줄은 그 자리에서 실행된다. */
+export const reduceMotion=typeof matchMedia!=="undefined"&&matchMedia("(prefers-reduced-motion: reduce)").matches;
 /* 확률 롤 전용 난수원. 오늘의 운세는 날짜 시드로 교체해 하루 동안 같은 결과를 만든다 */
 let RNG=Math.random;
 export const rand=()=>RNG();
