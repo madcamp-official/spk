@@ -7,7 +7,7 @@ import {renderLife,recordLife,updateStats} from "./render.js";
 import {track,markRoll,sendDwell,sendExit,flushEvents} from "./track.js";
 import {probPct} from "./util.js";
 import {closeDex} from "./dex.js";
-import {closeShare} from "./share.js";
+import {closeShare,shareURL,shareText} from "./share.js";
 import "./odds.js";
 import "./fortune.js";
 import "./suggest.js";
@@ -43,4 +43,5 @@ if(ST.total>0)$("lifeNo").textContent="지금까지 "+ST.total.toLocaleString()+
 addEventListener("load",()=>{track("visit",{});persist();});
 
 /* 브라우저 콘솔·자동 검증에서 내부를 들여다볼 수 있게 열어 둔다(비밀 없음). */
-window.__app={DATA,ST,session,rollLife,rollIQ,iqTopPct,renderLife,recordLife,updateStats,track};
+window.__app={DATA,ST,session,rollLife,rollIQ,iqTopPct,renderLife,recordLife,updateStats,track,
+ shareURL,shareText};

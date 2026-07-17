@@ -8,9 +8,14 @@ import {toast} from "./effects.js";
 
 /* ===== 공유 =====
    문구 A/B 테스트: 기기별로 스토리형(a)/성과형(b)이 고정 배정되고,
-   공유 URL의 ?v= 파라미터로 어느 문구가 사람을 데려왔는지 추적한다. */
-export function shareURL(){return location.origin+location.pathname+"?ref=share&v="+ST.ab;}
-export function shareText(l){
+   공유 URL의 ?v= 파라미터로 어느 문구가 사람을 데려왔는지 추적한다.
+   ?via= 는 어느 채널로 나간 링크인지다. 이게 없으면 카톡·X·기타 공유가 받는 쪽에서
+   전부 ref=share 한 덩어리가 되어, 채널별 바이럴 계수를 못 낸다. */
+export function shareURL(via){
+ const u=location.origin+location.pathname+"?ref=share&v="+ST.ab;
+ return via?u+"&via="+via:u;
+}
+export function shareText(l,via){
  const flag=flagOK?l.c.flag+" ":"";
  const head=ST.ab==="a"
   ?"🌏 나는 "+flag+l.c.name+" "+(l.urban?"도시":"농촌")+"에서 "+(l.male?"남자":"여자")+"로 태어났다"
@@ -25,7 +30,7 @@ export function shareText(l){
  if(l.lefty)badges.push("🫲 왼손잡이");
  if(l.top<=1)badges.push("💎 소득 상위 1%");
  if(badges.length)lines.push(badges.join(" · "));
- lines.push("나도 환생해 보기 👉 "+shareURL());
+ lines.push("나도 환생해 보기 👉 "+shareURL(via));
  return lines.join("\n");
 }
 export async function copyText(t){
@@ -57,7 +62,7 @@ export function loadKakao(){
 export async function kakaoShare(l){
  if(!(await loadKakao()))return false;
  try{
-  const url=shareURL();
+  const url=shareURL("kakao");
   Kakao.Share.sendDefault({
    objectType:"feed",
    content:{
@@ -97,7 +102,7 @@ export async function shareVia(ch){
  closeShare();
  session.lifeShared=true;
  const props={country:l.c.name,prob:probPct(l.prob)};
- const t=shareText(l);
+ const t=shareText(l,ch);   /* 링크에 이 채널을 각인해서 내보낸다 */
  if(ch==="clip"){
   track("share_text",props);
   toast(await copyText(t)?"공유 문구를 복사했어요 ✅":"복사에 실패했어요 😢");
