@@ -1,0 +1,1173 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>환생 시뮬레이터</title>
+<meta name="description" content="실제 지구 인구 분포 확률로 환생하는 시뮬레이터. 당신의 다음 생은 어디에서 시작될까요?">
+<meta property="og:type" content="website">
+<meta property="og:title" content="환생 시뮬레이터 · 당신의 다음 생은 어디에서?">
+<meta property="og:description" content="실제 세계 인구 분포 그대로 환생 뽑기. 인도·중국 확률 35%, 모나코는 20만분의 1. 지금 당신의 다음 생을 뽑아 보세요.">
+<meta property="og:image" content="https://omok00.github.io/rebirth-simulator/og-image.png">
+<meta property="og:url" content="https://omok00.github.io/rebirth-simulator/">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌏</text></svg>">
+<style>
+:root{
+  --void:#0a0d1c;
+  --surface:#141a33;
+  --surface2:#1c2445;
+  --line:#2a3158;
+  --ink:#ece9f5;
+  --muted:#9a98b5;
+  --gold:#f3c95c;
+  --gold-dim:rgba(243,201,92,.14);
+  --serif:"Nanum Myeongjo","Noto Serif KR","Apple SD Gothic Neo",Batang,serif;
+  --sans:"Pretendard Variable",Pretendard,"Apple SD Gothic Neo","Malgun Gothic","Segoe UI",system-ui,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--void);
+  color:var(--ink);
+  font-family:var(--sans);
+  line-height:1.6;
+  min-height:100vh;
+  overflow-x:hidden;
+}
+#stars{position:fixed;inset:0;z-index:0;pointer-events:none}
+#confetti{position:fixed;inset:0;z-index:50;pointer-events:none}
+.wrap{position:relative;z-index:1;max-width:720px;margin:0 auto;padding:40px 20px 60px}
+
+header{text-align:center;margin-bottom:28px}
+.eyebrow{font-size:11px;letter-spacing:.35em;color:var(--gold);text-transform:uppercase;margin-bottom:10px}
+h1{
+  font-family:var(--serif);
+  font-size:clamp(30px,6vw,44px);
+  font-weight:800;
+  margin:0 0 8px;
+  text-wrap:balance;
+  text-shadow:0 0 40px rgba(243,201,92,.25);
+}
+.tagline{color:var(--muted);font-size:14px;margin:0}
+.lifeno{color:var(--gold);font-size:13px;margin:10px 0 0;font-variant-numeric:tabular-nums;min-height:20px}
+
+.hero{
+  --tier-color:var(--line);
+  background:linear-gradient(180deg,var(--surface) 0%,#10152b 100%);
+  border:1px solid var(--tier-color);
+  border-radius:20px;
+  padding:34px 24px 28px;
+  text-align:center;
+  box-shadow:0 0 0 1px rgba(255,255,255,.02),0 0 46px -18px var(--tier-color);
+  transition:border-color .5s,box-shadow .5s;
+}
+.tierline{display:flex;justify-content:center;align-items:center;gap:10px;margin-bottom:14px;min-height:26px}
+.tier-badge{
+  font-size:12px;font-weight:800;letter-spacing:.12em;
+  padding:3px 12px;border-radius:99px;
+  color:#0a0d1c;background:var(--tier-color);
+}
+.tier-desc{font-size:13px;color:var(--muted)}
+.flag{
+  font-size:clamp(72px,16vw,104px);
+  line-height:1.15;
+  filter:drop-shadow(0 6px 24px rgba(0,0,0,.5));
+  transition:transform .2s;
+  min-height:1.15em;
+}
+.flag.rolling{filter:blur(2px) drop-shadow(0 6px 24px rgba(0,0,0,.5))}
+.code-flag{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:1.5em;height:1.5em;border-radius:50%;
+  border:3px solid var(--gold);background:var(--surface2);
+  font-family:var(--sans);font-size:.42em;font-weight:800;letter-spacing:.06em;color:var(--gold);
+}
+.country{
+  font-family:var(--serif);
+  font-size:clamp(26px,5.4vw,38px);
+  font-weight:800;margin:10px 0 4px;text-wrap:balance;
+}
+.subline{color:var(--muted);font-size:14px;margin:0 0 4px}
+.prob{color:var(--gold);font-size:14px;margin:10px 0 0;font-variant-numeric:tabular-nums}
+.badges{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:14px}
+.badges:empty{margin-top:0}
+.badge{
+  font-size:12px;padding:4px 12px;border-radius:99px;
+  background:var(--gold-dim);border:1px solid rgba(243,201,92,.4);color:var(--gold);
+}
+
+.chips{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+  gap:10px;margin-top:14px;
+}
+.chip{
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:12px 14px;
+  opacity:0;transform:translateY(10px);
+}
+.chip.reveal{opacity:1;transform:none;transition:opacity .45s,transform .45s}
+.chip .k{font-size:11px;letter-spacing:.14em;color:var(--muted);text-transform:uppercase}
+.chip .v{font-size:16px;font-weight:700;margin-top:3px;line-height:1.35}
+.chip .s{font-size:12px;color:var(--muted);margin-top:3px;font-variant-numeric:tabular-nums}
+
+.controls{margin-top:22px;text-align:center}
+button{
+  font-family:var(--sans);cursor:pointer;
+  border-radius:14px;border:1px solid var(--line);
+  background:var(--surface2);color:var(--ink);
+  font-size:14px;padding:10px 18px;
+}
+button:hover{border-color:var(--gold)}
+button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+button:disabled{opacity:.45;cursor:not-allowed}
+.btn-primary{
+  font-size:19px;font-weight:800;
+  padding:16px 44px;border-radius:99px;border:none;
+  background:linear-gradient(135deg,#f3c95c,#e09b3d);
+  color:#241a05;
+  box-shadow:0 8px 34px -8px rgba(243,201,92,.55);
+  transition:transform .15s;
+}
+.btn-primary:hover{transform:translateY(-2px)}
+.btn-primary:active{transform:translateY(1px)}
+.share-row{display:flex;gap:10px;justify-content:center;margin-top:14px;flex-wrap:wrap}
+
+.card{
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:18px;
+  padding:20px 22px;
+  margin-top:22px;
+}
+.card h3{margin:0 0 6px;font-size:16px}
+.card .hint{color:var(--muted);font-size:13px;margin:0 0 14px}
+.wish-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.wish-grid label{display:block;font-size:11px;letter-spacing:.12em;color:var(--muted);margin-bottom:5px;text-transform:uppercase}
+select{
+  width:100%;font-family:var(--sans);font-size:14px;
+  background:var(--surface2);color:var(--ink);
+  border:1px solid var(--line);border-radius:10px;padding:9px 10px;
+}
+select:focus-visible{outline:2px solid var(--gold);outline-offset:1px}
+.wish-prob{color:var(--gold);font-size:13px;margin:14px 0 12px;font-variant-numeric:tabular-nums;min-height:20px}
+.wish-actions{display:flex;gap:10px;flex-wrap:wrap}
+.auto-status{
+  margin-top:14px;font-size:14px;color:var(--muted);
+  font-variant-numeric:tabular-nums;min-height:22px;
+}
+.auto-status.success{color:var(--gold);font-weight:700}
+
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:22px}
+.stat{
+  background:var(--surface);border:1px solid var(--line);border-radius:14px;
+  padding:14px 12px;text-align:center;
+}
+.stat .n{font-size:20px;font-weight:800;color:var(--gold);font-variant-numeric:tabular-nums;line-height:1.3}
+.stat .l{font-size:11px;color:var(--muted);letter-spacing:.1em;margin-top:2px}
+
+details.card summary{cursor:pointer;font-weight:700;font-size:15px}
+details.card summary::marker{color:var(--gold)}
+.odds-list{margin:14px 0 0;padding:0;list-style:none}
+.odds-list li{
+  display:flex;justify-content:space-between;gap:12px;
+  padding:7px 0;border-bottom:1px solid var(--line);
+  font-size:14px;font-variant-numeric:tabular-nums;
+}
+.odds-list li:last-child{border-bottom:none}
+.odds-list .pc{color:var(--gold);font-weight:700}
+.odds-note{color:var(--muted);font-size:13px;margin-top:12px}
+
+.controls-sub{display:flex;gap:10px;justify-content:center;margin-top:12px}
+.fortune-line{color:#b78ef0;font-size:14px;margin:10px 0 0}
+.feedback{display:flex;gap:8px;justify-content:center;align-items:center;margin-top:16px;flex-wrap:wrap}
+.fb-label{font-size:13px;color:var(--muted)}
+button.fb{font-size:18px;padding:6px 12px;border-radius:99px;background:var(--surface2)}
+button.fb.picked{border-color:var(--gold);background:var(--gold-dim)}
+button.fb:disabled{opacity:.5}
+button.fb.picked:disabled{opacity:1}
+
+.toast{
+  position:fixed;left:50%;bottom:26px;transform:translate(-50%,16px);
+  background:var(--surface2);border:1px solid var(--gold);color:var(--ink);
+  padding:10px 18px;border-radius:99px;font-size:14px;z-index:80;
+  opacity:0;transition:opacity .25s,transform .25s;pointer-events:none;max-width:90vw;
+}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+
+.stat-btn{cursor:pointer;font-family:var(--sans)}
+.stat-btn:hover{border-color:var(--gold)}
+
+.modal-backdrop{
+  position:fixed;inset:0;background:rgba(4,6,14,.72);z-index:60;
+  display:flex;align-items:center;justify-content:center;padding:18px;
+}
+.modal{
+  background:var(--surface);border:1px solid var(--line);border-radius:18px;
+  width:min(680px,100%);max-height:82vh;display:flex;flex-direction:column;
+  padding:18px 20px;
+}
+.modal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+.modal-head h3{margin:0;font-size:17px}
+.dex-grid{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));
+  gap:8px;overflow-y:auto;padding:6px 2px 2px;
+}
+.dex-item{
+  display:flex;flex-direction:column;align-items:center;gap:2px;
+  background:var(--surface2);border:1px solid var(--line);border-radius:10px;
+  padding:8px 6px;opacity:.32;text-align:center;
+}
+.dex-item.owned{opacity:1;border-color:var(--tc)}
+.dex-flag{font-size:22px;line-height:1.2}
+.dex-code{
+  font-size:12px;font-weight:800;color:var(--gold);border:2px solid var(--gold);
+  border-radius:50%;width:32px;height:32px;display:inline-flex;align-items:center;justify-content:center;
+}
+.dex-name{font-size:11px;line-height:1.3}
+.dex-tier{font-size:10px;font-weight:800;color:var(--tc)}
+
+footer{margin-top:36px;text-align:center;color:var(--muted);font-size:12px;line-height:1.7}
+footer a{color:var(--gold)}
+
+@media (max-width:480px){
+  .stats{grid-template-columns:repeat(3,1fr)}
+  .stat .n{font-size:16px}
+}
+@media (prefers-reduced-motion:reduce){
+  .chip,.chip.reveal{opacity:1;transform:none;transition:none}
+  .btn-primary{transition:none}
+}
+</style>
+
+<canvas id="stars"></canvas>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Samsara Simulator</div>
+    <h1>환생 시뮬레이터</h1>
+    <p class="tagline">당신의 다음 생은, 실제 지구 인구 분포 확률 그대로 정해집니다</p>
+    <p class="lifeno" id="lifeNo"></p>
+  </header>
+
+  <section class="hero" id="hero">
+    <div class="tierline" id="tierline" hidden>
+      <span class="tier-badge" id="tierBadge"></span>
+      <span class="tier-desc" id="tierDesc"></span>
+    </div>
+    <div class="flag" id="flag">🌌</div>
+    <h2 class="country" id="country">아직 태어나기 전입니다</h2>
+    <p class="subline" id="subline">아래 버튼을 누르면 새로운 생을 받습니다</p>
+    <p class="prob" id="probline" hidden></p>
+    <p class="fortune-line" id="fortuneLine" hidden></p>
+    <div class="badges" id="badges"></div>
+    <div class="feedback" id="feedback" hidden>
+      <span class="fb-label">이번 생 어때요?</span>
+      <button class="fb" data-fb="😐" aria-label="그저 그래요">😐</button>
+      <button class="fb" data-fb="😂" aria-label="웃겨요">😂</button>
+      <button class="fb" data-fb="🔥" aria-label="최고예요">🔥</button>
+    </div>
+  </section>
+
+  <section class="chips" id="chips" hidden></section>
+
+  <div class="controls">
+    <button class="btn-primary" id="rollBtn">🌏 환생 시작하기</button>
+    <div class="controls-sub">
+      <button id="fortuneBtn">🔮 오늘의 환생 운세</button>
+    </div>
+    <div class="share-row" id="shareRow" hidden>
+      <button id="shareImg">🖼️ 결과 카드 저장</button>
+      <button id="shareTxt">📋 텍스트 복사</button>
+      <button id="shareNative">📤 공유하기</button>
+    </div>
+  </div>
+
+  <section class="card">
+    <h3>🙏 소원을 빌면, 이뤄질 때까지 환생합니다</h3>
+    <p class="hint">원하는 조건을 고르면 그 생이 나올 때까지 자동으로 리롤합니다.</p>
+    <div class="wish-grid">
+      <div>
+        <label for="wishCont">대륙</label>
+        <select id="wishCont">
+          <option value="">무관</option>
+          <option value="AS">아시아</option>
+          <option value="EU">유럽</option>
+          <option value="AF">아프리카</option>
+          <option value="NA">북아메리카</option>
+          <option value="SA">남아메리카</option>
+          <option value="OC">오세아니아</option>
+        </select>
+      </div>
+      <div>
+        <label for="wishCountry">국가</label>
+        <select id="wishCountry"><option value="">무관</option></select>
+      </div>
+      <div>
+        <label for="wishGender">성별</label>
+        <select id="wishGender">
+          <option value="">무관</option>
+          <option value="m">남자</option>
+          <option value="f">여자</option>
+        </select>
+      </div>
+    </div>
+    <p class="wish-prob" id="wishProb"></p>
+    <div class="wish-actions">
+      <button id="autoBtn">✨ 자동 환생 시작</button>
+      <button id="stopBtn" hidden>⏹ 멈추기</button>
+    </div>
+    <p class="auto-status" id="autoStatus"></p>
+  </section>
+
+  <section class="stats">
+    <div class="stat"><div class="n" id="stTotal">0</div><div class="l">총 환생 횟수</div></div>
+    <button class="stat stat-btn" id="dexBtn" title="환생 도감 열기"><div class="n" id="stSeen">0</div><div class="l">태어나 본 나라 · 도감 📖</div></button>
+    <div class="stat"><div class="n" id="stBest">·</div><div class="l">최고 희귀 기록</div></div>
+  </section>
+
+  <details class="card">
+    <summary>어느 나라로 태어날 확률이 가장 높을까?</summary>
+    <ul class="odds-list" id="oddsList"></ul>
+    <p class="odds-note" id="oddsNote"></p>
+  </details>
+
+  <footer>
+    국가·인구·도시화율·기대수명·1인당 GDP는 UN World Population Prospects 2024,
+    세계은행 등 공개 통계를 바탕으로 한 근사치입니다.<br>
+    종교·혈액형·소득 분위는 국가별 대표 분포 기반 추정이며, 재미로만 즐겨 주세요. 🌏<br>
+    💬 아이디어·버그 제보: <a href="https://github.com/omok00/rebirth-simulator/issues" target="_blank" rel="noopener">GitHub Issues</a>
+  </footer>
+</div>
+
+<div class="modal-backdrop" id="dexModal" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-label="환생 도감">
+    <div class="modal-head">
+      <h3>📖 환생 도감</h3>
+      <button id="dexClose" aria-label="닫기">✕</button>
+    </div>
+    <p class="hint" id="dexProgress"></p>
+    <div class="dex-grid" id="dexGrid"></div>
+  </div>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<canvas id="confetti"></canvas>
+
+<script>
+'use strict';
+/* ===== 데이터: [이름, 국기, 인구(백만), 도시화%, 기대수명, 1인당GDP($), 대표 언어, 종교키, 대륙] ===== */
+const RAW=[
+/* 동아시아 */
+["중국","🇨🇳",1416,66,78,12600,"중국어","china","AS"],
+["인도","🇮🇳",1451,36,72,2700,"힌디어","india","AS"],
+["일본","🇯🇵",123,92,84,33900,"일본어","japan","AS"],
+["대한민국","🇰🇷",51.7,81,84,33100,"한국어","korea","AS"],
+["북한","🇰🇵",26.2,63,73,640,"한국어","nk","AS"],
+["대만","🇹🇼",23.4,80,81,33000,"중국어","china","AS"],
+["홍콩","🇭🇰",7.5,100,85,51000,"광둥어","china","AS"],
+["마카오","🇲🇴",0.72,100,85,37000,"광둥어","china","AS"],
+["몽골","🇲🇳",3.5,69,71,5700,"몽골어","mongolia","AS"],
+/* 동남아시아 */
+["인도네시아","🇮🇩",283,59,72,4900,"인도네시아어","indonesia","AS"],
+["필리핀","🇵🇭",119,48,72,3900,"필리핀어","philippines","AS"],
+["베트남","🇻🇳",100,40,74,4300,"베트남어","vietnam","AS"],
+["태국","🇹🇭",71.7,53,79,7300,"태국어","buddh","AS"],
+["미얀마","🇲🇲",54.5,32,67,1200,"미얀마어","buddh","AS"],
+["말레이시아","🇲🇾",34.3,78,76,12000,"말레이어","malaysia","AS"],
+["캄보디아","🇰🇭",17,25,70,1800,"크메르어","buddh","AS"],
+["라오스","🇱🇦",7.7,38,69,2000,"라오어","buddh","AS"],
+["싱가포르","🇸🇬",5.9,100,84,84700,"영어","singapore","AS"],
+["동티모르","🇹🇱",1.4,32,70,1500,"테툼어","philippines","AS"],
+["브루나이","🇧🇳",0.46,79,75,34400,"말레이어","muslim","AS"],
+/* 남아시아 */
+["파키스탄","🇵🇰",245,38,67,1500,"우르두어","muslim","AS"],
+["방글라데시","🇧🇩",173,40,74,2600,"벵골어","bangladesh","AS"],
+["아프가니스탄","🇦🇫",42.6,27,63,400,"파슈토어","muslim","AS"],
+["네팔","🇳🇵",29.7,22,70,1300,"네팔어","nepal","AS"],
+["스리랑카","🇱🇰",21.9,19,77,3800,"싱할라어","srilanka","AS"],
+["부탄","🇧🇹",0.79,45,72,3700,"종카어","nepal","AS"],
+["몰디브","🇲🇻",0.52,42,80,12000,"디베히어","muslim","AS"],
+/* 중앙아시아·캅카스 */
+["카자흐스탄","🇰🇿",20.1,58,74,13100,"카자흐어","centralasia","AS"],
+["우즈베키스탄","🇺🇿",36.8,50,72,2500,"우즈베크어","muslim","AS"],
+["타지키스탄","🇹🇯",10.6,28,72,1200,"타지크어","muslim","AS"],
+["키르기스스탄","🇰🇬",7.2,38,72,1700,"키르기스어","muslim","AS"],
+["투르크메니스탄","🇹🇲",6.6,54,69,8500,"투르크멘어","muslim","AS"],
+["아제르바이잔","🇦🇿",10.2,57,74,7700,"아제르바이잔어","muslim","AS"],
+["조지아","🇬🇪",3.7,60,74,8100,"조지아어","e_eu","AS"],
+["아르메니아","🇦🇲",3.0,64,76,8100,"아르메니아어","e_eu","AS"],
+/* 서아시아(중동) */
+["이란","🇮🇷",91,77,75,4700,"페르시아어","muslim","AS"],
+["튀르키예","🇹🇷",87.5,77,77,12800,"튀르키예어","muslim","AS"],
+["이라크","🇮🇶",46,71,71,5500,"아랍어","muslim","AS"],
+["사우디아라비아","🇸🇦",33.9,85,78,32000,"아랍어","muslim","AS"],
+["예멘","🇾🇪",35.2,39,64,700,"아랍어","muslim","AS"],
+["시리아","🇸🇾",24.6,57,72,900,"아랍어","muslim","AS"],
+["요르단","🇯🇴",11.5,92,75,4500,"아랍어","muslim","AS"],
+["아랍에미리트","🇦🇪",9.6,88,79,49000,"아랍어","muslim","AS"],
+["이스라엘","🇮🇱",9.8,93,83,53000,"히브리어","israel","AS"],
+["팔레스타인","🇵🇸",5.5,77,74,3400,"아랍어","muslim","AS"],
+["레바논","🇱🇧",5.3,89,75,3800,"아랍어","muslim_mix","AS"],
+["오만","🇴🇲",4.7,88,78,20600,"아랍어","muslim","AS"],
+["쿠웨이트","🇰🇼",4.9,100,79,33000,"아랍어","muslim","AS"],
+["카타르","🇶🇦",2.7,99,80,80000,"아랍어","muslim","AS"],
+["바레인","🇧🇭",1.6,90,79,29000,"아랍어","muslim","AS"],
+/* 유럽 */
+["러시아","🇷🇺",144,75,73,13800,"러시아어","ru","EU"],
+["독일","🇩🇪",84.5,78,81,54300,"독일어","w_eu","EU"],
+["영국","🇬🇧",69,85,81,49500,"영어","w_eu","EU"],
+["프랑스","🇫🇷",66.5,82,83,46300,"프랑스어","w_eu","EU"],
+["이탈리아","🇮🇹",58.9,72,84,39000,"이탈리아어","s_eu","EU"],
+["스페인","🇪🇸",48.4,82,84,33900,"스페인어","s_eu","EU"],
+["폴란드","🇵🇱",36.8,60,78,22100,"폴란드어","s_eu","EU"],
+["우크라이나","🇺🇦",37.9,70,71,5100,"우크라이나어","e_eu","EU"],
+["루마니아","🇷🇴",19,55,76,18400,"루마니아어","e_eu","EU"],
+["네덜란드","🇳🇱",18,93,82,62500,"네덜란드어","w_eu","EU"],
+["벨기에","🇧🇪",11.8,98,82,53500,"네덜란드어","w_eu","EU"],
+["체코","🇨🇿",10.9,74,80,30400,"체코어","secular","EU"],
+["스웨덴","🇸🇪",10.6,88,84,56000,"스웨덴어","w_eu","EU"],
+["포르투갈","🇵🇹",10.4,67,82,27300,"포르투갈어","s_eu","EU"],
+["그리스","🇬🇷",10.3,80,81,23400,"그리스어","e_eu","EU"],
+["헝가리","🇭🇺",9.6,73,77,22100,"헝가리어","s_eu","EU"],
+["오스트리아","🇦🇹",9.1,59,82,56500,"독일어","w_eu","EU"],
+["벨라루스","🇧🇾",9.0,80,74,7900,"벨라루스어","e_eu","EU"],
+["스위스","🇨🇭",8.9,74,84,99500,"독일어","w_eu","EU"],
+["세르비아","🇷🇸",6.6,57,76,12500,"세르비아어","e_eu","EU"],
+["불가리아","🇧🇬",6.4,76,75,15800,"불가리아어","e_eu","EU"],
+["덴마크","🇩🇰",6.0,88,82,68000,"덴마크어","w_eu","EU"],
+["핀란드","🇫🇮",5.6,86,82,53700,"핀란드어","w_eu","EU"],
+["노르웨이","🇳🇴",5.6,84,83,87900,"노르웨이어","w_eu","EU"],
+["슬로바키아","🇸🇰",5.4,54,78,24500,"슬로바키아어","s_eu","EU"],
+["아일랜드","🇮🇪",5.3,64,83,103500,"영어","s_eu","EU"],
+["크로아티아","🇭🇷",3.9,58,78,21500,"크로아티아어","s_eu","EU"],
+["보스니아 헤르체고비나","🇧🇦",3.2,50,77,8100,"보스니아어","muslim_mix","EU"],
+["몰도바","🇲🇩",2.4,43,72,6700,"루마니아어","e_eu","EU"],
+["리투아니아","🇱🇹",2.9,68,77,27800,"리투아니아어","s_eu","EU"],
+["알바니아","🇦🇱",2.7,64,79,8300,"알바니아어","muslim_mix","EU"],
+["슬로베니아","🇸🇮",2.1,56,82,32200,"슬로베니아어","s_eu","EU"],
+["라트비아","🇱🇻",1.9,68,76,23200,"라트비아어","e_eu","EU"],
+["북마케도니아","🇲🇰",1.8,59,76,7700,"마케도니아어","e_eu","EU"],
+["코소보","🇽🇰",1.7,55,77,5700,"알바니아어","muslim_mix","EU"],
+["에스토니아","🇪🇪",1.4,70,79,31200,"에스토니아어","secular","EU"],
+["키프로스","🇨🇾",1.3,67,81,34700,"그리스어","e_eu","EU"],
+["룩셈부르크","🇱🇺",0.67,92,83,128300,"룩셈부르크어","s_eu","EU"],
+["몬테네그로","🇲🇪",0.62,68,77,12000,"몬테네그로어","e_eu","EU"],
+["몰타","🇲🇹",0.55,95,83,34100,"몰타어","s_eu","EU"],
+["아이슬란드","🇮🇸",0.39,94,83,78800,"아이슬란드어","w_eu","EU"],
+["안도라","🇦🇩",0.081,88,84,42000,"카탈루냐어","s_eu","EU"],
+["리히텐슈타인","🇱🇮",0.040,15,84,187000,"독일어","s_eu","EU"],
+["모나코","🇲🇨",0.039,100,86,240000,"프랑스어","s_eu","EU"],
+["산마리노","🇸🇲",0.034,98,84,52000,"이탈리아어","s_eu","EU"],
+/* 북아메리카·카리브 */
+["미국","🇺🇸",341,83,79,85400,"영어","usa","NA"],
+["멕시코","🇲🇽",130,81,75,13900,"스페인어","latam","NA"],
+["캐나다","🇨🇦",39.1,82,83,54000,"영어","w_eu","NA"],
+["과테말라","🇬🇹",18.4,53,74,5800,"스페인어","latam","NA"],
+["아이티","🇭🇹",11.8,60,64,1700,"아이티 크레올어","latam","NA"],
+["도미니카공화국","🇩🇴",11.4,84,74,10700,"스페인어","latam","NA"],
+["쿠바","🇨🇺",11.0,77,78,9500,"스페인어","latam","NA"],
+["온두라스","🇭🇳",10.8,60,70,3200,"스페인어","latam","NA"],
+["니카라과","🇳🇮",7.0,60,74,2500,"스페인어","latam","NA"],
+["엘살바도르","🇸🇻",6.3,75,71,5300,"스페인어","latam","NA"],
+["코스타리카","🇨🇷",5.2,82,80,16600,"스페인어","latam","NA"],
+["파나마","🇵🇦",4.5,70,76,18700,"스페인어","latam","NA"],
+["자메이카","🇯🇲",2.8,57,71,6900,"영어","christ","NA"],
+["트리니다드 토바고","🇹🇹",1.5,53,73,18200,"영어","christ","NA"],
+["바하마","🇧🇸",0.41,83,74,34700,"영어","christ","NA"],
+["벨리즈","🇧🇿",0.41,46,73,6800,"영어","latam","NA"],
+["바베이도스","🇧🇧",0.28,31,76,20200,"영어","christ","NA"],
+["세인트루시아","🇱🇨",0.18,19,73,13000,"영어","christ","NA"],
+["그레나다","🇬🇩",0.11,37,75,13000,"영어","christ","NA"],
+["세인트빈센트 그레나딘","🇻🇨",0.10,54,74,9800,"영어","christ","NA"],
+["앤티가 바부다","🇦🇬",0.094,24,78,21500,"영어","christ","NA"],
+["도미니카 연방","🇩🇲",0.073,71,73,9000,"영어","christ","NA"],
+["세인트키츠 네비스","🇰🇳",0.047,31,74,22000,"영어","christ","NA"],
+/* 남아메리카 */
+["브라질","🇧🇷",212,88,76,10300,"포르투갈어","latam","SA"],
+["콜롬비아","🇨🇴",52.9,82,77,6900,"스페인어","latam","SA"],
+["아르헨티나","🇦🇷",45.7,92,77,13700,"스페인어","latam","SA"],
+["페루","🇵🇪",34.2,79,77,7900,"스페인어","latam","SA"],
+["베네수엘라","🇻🇪",28.4,88,72,3900,"스페인어","latam","SA"],
+["칠레","🇨🇱",19.8,88,81,17100,"스페인어","latam","SA"],
+["에콰도르","🇪🇨",18.1,65,78,6500,"스페인어","latam","SA"],
+["볼리비아","🇧🇴",12.4,71,68,3700,"스페인어","latam","SA"],
+["파라과이","🇵🇾",6.9,63,74,6300,"스페인어","latam","SA"],
+["우루과이","🇺🇾",3.4,96,78,22800,"스페인어","latam","SA"],
+["가이아나","🇬🇾",0.83,27,70,20600,"영어","christ","SA"],
+["수리남","🇸🇷",0.63,66,72,6100,"네덜란드어","christ","SA"],
+/* 아프리카 */
+["나이지리아","🇳🇬",232,54,54,1600,"영어","muslim_mix","AF"],
+["에티오피아","🇪🇹",132,23,67,1000,"암하라어","ethiopia","AF"],
+["이집트","🇪🇬",116,43,71,3500,"아랍어","muslim","AF"],
+["콩고민주공화국","🇨🇩",106,47,61,650,"프랑스어","christ","AF"],
+["탄자니아","🇹🇿",67.5,37,67,1200,"스와힐리어","ssa_mix","AF"],
+["남아프리카공화국","🇿🇦",63,68,65,6000,"줄루어","christ","AF"],
+["케냐","🇰🇪",55.3,29,63,2100,"스와힐리어","christ","AF"],
+["수단","🇸🇩",50,36,66,600,"아랍어","muslim","AF"],
+["우간다","🇺🇬",48.7,26,64,1000,"영어","christ","AF"],
+["알제리","🇩🇿",46.2,75,77,5300,"아랍어","muslim","AF"],
+["모로코","🇲🇦",38,65,75,3800,"아랍어","muslim","AF"],
+["앙골라","🇦🇴",36.7,68,62,2700,"포르투갈어","christ","AF"],
+["모잠비크","🇲🇿",34.6,39,60,600,"포르투갈어","ssa_mix","AF"],
+["가나","🇬🇭",34.4,59,64,2200,"영어","ssa_mix","AF"],
+["코트디부아르","🇨🇮",31.9,53,59,2700,"프랑스어","muslim_mix","AF"],
+["마다가스카르","🇲🇬",31.2,40,65,500,"말라가시어","christ","AF"],
+["카메룬","🇨🇲",29.1,59,61,1600,"프랑스어","ssa_mix","AF"],
+["니제르","🇳🇪",27,17,61,630,"하우사어","muslim","AF"],
+["말리","🇲🇱",24.5,45,60,900,"밤바라어","muslim","AF"],
+["부르키나파소","🇧🇫",23.5,32,60,900,"프랑스어","muslim_mix","AF"],
+["말라위","🇲🇼",21.7,18,63,600,"치체와어","christ","AF"],
+["잠비아","🇿🇲",21.3,46,62,1300,"영어","christ","AF"],
+["차드","🇹🇩",20.3,24,53,700,"아랍어","muslim_mix","AF"],
+["소말리아","🇸🇴",19,48,56,600,"소말리어","muslim","AF"],
+["세네갈","🇸🇳",18.5,49,68,1700,"월로프어","muslim","AF"],
+["짐바브웨","🇿🇼",16.6,32,60,2100,"쇼나어","christ","AF"],
+["기니","🇬🇳",14.7,38,59,1500,"프랑스어","muslim","AF"],
+["베냉","🇧🇯",14.5,50,60,1400,"프랑스어","ssa_mix","AF"],
+["르완다","🇷🇼",14.2,18,67,1000,"키냐르완다어","christ","AF"],
+["부룬디","🇧🇮",14,15,62,250,"키룬디어","christ","AF"],
+["튀니지","🇹🇳",12.2,70,74,3900,"아랍어","muslim","AF"],
+["남수단","🇸🇸",11.1,21,55,450,"영어","christ","AF"],
+["토고","🇹🇬",9.5,45,62,1000,"프랑스어","ssa_mix","AF"],
+["시에라리온","🇸🇱",8.8,44,60,500,"영어","muslim_mix","AF"],
+["리비아","🇱🇾",7.4,82,72,6700,"아랍어","muslim","AF"],
+["콩고공화국","🇨🇬",6.3,69,65,2500,"프랑스어","christ","AF"],
+["라이베리아","🇱🇷",5.6,53,62,750,"영어","christ","AF"],
+["중앙아프리카공화국","🇨🇫",5.3,43,55,450,"상고어","christ","AF"],
+["모리타니","🇲🇷",5.2,57,65,2200,"아랍어","muslim","AF"],
+["에리트레아","🇪🇷",3.5,42,67,600,"티그리냐어","ssa_mix","AF"],
+["나미비아","🇳🇦",3.0,54,60,4900,"영어","christ","AF"],
+["감비아","🇬🇲",2.8,64,63,800,"영어","muslim","AF"],
+["보츠와나","🇧🇼",2.5,72,66,7700,"영어","christ","AF"],
+["가봉","🇬🇦",2.5,91,67,8800,"프랑스어","christ","AF"],
+["레소토","🇱🇸",2.3,30,55,1100,"소토어","christ","AF"],
+["기니비사우","🇬🇼",2.2,45,60,900,"포르투갈어","muslim_mix","AF"],
+["적도기니","🇬🇶",1.7,74,61,7100,"스페인어","christ","AF"],
+["모리셔스","🇲🇺",1.3,41,74,11600,"크레올어","mauritius","AF"],
+["에스와티니","🇸🇿",1.2,24,57,4000,"스와티어","christ","AF"],
+["지부티","🇩🇯",1.1,78,63,3400,"소말리어","muslim","AF"],
+["코모로","🇰🇲",0.85,30,64,1500,"코모로어","muslim","AF"],
+["카보베르데","🇨🇻",0.52,67,74,4300,"포르투갈어","latam","AF"],
+["상투메 프린시페","🇸🇹",0.23,76,68,2400,"포르투갈어","latam","AF"],
+["세이셸","🇸🇨",0.12,58,73,17900,"크레올어","christ","AF"],
+/* 오세아니아 */
+["호주","🇦🇺",26.7,86,84,65100,"영어","w_eu","OC"],
+["파푸아뉴기니","🇵🇬",10.5,13,66,3000,"톡피신어","christ","OC"],
+["뉴질랜드","🇳🇿",5.2,87,82,48200,"영어","w_eu","OC"],
+["피지","🇫🇯",0.93,58,68,5900,"피지어","christ","OC"],
+["솔로몬제도","🇸🇧",0.74,26,70,2200,"영어","christ","OC"],
+["바누아투","🇻🇺",0.33,26,70,3200,"비슬라마어","christ","OC"],
+["사모아","🇼🇸",0.22,18,72,4300,"사모아어","christ","OC"],
+["키리바시","🇰🇮",0.13,57,67,1800,"키리바시어","christ","OC"],
+["미크로네시아","🇫🇲",0.11,23,70,3500,"영어","christ","OC"],
+["통가","🇹🇴",0.10,23,71,5000,"통가어","christ","OC"],
+["마셜제도","🇲🇭",0.042,78,65,6000,"마셜어","christ","OC"],
+["팔라우","🇵🇼",0.018,82,69,14200,"팔라우어","christ","OC"],
+["나우루","🇳🇷",0.012,100,64,12000,"나우루어","christ","OC"],
+["투발루","🇹🇻",0.011,65,68,5800,"투발루어","christ","OC"],
+];
+
+/* 종교 프로필 (국가 내 대략적 비율 %) */
+const REL={
+usa:[["기독교",63],["무종교",29],["유대교",2],["이슬람교",1],["기타",5]],
+latam:[["가톨릭",65],["개신교",22],["무종교",10],["기타",3]],
+s_eu:[["가톨릭",72],["무종교",24],["기타",4]],
+w_eu:[["기독교",52],["무종교",40],["이슬람교",6],["기타",2]],
+e_eu:[["정교회",72],["무종교",20],["기타",8]],
+ru:[["정교회",63],["무종교",25],["이슬람교",10],["기타",2]],
+secular:[["무종교",75],["기독교",20],["기타",5]],
+muslim:[["이슬람교",95],["기독교",3],["기타",2]],
+muslim_mix:[["이슬람교",55],["기독교",40],["전통 신앙",5]],
+india:[["힌두교",79],["이슬람교",14],["기독교",2],["시크교",2],["기타",3]],
+china:[["무종교·민간신앙",74],["불교",18],["기독교",5],["이슬람교",3]],
+korea:[["무종교",56],["개신교",20],["불교",16],["가톨릭",8]],
+japan:[["신토·불교",70],["무종교",26],["기독교",2],["기타",2]],
+buddh:[["불교",88],["이슬람교",5],["기독교",4],["기타",3]],
+vietnam:[["무종교·민간신앙",73],["불교",15],["가톨릭",7],["기타",5]],
+indonesia:[["이슬람교",87],["기독교",10],["힌두교",2],["불교",1]],
+bangladesh:[["이슬람교",91],["힌두교",8],["기타",1]],
+nepal:[["힌두교",81],["불교",9],["이슬람교",5],["기타",5]],
+srilanka:[["불교",70],["힌두교",13],["이슬람교",10],["기독교",7]],
+philippines:[["가톨릭",79],["개신교",11],["이슬람교",6],["기타",4]],
+malaysia:[["이슬람교",64],["불교",19],["기독교",9],["힌두교",6],["기타",2]],
+singapore:[["불교",31],["무종교",20],["기독교",19],["이슬람교",15],["힌두교",5],["기타",10]],
+israel:[["유대교",74],["이슬람교",18],["기타",8]],
+christ:[["기독교",85],["무종교",8],["전통 신앙",7]],
+ssa_mix:[["기독교",60],["이슬람교",32],["전통 신앙",8]],
+ethiopia:[["기독교",67],["이슬람교",31],["전통 신앙",2]],
+centralasia:[["이슬람교",72],["정교회",22],["무종교",6]],
+mauritius:[["힌두교",48],["기독교",33],["이슬람교",17],["기타",2]],
+mongolia:[["불교",52],["무종교",40],["샤머니즘",5],["이슬람교",3]],
+nk:[["무종교",90],["천도교·기타",10]],
+};
+
+/* 혈액형 분포(%): 대륙별 근사 + Rh- 비율 */
+const BLOOD={
+AS:{abo:[["O",36],["A",27],["B",27],["AB",10]],rhNeg:2},
+AF:{abo:[["O",49],["A",27],["B",20],["AB",4]],rhNeg:4},
+EU:{abo:[["O",42],["A",37],["B",14],["AB",7]],rhNeg:14},
+NA:{abo:[["O",46],["A",35],["B",13],["AB",6]],rhNeg:10},
+SA:{abo:[["O",52],["A",33],["B",11],["AB",4]],rhNeg:8},
+OC:{abo:[["O",45],["A",34],["B",15],["AB",6]],rhNeg:12},
+};
+
+const CONT_NAME={AS:"아시아",EU:"유럽",AF:"아프리카",NA:"북아메리카",SA:"남아메리카",OC:"오세아니아"};
+const TIERS=[
+ {min:100,key:"N",desc:"흔한 생",color:"#98a0b8"},
+ {min:25,key:"R",desc:"드문 생",color:"#6fb1e8"},
+ {min:5,key:"SR",desc:"귀한 생",color:"#b78ef0"},
+ {min:0.5,key:"SSR",desc:"아주 귀한 생",color:"#f3c95c"},
+ {min:0,key:"UR",desc:"전설의 생",color:"#ff8fb2"},
+];
+const ZODIAC=[
+ [1,20,"물병자리","♒"],[2,19,"물고기자리","♓"],[3,21,"양자리","♈"],[4,20,"황소자리","♉"],
+ [5,21,"쌍둥이자리","♊"],[6,22,"게자리","♋"],[7,23,"사자자리","♌"],[8,23,"처녀자리","♍"],
+ [9,23,"천칭자리","♎"],[10,23,"전갈자리","♏"],[11,23,"사수자리","♐"],[12,22,"염소자리","♑"],
+];
+const MONTH_DAYS=[31,28,31,30,31,30,31,31,30,31,30,31];
+const P_MALE=0.512, SIGMA=0.75;
+
+const DATA=RAW.map(r=>({name:r[0],flag:r[1],pop:r[2],urban:r[3],life:r[4],gdp:r[5],lang:r[6],rel:r[7],cont:r[8]}));
+const TOTAL=DATA.reduce((a,c)=>a+c.pop,0);
+/* 누적 가중치 */
+let acc=0; const CUM=DATA.map(c=>(acc+=c.pop));
+
+/* ===== 유틸 ===== */
+const $=id=>document.getElementById(id);
+const reduceMotion=matchMedia("(prefers-reduced-motion: reduce)").matches;
+/* 확률 롤 전용 난수원. 오늘의 운세는 날짜 시드로 교체해 하루 동안 같은 결과를 만든다 */
+let RNG=Math.random;
+const rand=()=>RNG();
+function mulberry32(seed){return function(){seed|=0;seed=seed+0x6D2B79F5|0;
+ let t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;
+ return((t^t>>>14)>>>0)/4294967296;};}
+function strHash(s){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619);}return h>>>0;}
+function gauss(){let u=0,v=0;while(!u)u=rand();while(!v)v=rand();
+ return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);}
+function erf(x){const s=x<0?-1:1;x=Math.abs(x);const t=1/(1+0.3275911*x);
+ const y=1-((((1.061405429*t-1.453152027)*t+1.421413741)*t-0.284496736)*t+0.254829592)*t*Math.exp(-x*x);
+ return s*y;}
+const phi=x=>0.5*(1+erf(x/Math.SQRT2));
+function pickCountryIdx(){const r=rand()*TOTAL;let lo=0,hi=CUM.length-1;
+ while(lo<hi){const m=(lo+hi)>>1; if(CUM[m]<r)lo=m+1; else hi=m;} return lo;}
+function pickWeighted(pairs){let sum=0;for(const p of pairs)sum+=p[1];
+ let r=rand()*sum; for(const p of pairs){r-=p[1]; if(r<=0)return p;} return pairs[0];}
+function clamp(v,a,b){return Math.min(b,Math.max(a,v));}
+function koNum(n){ /* 큰 수를 한국어 단위로 */
+ if(n>=1e8)return (n/1e8).toFixed(n>=3e8?0:1).replace(/\.0$/,"")+"억";
+ if(n>=1e4)return Math.round(n/1e4).toLocaleString()+"만";
+ return Math.round(n).toLocaleString();}
+function fmtPct(p){const pct=p*100;
+ if(pct>=1)return pct.toFixed(1)+"%";
+ if(pct>=0.01)return pct.toFixed(2)+"%";
+ if(pct>=0.0001)return pct.toFixed(Math.min(6,1-Math.floor(Math.log10(pct))))+"%";
+ return "0.0001% 미만";}
+function incomeTopPct(v){let a=0;
+ for(const c of DATA)a+=(c.pop/TOTAL)*phi((Math.log(v)-Math.log(c.gdp))/SIGMA);
+ return clamp((1-a)*100,0.01,99.9);}
+function tierOf(pop){for(const t of TIERS)if(pop>=t.min)return t;return TIERS[TIERS.length-1];}
+function isoCode(flag){return [...flag].map(ch=>String.fromCodePoint(ch.codePointAt(0)-0x1F1E6+65)).join("");}
+
+/* 국기 이모지 지원 감지 (윈도우는 글자 2개로 렌더링됨) */
+const flagOK=(()=>{try{
+ const c=document.createElement("canvas");c.width=c.height=24;
+ const x=c.getContext("2d");x.font='20px "Segoe UI Emoji","Apple Color Emoji",sans-serif';
+ x.fillText("🇰🇷",0,20);
+ const d=x.getImageData(0,0,24,24).data;
+ for(let i=0;i<d.length;i+=4){const r=d[i],g=d[i+1],b=d[i+2],a=d[i+3];
+  if(a>10&&(Math.abs(r-g)>16||Math.abs(g-b)>16))return true;}
+ return false;
+}catch(e){return true;}})();
+function flagHTML(c){return flagOK?c.flag:'<span class="code-flag">'+isoCode(c.flag)+"</span>";}
+
+/* ===== 환생 로직 ===== */
+function rollLife(fCi,fMale){
+ const ci=fCi!=null?fCi:pickCountryIdx(), c=DATA[ci];
+ const male=fMale!=null?fMale:rand()<P_MALE;
+ const urban=rand()<c.urban/100;
+ const rel=pickWeighted(REL[c.rel]);
+ const bp=BLOOD[c.cont];
+ const abo=pickWeighted(bp.abo);
+ const rhNeg=rand()<bp.rhNeg/100;
+ let doy=1+Math.floor(rand()*365),m=0;
+ while(doy>MONTH_DAYS[m]){doy-=MONTH_DAYS[m];m++;}
+ const month=m+1,day=doy;
+ let zi=ZODIAC.length-1;
+ for(let i=0;i<ZODIAC.length;i++){const z=ZODIAC[i];
+  if(month>z[0]||(month===z[0]&&day>=z[1]))zi=i;}
+ if(month===1&&day<20)zi=11;
+ const lefty=rand()<0.10;
+ const twinP=c.cont==="AF"?0.03:0.016;
+ const twin=rand()<twinP;
+ const identical=twin&&rand()<0.33;
+ const lifeExp=clamp(Math.round(c.life+gauss()*7),45,106);
+ const income=c.gdp*Math.exp(gauss()*SIGMA);
+ const top=incomeTopPct(income);
+ const pC=c.pop/TOTAL,pG=male?P_MALE:1-P_MALE,pU=urban?c.urban/100:1-c.urban/100;
+ return {ci,c,male,urban,rel,abo,rhNeg,month,day,zodiac:ZODIAC[zi],lefty,twin,identical,
+  twinP,lifeExp,top,prob:pC*pG*pU,tier:tierOf(c.pop)};
+}
+/* 자동 환생용 경량 롤: 소원 조건(국가·성별)만 굴림 */
+function rollFast(){return {ci:pickCountryIdx(),male:rand()<P_MALE};}
+
+/* ===== 저장 상태 ===== */
+let ST={total:0,seen:[],best:null,dev:null,ab:null,refFirst:null,metrics:{},fortuneDay:null};
+try{const s=localStorage.getItem("rebirth_state");if(s)ST=Object.assign(ST,JSON.parse(s));}catch(e){}
+const seenSet=new Set(ST.seen);
+function persist(){try{ST.seen=[...seenSet];localStorage.setItem("rebirth_state",JSON.stringify(ST));}catch(e){}}
+
+/* ===== 유입 추적 · 이벤트 트래킹 =====
+   공유 URL에 ?ref=출처&v=문구변형 이 붙는다. 분석 도구(GA4/PostHog/Plausible)
+   스니펫을 페이지에 붙이면 track()이 자동으로 이벤트를 흘려보낸다. */
+if(!ST.dev)ST.dev=Math.random().toString(36).slice(2,10);
+if(ST.ab!=="a"&&ST.ab!=="b")ST.ab=Math.random()<0.5?"a":"b";
+const QS=new URLSearchParams(location.search);
+const REF=QS.get("ref")||"";
+if(REF&&!ST.refFirst)ST.refFirst=REF;
+function track(ev,props){
+ try{
+  ST.metrics=ST.metrics||{};ST.metrics[ev]=(ST.metrics[ev]||0)+1;
+  const p=Object.assign({ref:REF||ST.refFirst||"direct",v:ST.ab},props||{});
+  if(window.gtag)gtag("event",ev,p);
+  if(window.posthog&&window.posthog.capture)posthog.capture(ev,p);
+  if(window.plausible)plausible(ev,{props:p});
+ }catch(e){}
+}
+function updateStats(){
+ $("stTotal").textContent=ST.total.toLocaleString();
+ $("stSeen").textContent=seenSet.size+"/"+DATA.length;
+ $("stBest").textContent=ST.best?ST.best.name+" "+ST.best.tier:"·";
+}
+
+/* ===== 렌더링 ===== */
+let currentLife=null;
+const CHIP_DEFS=[
+ {k:"성별",f:l=>({v:l.male?"남자 ♂":"여자 ♀",s:"출생 성비 기준 "+(l.male?"51.2%":"48.8%")})},
+ {k:"태어난 곳",f:l=>({v:l.urban?"도시 🏙️":"농촌 🌾",s:"이 나라 도시화율 "+l.c.urban+"%"})},
+ {k:"모국어",f:l=>({v:l.c.lang,s:"국가 대표 언어"})},
+ {k:"종교",f:l=>({v:l.rel[0],s:"국가 내 약 "+l.rel[1]+"%"})},
+ {k:"혈액형",f:l=>({v:l.abo[0]+(l.rhNeg?"−":"+"),s:"지역 분포 기준 약 "+l.abo[1]+"%"})},
+ {k:"생일",f:l=>({v:l.month+"월 "+l.day+"일 "+l.zodiac[3],s:l.zodiac[2]})},
+ {k:"주로 쓰는 손",f:l=>({v:l.lefty?"왼손잡이 🫲":"오른손잡이 🫱",s:l.lefty?"10%":"90%"})},
+ {k:"쌍둥이",f:l=>({v:l.twin?(l.identical?"일란성 쌍둥이 👯":"이란성 쌍둥이 👯"):"단태아",
+   s:l.twin?"확률 "+(l.twinP*100).toFixed(1)+"%":"쌍둥이 아님 "+(100-l.twinP*100).toFixed(1)+"%"})},
+ {k:"기대수명",f:l=>({v:l.lifeExp+"세",s:"국가 평균 "+l.c.life+"세"})},
+ {k:"소득",f:l=>({v:"세계 상위 "+(l.top<1?l.top.toFixed(1):Math.round(l.top))+"%",s:"1인당 GDP 기반 추정"})},
+];
+function renderLife(l){
+ currentLife=l;
+ const hero=$("hero");
+ hero.style.setProperty("--tier-color",l.tier.color);
+ $("tierline").hidden=false;
+ const tb=$("tierBadge");tb.textContent=l.tier.key;tb.style.background=l.tier.color;
+ $("tierDesc").textContent=l.tier.desc+" · 인구 "+(l.c.pop>=1?koNum(l.c.pop*1e6)+"명":Math.round(l.c.pop*1e6).toLocaleString()+"명");
+ $("flag").innerHTML=flagHTML(l.c);
+ $("flag").classList.remove("rolling");
+ $("country").textContent=l.c.name;
+ $("subline").textContent=CONT_NAME[l.c.cont]+" · "+(l.urban?"도시":"농촌")+"에서 "+(l.male?"남자":"여자")+"로 태어났습니다";
+ const pl=$("probline");pl.hidden=false;
+ pl.textContent="이 인생을 받을 확률 "+fmtPct(l.prob)+" · 약 "+koNum(1/l.prob)+"번 중 1번";
+ const badges=[];
+ if(l.tier.key==="UR")badges.push("🌟 인구 50만 미만의 나라");
+ if(l.tier.key==="SSR")badges.push("✨ 인구 500만 미만의 나라");
+ if(l.twin)badges.push("👯 쌍둥이");
+ if(l.lefty)badges.push("🫲 왼손잡이");
+ if(l.lifeExp>=100)badges.push("💯 100세 장수 예정");
+ if(l.top<=1)badges.push("💎 소득 상위 1%");
+ $("badges").innerHTML=badges.map(b=>'<span class="badge">'+b+"</span>").join("");
+ const chips=$("chips");chips.hidden=false;
+ chips.innerHTML=CHIP_DEFS.map((d,i)=>{const r=d.f(l);
+  return '<div class="chip" style="transition-delay:'+(reduceMotion?0:i*60)+'ms"><div class="k">'+d.k+
+   '</div><div class="v">'+r.v+'</div><div class="s">'+r.s+"</div></div>";}).join("");
+ requestAnimationFrame(()=>requestAnimationFrame(()=>{
+  chips.querySelectorAll(".chip").forEach(el=>el.classList.add("reveal"));}));
+ $("lifeNo").textContent="당신의 "+ST.total.toLocaleString()+"번째 생";
+ $("rollBtn").textContent="🔄 다시 환생하기";
+ $("shareRow").hidden=false;
+ const fl=$("fortuneLine");
+ if(l.fortune){fl.hidden=false;fl.textContent="🔮 "+l.fortune;}
+ else fl.hidden=true;
+ const fb=$("feedback");fb.hidden=false;
+ fb.querySelectorAll(".fb").forEach(b=>{b.disabled=false;b.classList.remove("picked");});
+ if(l.tier.key==="SSR"||l.tier.key==="UR")burstConfetti(l.tier.color);
+}
+function recordLife(l){
+ ST.total++;seenSet.add(l.ci);
+ if(!ST.best||l.prob<ST.best.prob)ST.best={name:l.c.name,tier:l.tier.key,prob:l.prob};
+ persist();updateStats();
+}
+
+/* ===== 리롤 연출 ===== */
+let rolling=false;
+function doRoll(){
+ if(rolling||autoTimer)return;rolling=true;
+ const life=rollLife();recordLife(life);
+ track("roll",{country:life.c.name,tier:life.tier.key});
+ if(reduceMotion){renderLife(life);rolling=false;return;}
+ const flag=$("flag"),country=$("country");
+ flag.classList.add("rolling");
+ $("badges").innerHTML="";$("probline").hidden=true;
+ /* 탭이 백그라운드면 타이머가 스로틀링되므로 실제 경과 시간으로 종료 판정 */
+ const t0=performance.now();
+ const iv=setInterval(()=>{
+  const r=DATA[Math.floor(Math.random()*DATA.length)];
+  flag.innerHTML=flagHTML(r);country.textContent=r.name;
+  if(performance.now()-t0>=910){clearInterval(iv);renderLife(life);rolling=false;}
+ },70);
+}
+$("rollBtn").addEventListener("click",doRoll);
+
+/* ===== 오늘의 환생 운세 (날짜+기기 시드라 하루 동안 같은 결과) ===== */
+const FORTUNES=[
+ "낯선 나라의 음식을 먹으면 행운이 따라옵니다",
+ "오늘의 인연은 생각보다 가까운 곳에 있습니다. 인사를 먼저 건네 보세요",
+ "리롤이 곧 복권입니다. 오늘은 손이 따뜻한 날이네요",
+ "지도를 펼쳐 보세요. 다음 여행지가 오늘의 나라일지도 모릅니다",
+ "오늘 배운 외국어 한 마디가 언젠가 당신을 구합니다",
+ "이번 생은 연습이 아닙니다. 오늘 하루도 본편입니다",
+ "오늘의 별자리가 당신의 결정을 조용히 응원하고 있습니다",
+ "잃어버린 물건이 서랍 두 번째 칸에서 기다립니다",
+ "누군가에게 이 결과를 공유하면 웃음이 두 배가 됩니다",
+ "오늘은 평소보다 한 정거장 일찍 내려 걸어 보세요",
+ "당신이 태어났을 확률을 생각하면, 오늘의 실수쯤은 아무것도 아닙니다",
+ "가장 귀한 생은 언제나 지금 이번 생입니다",
+];
+function todayKey(){const d=new Date();return d.getFullYear()+"-"+(d.getMonth()+1)+"-"+d.getDate();}
+$("fortuneBtn").addEventListener("click",()=>{
+ if(rolling||autoTimer)return;
+ const key=todayKey();
+ const rng=mulberry32(strHash(key+"|"+ST.dev));
+ RNG=rng;
+ const life=rollLife();
+ const msg=FORTUNES[Math.floor(rng()*FORTUNES.length)];
+ RNG=Math.random;
+ life.fortune="오늘의 운세: "+msg;
+ const first=ST.fortuneDay!==key;
+ if(first){ST.fortuneDay=key;recordLife(life);}
+ renderLife(life);
+ $("lifeNo").textContent="오늘("+key+")의 운세 환생";
+ track("fortune",{country:life.c.name,first});
+ if(!first)toast("오늘의 운세는 하루 동안 같아요. 내일 또 만나요 🌙");
+ $("hero").scrollIntoView({behavior:reduceMotion?"auto":"smooth"});
+});
+
+/* ===== 소원(자동 환생) ===== */
+const wishCountrySel=$("wishCountry");
+[...DATA].map((c,i)=>({c,i})).sort((a,b)=>a.c.name.localeCompare(b.c.name,"ko"))
+ .forEach(({c,i})=>{const o=document.createElement("option");o.value=i;o.textContent=c.name;wishCountrySel.appendChild(o);});
+function wishSpec(){
+ return {cont:$("wishCont").value,country:wishCountrySel.value===""?null:+wishCountrySel.value,
+  gender:$("wishGender").value};
+}
+function wishP(w){
+ let pC=1;
+ if(w.country!=null)pC=DATA[w.country].pop/TOTAL;
+ else if(w.cont)pC=DATA.filter(c=>c.cont===w.cont).reduce((a,c)=>a+c.pop,0)/TOTAL;
+ let pG=1;if(w.gender==="m")pG=P_MALE;if(w.gender==="f")pG=1-P_MALE;
+ return pC*pG;
+}
+function wishMatch(w,r){
+ if(w.country!=null&&r.ci!==w.country)return false;
+ if(w.country==null&&w.cont&&DATA[r.ci].cont!==w.cont)return false;
+ if(w.gender==="m"&&!r.male)return false;
+ if(w.gender==="f"&&r.male)return false;
+ return true;
+}
+function updateWishProb(){
+ const w=wishSpec();
+ if(!w.cont&&w.country==null&&!w.gender){$("wishProb").textContent="조건을 고르면 확률을 계산해 드립니다.";return;}
+ const p=wishP(w);
+ $("wishProb").textContent="이 조건이 나올 확률 "+fmtPct(p)+" · 평균 약 "+koNum(1/p)+"번 환생해야 나옵니다";
+}
+["wishCont","wishCountry","wishGender"].forEach(id=>$(id).addEventListener("change",()=>{
+ if(id==="wishCont")wishCountrySel.value="";
+ if(id==="wishCountry"&&wishCountrySel.value!=="")$("wishCont").value="";
+ updateWishProb();
+}));
+updateWishProb();
+
+let autoTimer=null;
+function stopAuto(msg){
+ if(autoTimer){clearInterval(autoTimer);autoTimer=null;}
+ $("autoBtn").hidden=false;$("stopBtn").hidden=true;$("rollBtn").disabled=false;
+ if(msg)$("autoStatus").textContent=msg;
+ persist();updateStats();
+}
+$("autoBtn").addEventListener("click",()=>{
+ const w=wishSpec();
+ if(!w.cont&&w.country==null&&!w.gender){$("autoStatus").textContent="먼저 조건을 하나 이상 골라 주세요.";return;}
+ const p=wishP(w);
+ let attempts=0;const CAP=2000000;
+ $("autoBtn").hidden=true;$("stopBtn").hidden=false;$("rollBtn").disabled=true;
+ track("auto_start",{target:(w.country!=null?DATA[w.country].name:w.cont||"any")+"/"+(w.gender||"any")});
+ const status=$("autoStatus");status.classList.remove("success");
+ autoTimer=setInterval(()=>{
+  let matched=false,last=null;
+  for(let i=0;i<200;i++){
+   attempts++;ST.total++;
+   last=rollFast();seenSet.add(last.ci);
+   if(wishMatch(w,last)){matched=true;break;}
+   if(attempts>=CAP)break;
+  }
+  if(matched){
+   /* 당첨된 국가·성별을 고정하고 나머지 속성을 완성 */
+   const life=rollLife(last.ci,last.male);
+   const c=DATA[last.ci];
+   ST.total--; /* 매칭된 시도는 이미 세었으므로 recordLife의 +1 상쇄 */
+   recordLife(life);
+   renderLife(life);
+   status.classList.add("success");
+   status.textContent="✨ "+attempts.toLocaleString()+"번 만에 소원 성취! "+c.name+"에서 태어났습니다.";
+   track("auto_success",{attempts,country:c.name});
+   stopAuto();
+   burstConfetti("#f3c95c");
+   $("hero").scrollIntoView({behavior:reduceMotion?"auto":"smooth"});
+  }else if(attempts>=CAP){
+   stopAuto("😢 "+CAP.toLocaleString()+"번을 환생했지만 나오지 않았습니다. 조건을 조금 넓혀 보세요.");
+  }else{
+   const c=DATA[last.ci];
+   status.textContent="환생 중… "+attempts.toLocaleString()+"번째 시도 · 방금: "+c.name+" ("+(last.male?"남":"여")+")";
+   if(attempts%2000<200){persist();updateStats();}
+  }
+ },30);
+});
+$("stopBtn").addEventListener("click",()=>stopAuto("자동 환생을 멈췄습니다."));
+
+/* ===== 공유 =====
+   문구 A/B 테스트: 기기별로 스토리형(a)/성과형(b)이 고정 배정되고,
+   공유 URL의 ?v= 파라미터로 어느 문구가 사람을 데려왔는지 추적한다. */
+function shareURL(){return location.origin+location.pathname+"?ref=share&v="+ST.ab;}
+function shareText(l){
+ const flag=flagOK?l.c.flag+" ":"";
+ const head=ST.ab==="a"
+  ?"🌏 나는 "+flag+l.c.name+" "+(l.urban?"도시":"농촌")+"에서 "+(l.male?"남자":"여자")+"로 태어났다"
+  :"🎰 확률 "+fmtPct(l.prob)+"의 환생 뽑기 성공! "+flag+l.c.name+" "+l.tier.key+" 등급";
+ const lines=[
+  head,
+  "등급 "+l.tier.key+" ("+l.tier.desc+") · 나의 "+ST.total.toLocaleString()+"번째 생",
+  "🗣 "+l.c.lang+" · 🙏 "+l.rel[0]+" · 🩸 "+l.abo[0]+(l.rhNeg?"−":"+")+" · ⏳ 기대수명 "+l.lifeExp+"세",
+ ];
+ const badges=[];
+ if(l.twin)badges.push("👯 쌍둥이");if(l.lefty)badges.push("🫲 왼손잡이");
+ if(l.top<=1)badges.push("💎 소득 상위 1%");
+ if(badges.length)lines.push(badges.join(" · "));
+ lines.push("나도 환생해 보기 👉 "+shareURL());
+ return lines.join("\n");
+}
+async function copyText(t){
+ try{await navigator.clipboard.writeText(t);return true;}
+ catch(e){
+  const ta=document.createElement("textarea");ta.value=t;document.body.appendChild(ta);
+  ta.select();let ok=false;try{ok=document.execCommand("copy");}catch(e2){}
+  ta.remove();return ok;
+ }
+}
+$("shareTxt").addEventListener("click",async()=>{
+ if(!currentLife)return;
+ track("share_text",{country:currentLife.c.name,tier:currentLife.tier.key});
+ const ok=await copyText(shareText(currentLife));
+ $("shareTxt").textContent=ok?"✅ 복사됨!":"복사 실패";
+ setTimeout(()=>$("shareTxt").textContent="📋 텍스트 복사",1600);
+});
+$("shareNative").addEventListener("click",async()=>{
+ if(!currentLife)return;
+ track("share_native",{country:currentLife.c.name,tier:currentLife.tier.key});
+ const t=shareText(currentLife);
+ if(navigator.share){
+  let payload={text:t};
+  try{
+   const blob=await new Promise(res=>drawCard(currentLife).toBlob(res,"image/png"));
+   if(blob){
+    const file=new File([blob],"rebirth.png",{type:"image/png"});
+    if(navigator.canShare&&navigator.canShare({files:[file],text:t}))payload={files:[file],text:t};
+   }
+  }catch(e){}
+  try{await navigator.share(payload);}catch(e){}
+ }else{
+  const ok=await copyText(t);
+  $("shareNative").textContent=ok?"✅ 복사됨!":"공유 미지원";
+  setTimeout(()=>$("shareNative").textContent="📤 공유하기",1600);
+ }
+});
+
+/* 결과 카드 이미지 (1080x1350) */
+function drawCard(l){
+ const W=1080,H=1350,cv=document.createElement("canvas");cv.width=W;cv.height=H;
+ const x=cv.getContext("2d");
+ const g=x.createLinearGradient(0,0,0,H);
+ g.addColorStop(0,"#0a0d1c");g.addColorStop(.6,"#141a33");g.addColorStop(1,"#0a0d1c");
+ x.fillStyle=g;x.fillRect(0,0,W,H);
+ for(let i=0;i<160;i++){x.fillStyle="rgba(236,233,245,"+(Math.random()*.7+.1)+")";
+  const r=Math.random()*1.8+.4;
+  x.beginPath();x.arc(Math.random()*W,Math.random()*H,r,0,7);x.fill();}
+ x.textAlign="center";
+ x.fillStyle="#f3c95c";x.font="600 34px 'Malgun Gothic','Apple SD Gothic Neo',sans-serif";
+ x.fillText("환 생 시 뮬 레 이 터",W/2,120);
+ x.fillStyle="#9a98b5";x.font="30px 'Malgun Gothic',sans-serif";
+ x.fillText("나의 "+ST.total.toLocaleString()+"번째 생",W/2,175);
+ if(flagOK){
+  x.font="240px 'Segoe UI Emoji','Apple Color Emoji',sans-serif";
+  x.fillText(l.c.flag,W/2,470);
+ }else{
+  x.strokeStyle="#f3c95c";x.lineWidth=8;
+  x.beginPath();x.arc(W/2,380,130,0,7);x.stroke();
+  x.fillStyle="#f3c95c";x.font="800 96px 'Segoe UI',sans-serif";
+  x.fillText(isoCode(l.c.flag),W/2,415);
+ }
+ x.fillStyle="#ece9f5";x.font="800 88px Batang,'Malgun Gothic',serif";
+ x.fillText(l.c.name,W/2,610);
+ x.fillStyle="#9a98b5";x.font="36px 'Malgun Gothic',sans-serif";
+ x.fillText(CONT_NAME[l.c.cont]+" · "+(l.urban?"도시":"농촌")+" · "+(l.male?"남자":"여자"),W/2,672);
+ /* 등급 배지 */
+ x.fillStyle=l.tier.color;
+ const bw=300;roundRect(x,W/2-bw/2,710,bw,64,32);x.fill();
+ x.fillStyle="#0a0d1c";x.font="800 38px 'Segoe UI','Malgun Gothic',sans-serif";
+ x.fillText(l.tier.key+" · "+l.tier.desc,W/2,754);
+ x.fillStyle="#f3c95c";x.font="34px 'Malgun Gothic',sans-serif";
+ x.fillText("이 인생을 받을 확률 "+fmtPct(l.prob),W/2,840);
+ x.fillStyle="#ece9f5";x.font="34px 'Malgun Gothic',sans-serif";
+ const rows=[
+  "🗣 "+l.c.lang+"    🙏 "+l.rel[0],
+  "🩸 "+l.abo[0]+(l.rhNeg?"−":"+")+"    🎂 "+l.month+"월 "+l.day+"일 "+l.zodiac[2],
+  "⏳ 기대수명 "+l.lifeExp+"세    💰 세계 소득 상위 "+(l.top<1?l.top.toFixed(1):Math.round(l.top))+"%",
+ ];
+ const extra=[];
+ if(l.twin)extra.push("👯 쌍둥이");if(l.lefty)extra.push("🫲 왼손잡이");
+ if(extra.length)rows.push(extra.join("    "));
+ rows.forEach((r,i)=>x.fillText(r,W/2,930+i*64));
+ x.fillStyle="#9a98b5";x.font="28px 'Malgun Gothic',sans-serif";
+ x.fillText("당신의 다음 생은 어디에서 시작될까요?",W/2,H-120);
+ x.fillStyle="#f3c95c";
+ x.fillText(location.host||"환생 시뮬레이터",W/2,H-70);
+ return cv;
+}
+function roundRect(x,px,py,w,h,r){
+ x.beginPath();x.moveTo(px+r,py);x.arcTo(px+w,py,px+w,py+h,r);
+ x.arcTo(px+w,py+h,px,py+h,r);x.arcTo(px,py+h,px,py,r);x.arcTo(px,py,px+w,py,r);x.closePath();
+}
+$("shareImg").addEventListener("click",()=>{
+ if(!currentLife)return;
+ track("share_card",{country:currentLife.c.name,tier:currentLife.tier.key});
+ drawCard(currentLife).toBlob(b=>{
+  if(!b)return;
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(b);
+  a.download="rebirth-"+isoCode(currentLife.c.flag)+"-"+ST.total+".png";
+  a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+ },"image/png");
+});
+
+/* ===== 확률 표 ===== */
+(function(){
+ const top=[...DATA].sort((a,b)=>b.pop-a.pop).slice(0,12);
+ $("oddsList").innerHTML=top.map(c=>{
+  const p=c.pop/TOTAL*100;
+  return "<li><span>"+(flagOK?c.flag+" ":"")+c.name+"</span><span class='pc'>"+p.toFixed(1)+"%</span></li>";
+ }).join("");
+ const cnIn=(DATA[0].pop+DATA[1].pop)/TOTAL*100;
+ $("oddsNote").textContent="중국과 인도만 합쳐도 약 "+cnIn.toFixed(0)+"%. 환생 3번 중 1번은 두 나라 중 하나에서 시작됩니다. 반대로 투발루(인구 1.1만 명)가 나올 확률은 약 "+koNum(TOTAL*1e6/11000)+"번 중 1번입니다.";
+})();
+
+/* ===== 별 배경 ===== */
+(function(){
+ const cv=$("stars"),x=cv.getContext("2d");
+ let stars=[];
+ function resize(){
+  cv.width=innerWidth;cv.height=innerHeight;
+  stars=Array.from({length:Math.min(180,innerWidth/6)},()=>({
+   x:Math.random()*cv.width,y:Math.random()*cv.height,
+   r:Math.random()*1.4+.3,p:Math.random()*Math.PI*2,s:Math.random()*.9+.3}));
+ }
+ resize();addEventListener("resize",resize);
+ function draw(t){
+  x.clearRect(0,0,cv.width,cv.height);
+  for(const s of stars){
+   const a=reduceMotion?.6:.35+.4*Math.sin(t/1400*s.s+s.p);
+   x.fillStyle="rgba(236,233,245,"+a.toFixed(2)+")";
+   x.beginPath();x.arc(s.x,s.y,s.r,0,7);x.fill();
+  }
+  if(!reduceMotion)requestAnimationFrame(draw);
+ }
+ requestAnimationFrame(draw);
+})();
+
+/* ===== 컨페티 ===== */
+function burstConfetti(color){
+ if(reduceMotion)return;
+ const cv=$("confetti"),x=cv.getContext("2d");
+ cv.width=innerWidth;cv.height=innerHeight;
+ const hero=$("hero").getBoundingClientRect();
+ const cx=hero.left+hero.width/2,cy=Math.max(80,hero.top+60);
+ const colors=[color,"#f3c95c","#ff8fb2","#b78ef0","#ece9f5"];
+ const parts=Array.from({length:140},()=>({
+  x:cx,y:cy,
+  vx:(Math.random()-.5)*14,vy:-Math.random()*13-3,
+  g:.35,r:Math.random()*5+2,rot:Math.random()*Math.PI,vr:(Math.random()-.5)*.3,
+  c:colors[Math.floor(Math.random()*colors.length)],life:1}));
+ let frame=0;
+ (function tick(){
+  frame++;x.clearRect(0,0,cv.width,cv.height);
+  let alive=false;
+  for(const p of parts){
+   p.x+=p.vx;p.y+=p.vy;p.vy+=p.g;p.rot+=p.vr;p.life-=.008;
+   if(p.life<=0||p.y>cv.height+20)continue;
+   alive=true;
+   x.save();x.translate(p.x,p.y);x.rotate(p.rot);
+   x.globalAlpha=Math.max(0,p.life);x.fillStyle=p.c;
+   x.fillRect(-p.r,-p.r/2,p.r*2,p.r);x.restore();
+  }
+  if(alive&&frame<260)requestAnimationFrame(tick);
+  else x.clearRect(0,0,cv.width,cv.height);
+ })();
+}
+
+/* ===== 토스트 ===== */
+let toastT;
+function toast(msg){
+ const t=$("toast");t.textContent=msg;t.hidden=false;
+ requestAnimationFrame(()=>t.classList.add("show"));
+ clearTimeout(toastT);
+ toastT=setTimeout(()=>{t.classList.remove("show");setTimeout(()=>{t.hidden=true;},300);},2200);
+}
+
+/* ===== 이모지 피드백 (행동 데이터 수집) ===== */
+$("feedback").addEventListener("click",e=>{
+ const b=e.target.closest(".fb");if(!b||b.disabled||!currentLife)return;
+ $("feedback").querySelectorAll(".fb").forEach(x=>{x.disabled=true;});
+ b.classList.add("picked");
+ track("feedback",{emoji:b.dataset.fb,country:currentLife.c.name,tier:currentLife.tier.key});
+ persist();
+ toast("소중한 "+b.dataset.fb+" 잘 받았어요!");
+});
+
+/* ===== 환생 도감 ===== */
+function openDex(){
+ const sorted=[...DATA].map((c,i)=>({c,i})).sort((a,b)=>b.c.pop-a.c.pop);
+ $("dexGrid").innerHTML=sorted.map(({c,i})=>{
+  const owned=seenSet.has(i);const t=tierOf(c.pop);
+  const fl=flagOK?'<span class="dex-flag">'+c.flag+'</span>'
+   :'<span class="dex-flag dex-code">'+isoCode(c.flag)+'</span>';
+  return '<div class="dex-item'+(owned?" owned":"")+'" style="--tc:'+t.color+'">'
+   +fl+'<span class="dex-name">'+c.name+'</span><span class="dex-tier">'+t.key+"</span></div>";
+ }).join("");
+ $("dexProgress").textContent="수집한 나라 "+seenSet.size+" / "+DATA.length
+  +" ("+Math.round(seenSet.size/DATA.length*100)+"%) · 밝은 칸이 태어나 본 나라입니다";
+ $("dexModal").hidden=false;
+ document.body.style.overflow="hidden";
+ track("collection_open",{owned:seenSet.size});
+}
+function closeDex(){$("dexModal").hidden=true;document.body.style.overflow="";}
+$("dexBtn").addEventListener("click",openDex);
+$("dexClose").addEventListener("click",closeDex);
+$("dexModal").addEventListener("click",e=>{if(e.target===$("dexModal"))closeDex();});
+addEventListener("keydown",e=>{if(e.key==="Escape"&&!$("dexModal").hidden)closeDex();});
+
+updateStats();
+if(ST.total>0)$("lifeNo").textContent="지금까지 "+ST.total.toLocaleString()+"번 환생했습니다";
+track("visit",{});
+persist();
+</script>
+<!-- ▼ 분석 도구 스니펫(GA4 gtag / PostHog / Plausible)을 이 아래에 붙여넣으세요.
+     track()이 감지해서 roll, share_text, feedback 등 모든 이벤트를 자동으로 흘려보냅니다. -->
