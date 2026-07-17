@@ -5,8 +5,9 @@
 
 - **라이브**: https://life-reroll.madcamp-kaist.org/
 - **레포**: https://github.com/madcamp-official/spk (몰입캠프 26s-w3-c1-03)
-- **스택**: 정적 HTML 단일 파일 + 국기 웹폰트. 프레임워크·빌드 없음.
-  "모두의 환생 횟수" 하나 때문에 의존성 없는 Node 카운터([server/counter.js](server/counter.js))가 붙는다 — 이것만 서버가 필요하고, 없으면 해당 타일만 숨겨진 채 나머지는 그대로 동작한다.
+- **스택**: 정적 HTML + CSS + ES 모듈. 프레임워크·번들러·빌드 단계 없음 — 파일을 그대로 서빙한다.
+  "모두의 환생 횟수"와 이벤트 수집 때문에 의존성 없는 Node 서버([server/counter.js](server/counter.js))가 붙는다 —
+  이것만 서버가 필요하고, 없으면 해당 타일만 숨겨진 채 나머지는 그대로 동작한다.
 
 ## 핵심 아이디어
 
@@ -33,6 +34,44 @@
 | 누적 통계 | 나의 환생 횟수, 도감 진행률, 최고 희귀 기록 (localStorage) |
 | 모두의 환생 횟수 | 방문자 전체가 뽑은 환생의 합계. `/api/counter`로 읽고 환생마다 1씩 올린다 |
 | 국기 표시 | 윈도우에는 국기 이모지 글리프가 없어 "KR" 두 글자로 나온다. 국기 코드포인트만 담은 Twemoji 웹폰트를 얹어 전 OS에서 국기가 보인다 |
+
+## 파일 구조
+
+한 파일에 1,469줄이 쌓여 손대기 어려워져서 기능별로 쪼갰다. 빌드는 여전히 없다 —
+브라우저의 ES 모듈을 그대로 쓴다.
+
+```
+index.html          마크업만 (117줄). <link>로 CSS, <script type="module">로 js/main.js
+css/style.css       전체 스타일
+TwemojiCountryFlags.woff2   국기 웹폰트 (css에서 ../ 로 참조)
+js/
+  data.js     198개국 데이터 (RAW·REL·BODY) — 전체의 절반을 차지하던 덩어리
+  util.js     DOM 단축, 난수원(RNG 교체 가능), 숫자 포맷
+  state.js    localStorage 상태(ST) + 지금 보고 있는 생(session)
+  flags.js    국기 이모지 지원 감지 (웹폰트 로드 후 재판정)
+  roll.js     환생 뽑기 — 국가·성별·민족·체격·IQ·소득
+  render.js   결과 화면(칩·배지) 렌더
+  counter.js  모두의 환생 횟수 (/api/counter)
+  track.js    이벤트 큐 → /api/track, 체류시간·이탈 계측
+  effects.js  별 배경·컨페티·토스트
+  share.js    공유 시트·결과 카드(canvas)
+  dex.js      환생 도감
+  fortune.js  오늘의 환생 운세
+  odds.js     확률 표
+  suggest.js  한 줄 제안
+  main.js     조립 + 리롤 버튼 + 전역 단축키
+server/counter.js   카운터·이벤트 수집 (VM에서만 동작)
+deploy.sh           배포
+```
+
+의존 방향은 한쪽으로만 흐른다(`data`·`util`·`state`는 아무것도 import하지 않고,
+`main.js`가 맨 위에서 조립). **순환 참조가 생기면 되돌릴 것.**
+
+> ⚠️ **`index.html`을 파일로 직접 열면(`file://`) 더 이상 동작하지 않는다.** ES 모듈은
+> CORS 때문에 http로 서빙해야 한다. 아래 "로컬 실행"의 정적 서버를 쓸 것.
+
+`window.__app`에 주요 내부(DATA, rollLife, renderLife 등)를 열어 두었다 —
+콘솔에서 만져 보거나 자동 검증에서 쓴다.
 
 ## 반응 수집 설계 (배포 → 반응 → 개선 루프)
 
