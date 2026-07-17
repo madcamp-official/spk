@@ -3,7 +3,7 @@
 실제 지구 인구 분포 확률 그대로 다음 생을 뽑는 웹 시뮬레이터.
 리롤을 반복하다가 마음에 드는 생이 나오면 카드로 만들어 공유한다.
 
-- **라이브**: https://omok00.github.io/rebirth-simulator/
+- **라이브**: https://life-reroll.madcamp-kaist.org/
 - **스택**: 정적 HTML 단일 파일 (프레임워크·서버 없음), GitHub Pages 배포
 
 ## 핵심 아이디어
@@ -32,9 +32,9 @@
 홍보 채널마다 URL에 `?ref=` 파라미터를 붙여 배포한다.
 
 ```
-https://omok00.github.io/rebirth-simulator/?ref=everytime
-https://omok00.github.io/rebirth-simulator/?ref=instagram
-https://omok00.github.io/rebirth-simulator/?ref=discord
+https://life-reroll.madcamp-kaist.org/?ref=everytime
+https://life-reroll.madcamp-kaist.org/?ref=instagram
+https://life-reroll.madcamp-kaist.org/?ref=discord
 ```
 
 사용자가 앱에서 공유하면 자동으로 `?ref=share&v=a|b`가 붙는다.
