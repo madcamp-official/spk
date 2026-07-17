@@ -7,7 +7,12 @@ import {probPct} from "./util.js";
 if(!ST.dev)ST.dev=Math.random().toString(36).slice(2,10);
 if(ST.ab!=="a"&&ST.ab!=="b")ST.ab=Math.random()<0.5?"a":"b";
 const QS=new URLSearchParams(location.search);
-const REF=QS.get("ref")||"";
+/* ref는 홍보처마다 자유롭게 붙이는 태그라 via처럼 목록으로 못 막는다. 대신 모양을 강제한다.
+   이 값은 "모든" 이벤트에 복사돼 실리므로, 길이를 안 막으면 ?ref=<5000자> 링크 하나로
+   배치가 서버의 MAX_BODY(8192)를 넘겨 413으로 잘린다 — sendBeacon은 응답을 안 보니
+   그 사람의 계측이 통째로, 소리 없이 죽는다. 짧은 쓰레기 값도 유입 채널 표를 더럽힌다. */
+const RAW=QS.get("ref")||"";
+const REF=/^[a-z0-9_-]{1,24}$/i.test(RAW)?RAW:"";
 if(REF&&!ST.refFirst)ST.refFirst=REF;
 /* vin = 나를 데려온 공유 카피, ab = 내가 공유할 때 쓸 카피. 한 기기가 유입자이자
    공유자라 둘을 한 필드로 합치면 A/B 유입 비교가 자기 동전던지기에 묻힌다. */
