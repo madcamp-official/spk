@@ -184,10 +184,13 @@ sudo install -m 644 server/counter.js /opt/life-reroll/counter.js && sudo system
 nginx가 `/api/`를 카운터(`127.0.0.1:1558`)로 프록시하며, 터널 뒤라 모든 요청이
 `127.0.0.1`에서 오므로 `CF-Connecting-IP`로 실제 IP를 복원해 IP당 레이트리밋을 건다.
 
-> **GitHub Pages 워크플로와 CNAME은 현재 무효다.** 도메인은 터널이 가리키고 있어
-> Pages 쪽 커스텀 도메인은 인증되지 않는다. Pages로 되돌리려면 터널 호스트네임을 지우고
-> `madcamp-official.github.io`로 CNAME을 만들어야 하며, 그 경우 카운터 서버는 못 쓴다
-> ([.github/workflows/pages.yml](.github/workflows/pages.yml)).
+> **GitHub Pages는 쓰지 않는다.** 배포 대상은 위의 VM 하나뿐이다.
+>
+> 카운터와 계측이 동작하는 건 **이 VM이 `/api/`를 서빙하기 때문**이다. Pages는 정적
+> 파일만 올릴 수 있어 `counter.js`(node 프로세스)를 돌릴 수 없다. 즉 **Pages로 가면**
+> `/api/counter`·`/api/track`이 전부 404가 되고 "모두의 환생 횟수"와 모든 계측이 죽는다.
+> 계측을 유지하려면 VM이어야 한다는 뜻이고, 그래서 Pages 워크플로와 `CNAME`을 제거했다
+> (`CNAME`은 Pages 전용 규약이라 nginx·Cloudflare는 읽지 않는다).
 
 ## 데이터 출처와 한계
 
