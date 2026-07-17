@@ -276,7 +276,7 @@ footer a{color:var(--gold)}
 
   <section class="stats">
     <div class="stat"><div class="n" id="stTotal">0</div><div class="l">나의 환생 횟수</div></div>
-    <!-- 카운터 API가 없는 환경(예: Pages 배포)에서는 계속 hidden으로 남는다 -->
+    <!-- 카운터 API가 없는 환경(로컬에서 index.html만 띄울 때)에서는 계속 hidden으로 남는다 -->
     <div class="stat" id="globalStat" hidden><div class="n" id="stGlobal">—</div><div class="l">모두의 환생 횟수 🌏</div></div>
     <button class="stat stat-btn" id="dexBtn" title="환생 도감 열기"><div class="n" id="stSeen">0</div><div class="l">태어나 본 나라 · 도감 📖</div></button>
     <div class="stat"><div class="n" id="stBest">·</div><div class="l">최고 희귀 기록</div></div>
@@ -923,11 +923,36 @@ const VQ=QS.get("v");
 const VIN=(VQ==="a"||VQ==="b")?VQ:"";
 if(VIN&&!ST.vIn)ST.vIn=VIN;
 const RETURNING=ST.total>0;
+/* ===== 이벤트 큐 =====
+   리롤 클릭 경로에서는 배열에 push만 한다. 실제 전송은 3초 유휴 또는 이탈 시점에
+   sendBeacon으로 몰아서 — 응답을 기다리지 않고, 실패해도 무시한다.
+   (데이터 몇 개 잃는 게 리롤 체감을 잃는 것보다 싸다) */
+const EVENT_API="/api/track";
+const _q=[];let _qTimer=null;
+function flushEvents(){
+ if(_qTimer){clearTimeout(_qTimer);_qTimer=null;}
+ if(!_q.length)return;
+ if(!navigator.sendBeacon){_q.length=0;return;}
+ while(_q.length){
+  const batch=_q.splice(0,50);
+  try{
+   const ok=navigator.sendBeacon(EVENT_API,
+    new Blob([JSON.stringify(batch)],{type:"application/json"}));
+   if(!ok){_q.unshift.apply(_q,batch);break;} /* 브라우저 큐 포화 — 되돌리고 중단 */
+  }catch(e){break;}
+ }
+}
 function track(ev,props){
  try{
   ST.metrics=ST.metrics||{};ST.metrics[ev]=(ST.metrics[ev]||0)+1;
+  /* ref/vin/v 각인은 전송 경로와 무관하게 여기서 끝난다. 큐에는 각인된 뒤의 것이
+     들어간다 — 여기서 빠지면 vin이 사라져 문구 A/B를 영영 못 읽는다. */
   const p=Object.assign({ref:REF||ST.refFirst||"direct",v:ST.ab,
    vin:VIN||ST.vIn||"none"},props||{});
+  _q.push({e:ev,p});
+  if(_q.length>500)_q.splice(0,_q.length-500); /* 전송이 계속 실패해도 무한정 쌓지 않는다 */
+  if(!_qTimer)_qTimer=setTimeout(flushEvents,3000);
+  /* 외부 스니펫을 붙였을 때만 동작. 경로 A(자체 수집)에서는 전부 no-op이다. */
   if(window.gtag)gtag("event",ev,p);
   if(window.posthog&&window.posthog.capture)posthog.capture(ev,p);
   if(window.plausible)plausible(ev,{props:p});
@@ -963,8 +988,12 @@ function sendExit(){
  sendDwell("exit");
  track("exit",{rolls:sessionRolls,activated});
 }
-addEventListener("pagehide",sendExit);
-addEventListener("visibilitychange",()=>{if(document.visibilityState==="hidden")sendExit();});
+/* exit·마지막 dwell은 이 시점에만 존재한다. 큐에 넣은 직후 반드시 flush해야
+   회수된다(exitSent로 두 번째 호출이 막혀도 flush는 항상 돈다). */
+addEventListener("pagehide",()=>{sendExit();flushEvents();});
+addEventListener("visibilitychange",()=>{
+ if(document.visibilityState==="hidden"){sendExit();flushEvents();}
+});
 
 function updateStats(){
  $("stTotal").textContent=ST.total.toLocaleString();
