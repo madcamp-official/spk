@@ -19,7 +19,13 @@ SERVICE=life-reroll-counter
 HOST=life-reroll.madcamp-kaist.org
 LOCAL=http://127.0.0.1:1557
 LIVE=https://$HOST
-ASSETS=(index.html og-image.png TwemojiCountryFlags.woff2)
+# 루트 파일 + css/ js/ 아래 전부. 모듈은 하나라도 빠지면 앱이 통째로 죽으므로
+# 목록을 손으로 관리하지 않고 레포에 있는 것을 그대로 훑는다.
+mapfile -t ASSETS < <(
+  cd "$REPO" || exit 1
+  printf '%s\n' index.html og-image.png TwemojiCountryFlags.woff2
+  find css js -type f \( -name '*.css' -o -name '*.js' \) | sort
+)
 
 PULL=0
 CHECK_ONLY=0
@@ -68,14 +74,16 @@ if [ "$CHECK_ONLY" -eq 1 ]; then
   done
 else
   install -d -o www-data -g www-data "$WWW"
+  same=0
   for f in "${ASSETS[@]}"; do
     if cmp -s "$REPO/$f" "$WWW/$f" 2>/dev/null; then
-      ok "$f 변경 없음"
+      same=$((same+1))
     else
-      install -m 644 -o www-data -g www-data "$REPO/$f" "$WWW/$f"
+      install -D -m 644 -o www-data -g www-data "$REPO/$f" "$WWW/$f"
       chg "$f 갱신"
     fi
   done
+  [ "$same" -gt 0 ] && ok "$same개 파일 변경 없음"
 fi
 
 # ── 3. 카운터 서버 ───────────────────────────────────────────────
@@ -122,6 +130,25 @@ fi
 
 font_code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 25 "$LIVE/TwemojiCountryFlags.woff2" || echo 000)
 [ "$font_code" = 200 ] && ok "라이브 국기 폰트   HTTP $font_code" || { bad "라이브 국기 폰트   HTTP $font_code"; }
+
+# index.html이 200이어도 모듈이 하나 빠지면 앱은 통째로 죽는다. css·js를 전부 확인한다.
+# 반드시 로컬 nginx(오리진)로 본다 — 배포가 제대로 됐는지는 오리진이 답이고,
+# 라이브로 찌르면 아직 없는 파일의 응답을 Cloudflare가 캐시해 버려 오히려 사고가 난다.
+missing=""
+n=0
+for f in $(cd "$REPO" && find css js -type f \( -name '*.css' -o -name '*.js' \) | sort); do
+  n=$((n+1))
+  ct=$(curl -s -o /dev/null -w '%{content_type}' -H "Host: $HOST" "$LOCAL/$f" || echo "?")
+  case "$f:$ct" in
+    *.css:text/css*|*.js:*javascript*) ;;
+    *) missing="$missing $f($ct)" ;;
+  esac
+done
+if [ -z "$missing" ]; then
+  ok "오리진 css·js      ${n}개 모두 정상 타입"
+else
+  bad "오리진 css·js      잘못된 응답:$missing"
+fi
 
 api=$(curl -s --max-time 20 "$LIVE/api/counter" || true)
 if printf '%s' "$api" | grep -q '"total"'; then

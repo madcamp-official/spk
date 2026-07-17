@@ -1,0 +1,232 @@
+/* 윈도우에는 국기 이모지 글리프가 아예 없어서 "KR" 두 글자로 렌더된다.
+   unicode-range를 국기(Regional Indicator)로 묶어두었으므로 아래 스택 맨 앞에 두어도
+   나머지 글자에는 영향이 없다. */
+@font-face{
+  font-family:"Twemoji Country Flags";
+  src:url("../TwemojiCountryFlags.woff2") format("woff2");
+  unicode-range:U+1F1E6-1F1FF;
+  font-display:swap;
+}
+:root{
+  --void:#0a0d1c;
+  --surface:#141a33;
+  --surface2:#1c2445;
+  --line:#2a3158;
+  --ink:#ece9f5;
+  --muted:#9a98b5;
+  --gold:#f3c95c;
+  --gold-dim:rgba(243,201,92,.14);
+  --serif:"Twemoji Country Flags","Nanum Myeongjo","Noto Serif KR","Apple SD Gothic Neo",Batang,serif;
+  --sans:"Twemoji Country Flags","Pretendard Variable",Pretendard,"Apple SD Gothic Neo","Malgun Gothic","Segoe UI",system-ui,sans-serif;
+}
+*{box-sizing:border-box}
+/* .chips{display:grid} 같은 작성자 규칙은 UA의 [hidden]{display:none}을 무조건
+   이긴다(명시도 무관). !important 없이는 hidden 속성이 조용히 무시된다. */
+[hidden]{display:none !important}
+html,body{margin:0;padding:0}
+body{
+  background:var(--void);
+  color:var(--ink);
+  font-family:var(--sans);
+  line-height:1.6;
+  min-height:100vh;
+  overflow-x:hidden;
+}
+#stars{position:fixed;inset:0;z-index:0;pointer-events:none}
+#confetti{position:fixed;inset:0;z-index:50;pointer-events:none}
+.wrap{position:relative;z-index:1;max-width:720px;margin:0 auto;padding:40px 20px 60px}
+
+header{text-align:center;margin-bottom:28px}
+.eyebrow{font-size:11px;letter-spacing:.35em;color:var(--gold);text-transform:uppercase;margin-bottom:10px}
+h1{
+  font-family:var(--serif);
+  font-size:clamp(30px,6vw,44px);
+  font-weight:800;
+  margin:0 0 8px;
+  text-wrap:balance;
+  text-shadow:0 0 40px rgba(243,201,92,.25);
+}
+.tagline{color:var(--muted);font-size:14px;margin:0}
+.lifeno{color:var(--gold);font-size:13px;margin:10px 0 0;font-variant-numeric:tabular-nums;min-height:20px}
+
+.hero{
+  --rarity-color:var(--line);
+  background:linear-gradient(180deg,var(--surface) 0%,#10152b 100%);
+  border:1px solid var(--rarity-color);
+  border-radius:20px;
+  padding:34px 24px 28px;
+  text-align:center;
+  box-shadow:0 0 0 1px rgba(255,255,255,.02),0 0 46px -18px var(--rarity-color);
+  transition:border-color .5s,box-shadow .5s;
+}
+.popline{font-size:13px;color:var(--muted);margin:0 0 14px;min-height:20px}
+.flag{
+  font-size:clamp(72px,16vw,104px);
+  line-height:1.15;
+  filter:drop-shadow(0 6px 24px rgba(0,0,0,.5));
+  transition:transform .2s;
+  min-height:1.15em;
+}
+.code-flag{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:1.5em;height:1.5em;border-radius:50%;
+  border:3px solid var(--gold);background:var(--surface2);
+  font-family:var(--sans);font-size:.42em;font-weight:800;letter-spacing:.06em;color:var(--gold);
+}
+.country{
+  font-family:var(--serif);
+  font-size:clamp(26px,5.4vw,38px);
+  font-weight:800;margin:10px 0 4px;text-wrap:balance;
+}
+.subline{color:var(--muted);font-size:14px;margin:0 0 4px}
+/* 배지는 뜰 때도 있고 안 뜰 때도 있다. 자리를 미리 잡아두지 않으면 리롤할 때마다
+   아래 "다시 환생하기" 버튼이 배지 한 줄만큼 오르내린다. */
+.badges{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:14px;min-height:29px}
+.badge{
+  font-size:12px;padding:4px 12px;border-radius:99px;
+  background:var(--gold-dim);border:1px solid rgba(243,201,92,.4);color:var(--gold);
+}
+
+.chips{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+  gap:10px;margin-top:14px;
+}
+.chip{
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:12px 14px;
+  opacity:0;transform:translateY(10px);
+}
+.chip.reveal{opacity:1;transform:none;transition:opacity .45s,transform .45s}
+.chip .k{font-size:11px;letter-spacing:.14em;color:var(--muted);text-transform:uppercase}
+.chip .v{font-size:16px;font-weight:700;margin-top:3px;line-height:1.35}
+.chip .s{font-size:12px;color:var(--muted);margin-top:3px;font-variant-numeric:tabular-nums}
+
+.controls{margin-top:22px;text-align:center}
+button{
+  font-family:var(--sans);cursor:pointer;
+  border-radius:14px;border:1px solid var(--line);
+  background:var(--surface2);color:var(--ink);
+  font-size:14px;padding:10px 18px;
+}
+button:hover{border-color:var(--gold)}
+button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+button:disabled{opacity:.45;cursor:not-allowed}
+.btn-primary{
+  font-size:19px;font-weight:800;
+  padding:16px 44px;border-radius:99px;border:none;
+  background:linear-gradient(135deg,#f3c95c,#e09b3d);
+  color:#241a05;
+  box-shadow:0 8px 34px -8px rgba(243,201,92,.55);
+  transition:transform .15s;
+}
+.btn-primary:hover{transform:translateY(-2px)}
+.btn-primary:active{transform:translateY(1px)}
+.share-row{display:flex;gap:10px;justify-content:center;margin-top:14px;flex-wrap:wrap}
+
+.card{
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:18px;
+  padding:20px 22px;
+  margin-top:22px;
+}
+.card h3{margin:0 0 6px;font-size:16px}
+.card .hint{color:var(--muted);font-size:13px;margin:0 0 14px}
+
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:22px}
+.stat{
+  background:var(--surface);border:1px solid var(--line);border-radius:14px;
+  padding:14px 12px;text-align:center;
+}
+.stat .n{font-size:20px;font-weight:800;color:var(--gold);font-variant-numeric:tabular-nums;line-height:1.3}
+.stat .l{font-size:11px;color:var(--muted);letter-spacing:.1em;margin-top:2px}
+
+details.card summary{cursor:pointer;font-weight:700;font-size:15px}
+details.card summary::marker{color:var(--gold)}
+.odds-list{margin:14px 0 0;padding:0;list-style:none}
+.odds-list li{
+  display:flex;justify-content:space-between;gap:12px;
+  padding:7px 0;border-bottom:1px solid var(--line);
+  font-size:14px;font-variant-numeric:tabular-nums;
+}
+.odds-list li:last-child{border-bottom:none}
+.odds-list .pc{color:var(--gold);font-weight:700}
+.odds-note{color:var(--muted);font-size:13px;margin-top:12px}
+
+.controls-sub{display:flex;gap:10px;justify-content:center;margin-top:12px}
+.fortune-line{color:#b78ef0;font-size:14px;margin:10px 0 0}
+.sg-row{display:flex;gap:8px}
+.sg-input{
+  flex:1;min-width:0;padding:9px 12px;border-radius:10px;
+  border:1px solid var(--line);background:var(--surface2);
+  color:var(--ink);font-family:var(--sans);font-size:14px;
+}
+.sg-input::placeholder{color:var(--muted);opacity:.7}
+.sg-input:focus{outline:none;border-color:var(--gold)}
+.sg-send{font-size:13px;padding:9px 16px;border-radius:10px;background:var(--surface2);white-space:nowrap}
+.sg-send:disabled{opacity:.5}
+.sg-note{font-size:11px;color:var(--muted);margin:8px 0 0;opacity:.75}
+@media(max-width:420px){.sg-row{flex-wrap:wrap}.sg-send{width:100%}}
+
+.toast{
+  position:fixed;left:50%;bottom:26px;transform:translate(-50%,16px);
+  background:var(--surface2);border:1px solid var(--gold);color:var(--ink);
+  padding:10px 18px;border-radius:99px;font-size:14px;z-index:80;
+  opacity:0;transition:opacity .25s,transform .25s;pointer-events:none;max-width:90vw;
+}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+
+.stat-btn{cursor:pointer;font-family:var(--sans)}
+.stat-btn:hover{border-color:var(--gold)}
+
+.modal-backdrop{
+  position:fixed;inset:0;background:rgba(4,6,14,.72);z-index:60;
+  display:flex;align-items:center;justify-content:center;padding:18px;
+}
+.modal{
+  background:var(--surface);border:1px solid var(--line);border-radius:18px;
+  width:min(680px,100%);max-height:82vh;display:flex;flex-direction:column;
+  padding:18px 20px;
+}
+.modal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+.modal-head h3{margin:0;font-size:17px}
+.dex-grid{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));
+  gap:8px;overflow-y:auto;padding:6px 2px 2px;
+}
+.dex-item{
+  display:flex;flex-direction:column;align-items:center;gap:2px;
+  background:var(--surface2);border:1px solid var(--line);border-radius:10px;
+  padding:8px 6px;opacity:.32;text-align:center;
+}
+.dex-item.owned{opacity:1;border-color:var(--tc)}
+.dex-flag{font-size:22px;line-height:1.2}
+.dex-code{
+  font-size:12px;font-weight:800;color:var(--gold);border:2px solid var(--gold);
+  border-radius:50%;width:32px;height:32px;display:inline-flex;align-items:center;justify-content:center;
+}
+.dex-name{font-size:11px;line-height:1.3}
+.dex-prob{font-size:10px;font-weight:800;color:var(--tc);font-variant-numeric:tabular-nums}
+
+.share-modal{width:min(400px,100%)}
+.share-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
+.share-opt{
+  display:flex;flex-direction:column;align-items:center;gap:7px;
+  padding:14px 6px;font-size:12px;border-radius:12px;
+}
+.share-opt .so-ico{font-size:24px;line-height:1}
+
+footer{margin-top:36px;text-align:center;color:var(--muted);font-size:12px;line-height:1.7}
+footer a{color:var(--gold)}
+
+@media (max-width:480px){
+  .stats{grid-template-columns:repeat(3,1fr)}
+  .stat .n{font-size:16px}
+}
+@media (prefers-reduced-motion:reduce){
+  .chip,.chip.reveal{opacity:1;transform:none;transition:none}
+  .btn-primary{transition:none}
+}
