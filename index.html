@@ -26,7 +26,7 @@
   --sans:"Pretendard Variable",Pretendard,"Apple SD Gothic Neo","Malgun Gothic","Segoe UI",system-ui,sans-serif;
 }
 *{box-sizing:border-box}
-/* .feedback{display:flex} 같은 작성자 규칙은 UA의 [hidden]{display:none}을 무조건
+/* .chips{display:grid} 같은 작성자 규칙은 UA의 [hidden]{display:none}을 무조건
    이긴다(명시도 무관). !important 없이는 hidden 속성이 조용히 무시된다. */
 [hidden]{display:none !important}
 html,body{margin:0;padding:0}
@@ -165,14 +165,6 @@ details.card summary::marker{color:var(--gold)}
 
 .controls-sub{display:flex;gap:10px;justify-content:center;margin-top:12px}
 .fortune-line{color:#b78ef0;font-size:14px;margin:10px 0 0}
-.feedback{display:flex;gap:8px;justify-content:center;align-items:center;margin-top:16px;flex-wrap:wrap}
-.fb-label{font-size:13px;color:var(--muted)}
-button.fb{font-size:18px;padding:6px 12px;border-radius:99px;background:var(--surface2)}
-button.fb.picked{border-color:var(--gold);background:var(--gold-dim)}
-button.fb:disabled{opacity:.5}
-button.fb.picked:disabled{opacity:1}
-.suggest{margin-top:14px;padding-top:14px;border-top:1px solid var(--line)}
-.sg-label{display:block;font-size:13px;color:var(--muted);margin-bottom:8px}
 .sg-row{display:flex;gap:8px}
 .sg-input{
   flex:1;min-width:0;padding:9px 12px;border-radius:10px;
@@ -259,21 +251,6 @@ footer a{color:var(--gold)}
     <p class="prob" id="probline" hidden></p>
     <p class="fortune-line" id="fortuneLine" hidden></p>
     <div class="badges" id="badges"></div>
-    <div class="feedback" id="feedback" hidden>
-      <span class="fb-label">이번 생 어때요?</span>
-      <button class="fb" data-fb="😐" aria-label="그저 그래요">😐</button>
-      <button class="fb" data-fb="😂" aria-label="웃겨요">😂</button>
-      <button class="fb" data-fb="🔥" aria-label="최고예요">🔥</button>
-    </div>
-    <form class="suggest" id="suggest" hidden>
-      <label class="sg-label" for="sgInput">이런 항목도 환생 결과에 넣어 주세요</label>
-      <div class="sg-row">
-        <input class="sg-input" id="sgInput" type="text" maxlength="80" autocomplete="off"
-               placeholder="예: 형제 수, 태어난 계절, 평균 키…">
-        <button class="sg-send" id="sgSend" type="submit">보내기</button>
-      </div>
-      <p class="sg-note">한 줄이면 충분해요. 개인정보는 적지 말아 주세요.</p>
-    </form>
   </section>
 
   <section class="chips" id="chips" hidden></section>
@@ -301,6 +278,17 @@ footer a{color:var(--gold)}
     <ul class="odds-list" id="oddsList"></ul>
     <p class="odds-note" id="oddsNote"></p>
   </details>
+
+  <form class="card suggest" id="suggest">
+    <h3>💡 이런 항목도 환생 결과에 넣어 주세요</h3>
+    <p class="hint">한 줄이면 충분해요. 다음 개선 후보로 담아 둡니다.</p>
+    <div class="sg-row">
+      <input class="sg-input" id="sgInput" type="text" maxlength="80" autocomplete="off"
+             placeholder="예: 형제 수, 태어난 계절, 평균 키…">
+      <button class="sg-send" id="sgSend" type="submit">보내기</button>
+    </div>
+    <p class="sg-note">개인정보는 적지 말아 주세요.</p>
+  </form>
 
   <footer>
     국가·인구·도시화율·기대수명·1인당 GDP는 UN World Population Prospects 2024,
@@ -702,10 +690,23 @@ function markRoll(){
  activated=true;
  track("activate",{ms:Math.round(performance.now()-T_LOAD),returning:RETURNING});
 }
+/* ===== 체류 시간 = "이번 생 어때요?"의 답 =====
+   이모지 평가를 대신한다. 결과를 오래 들여다볼수록 마음에 든 것이고, 1초도 안 돼
+   다시 굴렸으면 심심했다는 뜻이다. 클릭을 요구하지 않아 모든 생에서 수집된다.
+   reason: 이 생을 왜 떠났는가 (reroll=다시 굴림 / exit=이탈) */
+let lifeShownAt=0,dwellSent=false,lifeShared=false;
+function sendDwell(reason){
+ if(!currentLife||!lifeShownAt||dwellSent)return;
+ dwellSent=true;
+ track("dwell",{ms:Math.round(performance.now()-lifeShownAt),
+  country:currentLife.c.name,prob:probPct(currentLife.prob),
+  shared:lifeShared,reason});
+}
 /* pagehide/visibilitychange만 모바일에서 신뢰할 수 있다(beforeunload는 안 뜬다).
    탭 전환마다 중복 발사되지 않도록 세션당 1회로 막는다. */
 function sendExit(){
  if(exitSent)return;exitSent=true;
+ sendDwell("exit");
  track("exit",{rolls:sessionRolls,activated});
 }
 addEventListener("pagehide",sendExit);
@@ -760,9 +761,8 @@ function renderLife(l){
  const fl=$("fortuneLine");
  if(l.fortune){fl.hidden=false;fl.textContent="🔮 "+l.fortune;}
  else fl.hidden=true;
- const fb=$("feedback");fb.hidden=false;
- fb.querySelectorAll(".fb").forEach(b=>{b.disabled=false;b.classList.remove("picked");});
- $("suggest").hidden=false;
+ /* 이 생을 보기 시작한 시각. 여기서부터 다음 리롤까지가 "이번 생 어때요?"의 답이다. */
+ lifeShownAt=performance.now();dwellSent=false;lifeShared=false;
  if(l.c.pop<5)burstConfetti(rarityColor(l.c.pop));
 }
 function recordLife(l){
@@ -774,7 +774,9 @@ function recordLife(l){
 /* ===== 리롤 연출 ===== */
 let rolling=false;
 function doRoll(){
- if(rolling)return;rolling=true;
+ if(rolling)return;
+ sendDwell("reroll"); /* 지금 떠나는 생에 대한 평가를 먼저 보낸다 */
+ rolling=true;
  const life=rollLife();recordLife(life);
  markRoll();
  track("roll",{country:life.c.name,prob:probPct(life.prob)});
@@ -810,6 +812,7 @@ const FORTUNES=[
 function todayKey(){const d=new Date();return d.getFullYear()+"-"+(d.getMonth()+1)+"-"+d.getDate();}
 $("fortuneBtn").addEventListener("click",()=>{
  if(rolling)return;
+ sendDwell("fortune");
  const key=todayKey();
  const rng=mulberry32(strHash(key+"|"+ST.dev));
  let life,msg;
@@ -860,6 +863,7 @@ async function copyText(t){
 }
 $("shareTxt").addEventListener("click",async()=>{
  if(!currentLife)return;
+ lifeShared=true;
  track("share_text",{country:currentLife.c.name,prob:probPct(currentLife.prob)});
  const ok=await copyText(shareText(currentLife));
  $("shareTxt").textContent=ok?"✅ 복사됨!":"복사 실패";
@@ -867,6 +871,7 @@ $("shareTxt").addEventListener("click",async()=>{
 });
 $("shareNative").addEventListener("click",async()=>{
  if(!currentLife)return;
+ lifeShared=true;
  track("share_native",{country:currentLife.c.name,prob:probPct(currentLife.prob)});
  const t=shareText(currentLife);
  if(navigator.share){
@@ -941,6 +946,7 @@ function roundRect(x,px,py,w,h,r){
 }
 $("shareImg").addEventListener("click",()=>{
  if(!currentLife)return;
+ lifeShared=true;
  track("share_card",{country:currentLife.c.name,prob:probPct(currentLife.prob)});
  drawCard(currentLife).toBlob(b=>{
   if(!b)return;
@@ -1026,16 +1032,6 @@ function toast(msg){
  toastT=setTimeout(()=>{t.classList.remove("show");toastT2=setTimeout(()=>{t.hidden=true;},300);},2200);
 }
 
-/* ===== 이모지 피드백 (행동 데이터 수집) ===== */
-$("feedback").addEventListener("click",e=>{
- const b=e.target.closest(".fb");if(!b||b.disabled||!currentLife)return;
- $("feedback").querySelectorAll(".fb").forEach(x=>{x.disabled=true;});
- b.classList.add("picked");
- track("feedback",{emoji:b.dataset.fb,country:currentLife.c.name,prob:probPct(currentLife.prob)});
- persist();
- toast("소중한 "+b.dataset.fb+" 잘 받았어요!");
-});
-
 /* ===== 한 줄 제안 (직접 의견 수집 통로) =====
    정적 페이지라 서버가 없다. track()으로 분석 도구에 실어 보내고, 스니펫이 아직
    없을 때를 대비해 localStorage에도 남긴다(스니펫 연결 전까지는 팀이 읽을 수 없음). */
@@ -1078,6 +1074,6 @@ if(ST.total>0)$("lifeNo").textContent="지금까지 "+ST.total.toLocaleString()+
 addEventListener("load",()=>{track("visit",{});persist();});
 </script>
 <!-- ▼ 분석 도구 스니펫(GA4 gtag / PostHog / Plausible)을 이 아래에 붙여넣으세요.
-     track()이 감지해서 visit, roll, share_text, feedback 등 모든 이벤트를 자동으로 흘려보냅니다. -->
+     track()이 감지해서 visit, roll, dwell, share_text, suggest 등 모든 이벤트를 자동으로 흘려보냅니다. -->
 </body>
 </html>
