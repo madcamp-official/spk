@@ -1,3 +1,6 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>환생 시뮬레이터</title>
@@ -239,6 +242,8 @@ footer a{color:var(--gold)}
   .btn-primary{transition:none}
 }
 </style>
+</head>
+<body>
 
 <canvas id="stars"></canvas>
 
@@ -366,7 +371,7 @@ const RAW=[
 ["북한","🇰🇵",26.2,63,73,640,"한국어","nk","AS"],
 ["대만","🇹🇼",23.4,80,81,33000,"중국어","china","AS"],
 ["홍콩","🇭🇰",7.5,100,85,51000,"광둥어","china","AS"],
-["마카오","🇲🇴",0.72,100,85,37000,"광둥어","china","AS"],
+["마카오","🇲🇴",0.72,100,85,70000,"광둥어","china","AS"],
 ["몽골","🇲🇳",3.5,69,71,5700,"몽골어","mongolia","AS"],
 /* 동남아시아 */
 ["인도네시아","🇮🇩",283,59,72,4900,"인도네시아어","indonesia","AS"],
@@ -386,7 +391,7 @@ const RAW=[
 ["아프가니스탄","🇦🇫",42.6,27,63,400,"파슈토어","muslim","AS"],
 ["네팔","🇳🇵",29.7,22,70,1300,"네팔어","nepal","AS"],
 ["스리랑카","🇱🇰",21.9,19,77,3800,"싱할라어","srilanka","AS"],
-["부탄","🇧🇹",0.79,45,72,3700,"종카어","nepal","AS"],
+["부탄","🇧🇹",0.79,45,72,3700,"종카어","buddh","AS"],
 ["몰디브","🇲🇻",0.52,42,80,12000,"디베히어","muslim","AS"],
 /* 중앙아시아·캅카스 */
 ["카자흐스탄","🇰🇿",20.1,58,74,13100,"카자흐어","centralasia","AS"],
@@ -667,6 +672,8 @@ function incomeTopPct(v){let a=0;
  for(const c of DATA)a+=(c.pop/TOTAL)*phi((Math.log(v)-Math.log(c.gdp))/SIGMA);
  return clamp((1-a)*100,0.01,99.9);}
 function tierOf(pop){for(const t of TIERS)if(pop>=t.min)return t;return TIERS[TIERS.length-1];}
+/* 소득 상위 % 표시: 반올림으로 "상위 100%"/"상위 0.0%"가 나오지 않게 캡 */
+function fmtTop(t){if(t<0.1)return "0.1% 이내";if(t<1)return t.toFixed(1)+"%";return Math.min(99,Math.round(t))+"%";}
 function isoCode(flag){return [...flag].map(ch=>String.fromCodePoint(ch.codePointAt(0)-0x1F1E6+65)).join("");}
 
 /* 국기 이모지 지원 감지 (윈도우는 글자 2개로 렌더링됨) */
@@ -714,6 +721,10 @@ function rollFast(){return {ci:pickCountryIdx(),male:rand()<P_MALE};}
 /* ===== 저장 상태 ===== */
 let ST={total:0,seen:[],best:null,dev:null,ab:null,refFirst:null,metrics:{},fortuneDay:null};
 try{const s=localStorage.getItem("rebirth_state");if(s)ST=Object.assign(ST,JSON.parse(s));}catch(e){}
+/* 손상·구버전 저장 데이터 방어 */
+if(!Array.isArray(ST.seen))ST.seen=[];
+if(typeof ST.total!=="number"||!isFinite(ST.total))ST.total=0;
+if(typeof ST.metrics!=="object"||!ST.metrics)ST.metrics={};
 const seenSet=new Set(ST.seen);
 function persist(){try{ST.seen=[...seenSet];localStorage.setItem("rebirth_state",JSON.stringify(ST));}catch(e){}}
 
@@ -747,13 +758,15 @@ const CHIP_DEFS=[
  {k:"태어난 곳",f:l=>({v:l.urban?"도시 🏙️":"농촌 🌾",s:"이 나라 도시화율 "+l.c.urban+"%"})},
  {k:"모국어",f:l=>({v:l.c.lang,s:"국가 대표 언어"})},
  {k:"종교",f:l=>({v:l.rel[0],s:"국가 내 약 "+l.rel[1]+"%"})},
- {k:"혈액형",f:l=>({v:l.abo[0]+(l.rhNeg?"−":"+"),s:"지역 분포 기준 약 "+l.abo[1]+"%"})},
+ {k:"혈액형",f:l=>{const bp=BLOOD[l.c.cont];
+   const pct=l.abo[1]*(l.rhNeg?bp.rhNeg:100-bp.rhNeg)/100;
+   return {v:l.abo[0]+(l.rhNeg?"−":"+"),s:"지역 분포 기준 약 "+(pct<1?pct.toFixed(1):Math.round(pct))+"%"};}},
  {k:"생일",f:l=>({v:l.month+"월 "+l.day+"일 "+l.zodiac[3],s:l.zodiac[2]})},
  {k:"주로 쓰는 손",f:l=>({v:l.lefty?"왼손잡이 🫲":"오른손잡이 🫱",s:l.lefty?"10%":"90%"})},
  {k:"쌍둥이",f:l=>({v:l.twin?(l.identical?"일란성 쌍둥이 👯":"이란성 쌍둥이 👯"):"단태아",
    s:l.twin?"확률 "+(l.twinP*100).toFixed(1)+"%":"쌍둥이 아님 "+(100-l.twinP*100).toFixed(1)+"%"})},
  {k:"기대수명",f:l=>({v:l.lifeExp+"세",s:"국가 평균 "+l.c.life+"세"})},
- {k:"소득",f:l=>({v:"세계 상위 "+(l.top<1?l.top.toFixed(1):Math.round(l.top))+"%",s:"1인당 GDP 기반 추정"})},
+ {k:"소득",f:l=>({v:"세계 상위 "+fmtTop(l.top),s:"1인당 GDP 기반 추정"})},
 ];
 function renderLife(l){
  currentLife=l;
@@ -838,10 +851,12 @@ $("fortuneBtn").addEventListener("click",()=>{
  if(rolling||autoTimer)return;
  const key=todayKey();
  const rng=mulberry32(strHash(key+"|"+ST.dev));
+ let life,msg;
  RNG=rng;
- const life=rollLife();
- const msg=FORTUNES[Math.floor(rng()*FORTUNES.length)];
- RNG=Math.random;
+ try{
+  life=rollLife();
+  msg=FORTUNES[Math.floor(rng()*FORTUNES.length)];
+ }finally{RNG=Math.random;}
  life.fortune="오늘의 운세: "+msg;
  const first=ST.fortuneDay!==key;
  if(first){ST.fortuneDay=key;recordLife(life);}
@@ -895,6 +910,7 @@ function stopAuto(msg){
  persist();updateStats();
 }
 $("autoBtn").addEventListener("click",()=>{
+ if(rolling)return; /* 리롤 연출 중 시작하면 910ms 뒤 수동 결과가 자동 결과를 덮어씀 */
  const w=wishSpec();
  if(!w.cont&&w.country==null&&!w.gender){$("autoStatus").textContent="먼저 조건을 하나 이상 골라 주세요.";return;}
  const p=wishP(w);
@@ -1030,7 +1046,7 @@ function drawCard(l){
  const rows=[
   "🗣 "+l.c.lang+"    🙏 "+l.rel[0],
   "🩸 "+l.abo[0]+(l.rhNeg?"−":"+")+"    🎂 "+l.month+"월 "+l.day+"일 "+l.zodiac[2],
-  "⏳ 기대수명 "+l.lifeExp+"세    💰 세계 소득 상위 "+(l.top<1?l.top.toFixed(1):Math.round(l.top))+"%",
+  "⏳ 기대수명 "+l.lifeExp+"세    💰 세계 소득 상위 "+fmtTop(l.top),
  ];
  const extra=[];
  if(l.twin)extra.push("👯 쌍둥이");if(l.lefty)extra.push("🫲 왼손잡이");
@@ -1080,7 +1096,8 @@ $("shareImg").addEventListener("click",()=>{
    x:Math.random()*cv.width,y:Math.random()*cv.height,
    r:Math.random()*1.4+.3,p:Math.random()*Math.PI*2,s:Math.random()*.9+.3}));
  }
- resize();addEventListener("resize",resize);
+ resize();
+ addEventListener("resize",()=>{resize();if(reduceMotion)requestAnimationFrame(draw);});
  function draw(t){
   x.clearRect(0,0,cv.width,cv.height);
   for(const s of stars){
@@ -1124,12 +1141,12 @@ function burstConfetti(color){
 }
 
 /* ===== 토스트 ===== */
-let toastT;
+let toastT,toastT2;
 function toast(msg){
  const t=$("toast");t.textContent=msg;t.hidden=false;
  requestAnimationFrame(()=>t.classList.add("show"));
- clearTimeout(toastT);
- toastT=setTimeout(()=>{t.classList.remove("show");setTimeout(()=>{t.hidden=true;},300);},2200);
+ clearTimeout(toastT);clearTimeout(toastT2);
+ toastT=setTimeout(()=>{t.classList.remove("show");toastT2=setTimeout(()=>{t.hidden=true;},300);},2200);
 }
 
 /* ===== 이모지 피드백 (행동 데이터 수집) ===== */
@@ -1166,8 +1183,10 @@ addEventListener("keydown",e=>{if(e.key==="Escape"&&!$("dexModal").hidden)closeD
 
 updateStats();
 if(ST.total>0)$("lifeNo").textContent="지금까지 "+ST.total.toLocaleString()+"번 환생했습니다";
-track("visit",{});
-persist();
+/* visit은 아래에 붙는 분석 스니펫이 로드된 뒤(window load) 발화해야 유실되지 않는다 */
+addEventListener("load",()=>{track("visit",{});persist();});
 </script>
 <!-- ▼ 분석 도구 스니펫(GA4 gtag / PostHog / Plausible)을 이 아래에 붙여넣으세요.
-     track()이 감지해서 roll, share_text, feedback 등 모든 이벤트를 자동으로 흘려보냅니다. -->
+     track()이 감지해서 visit, roll, share_text, feedback 등 모든 이벤트를 자동으로 흘려보냅니다. -->
+</body>
+</html>

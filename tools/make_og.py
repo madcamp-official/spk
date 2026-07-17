@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 """OG 공유 썸네일(og-image.png, 1200x630) 생성 스크립트.
-카톡/인스타/디스코드 링크 미리보기에 쓰인다. 실행: python tools/make_og.py
+카톡/인스타/디스코드 링크 미리보기에 쓰인다.
+
+실행: pip install pillow && python tools/make_og.py
 """
 import random
 from pathlib import Path
@@ -22,11 +24,30 @@ TIERS = [
     ("UR", (255, 143, 178)),
 ]
 
-FONT_DIR = "C:/Windows/Fonts"
+# 플랫폼별 한글 폰트 후보 (앞에서부터 존재하는 것 사용)
+FONT_CANDIDATES = {
+    "bold": [
+        "C:/Windows/Fonts/malgunbd.ttf",                                  # Windows 맑은 고딕 Bold
+        "/System/Library/Fonts/AppleSDGothicNeo.ttc",                     # macOS
+        "/usr/share/fonts/truetype/nanum/NanumGothicBold.ttf",            # Linux
+        "/usr/share/fonts/opentype/noto/NotoSansCJK-Bold.ttc",
+    ],
+    "regular": [
+        "C:/Windows/Fonts/malgun.ttf",
+        "/System/Library/Fonts/AppleSDGothicNeo.ttc",
+        "/usr/share/fonts/truetype/nanum/NanumGothic.ttf",
+        "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
+    ],
+}
 
 
-def font(name, size):
-    return ImageFont.truetype(f"{FONT_DIR}/{name}", size)
+def font(weight, size):
+    for path in FONT_CANDIDATES[weight]:
+        try:
+            return ImageFont.truetype(path, size)
+        except OSError:
+            continue
+    raise SystemExit(f"한글 폰트를 찾지 못했습니다. FONT_CANDIDATES({weight})에 경로를 추가하세요.")
 
 
 def lerp(a, b, t):
@@ -52,8 +73,8 @@ def main():
         c = lerp(VOID, INK, a)
         d.ellipse([x - r, y - r, x + r, y + r], fill=c)
 
-    bold = lambda s: font("malgunbd.ttf", s)
-    reg = lambda s: font("malgun.ttf", s)
+    bold = lambda s: font("bold", s)
+    reg = lambda s: font("regular", s)
 
     def center(text, fnt, y, fill):
         w = d.textlength(text, font=fnt)

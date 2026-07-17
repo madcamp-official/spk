@@ -4,6 +4,7 @@
 리롤을 반복하다가 마음에 드는 생이 나오면 카드로 만들어 공유한다.
 
 - **라이브**: https://life-reroll.madcamp-kaist.org/
+- **레포**: https://github.com/madcamp-official/spk (몰입캠프 26s-w3-c1-03)
 - **스택**: 정적 HTML 단일 파일 (프레임워크·서버 없음), GitHub Pages 배포
 
 ## 핵심 아이디어
@@ -71,7 +72,8 @@ https://life-reroll.madcamp-kaist.org/?ref=discord
 python -m http.server 8791
 # → http://localhost:8791/index.html
 
-# OG 썸네일 재생성 (수정 시)
+# OG 썸네일 재생성 (수정 시, Pillow 필요)
+pip install pillow
 python tools/make_og.py
 ```
 
