@@ -1,4 +1,4 @@
-import {DATA,CONT_NAME} from "./data.js";
+import {DATA,TOTAL,CONT_NAME} from "./data.js";
 import {$,reduceMotion,koNum,fmtPct,fmtTop,fmtUSD} from "./util.js";
 import {ST,seenSet,persist,session} from "./state.js";
 import {flagHTML} from "./flags.js";
@@ -24,6 +24,7 @@ export const CHIP_DEFS=[
  {k:"몸무게",f:l=>({v:l.weight+"kg",s:"BMI "+l.bmi.toFixed(1)+" · 국가 평균 "+l.c.bmi})},
  {k:"IQ",f:l=>({v:l.iq,s:"평균 100인 세계 공통 분포 · 상위 "+fmtTop(iqTopPct(l.iq))})},
  {k:"주로 쓰는 손",f:l=>({v:l.lefty?"왼손잡이 🫲":"오른손잡이 🫱",s:l.lefty?"10%":"90%"})},
+ {k:"탈모",f:l=>({v:l.balding?"탈모 예정 🧑‍🦲":"숱 유지 💇",s:"50세까지 "+(l.male?"남성 약 50%":"여성 약 20%")})},
  {k:"기대수명",f:l=>({v:l.lifeExp+"세",s:"국가 평균 "+l.c.life+"세"})},
  {k:"연 소득",f:l=>({v:fmtUSD(l.income),s:"세계 상위 "+fmtTop(l.top)+" · 1인당 GDP 기반 추정"})},
 ];
@@ -32,7 +33,11 @@ export function renderLife(l){
  const hero=$("hero");
  hero.style.setProperty("--rarity-color",rarityColor(l.c.pop));
  $("popline").hidden=false;
- $("popline").textContent="인구 "+(l.c.pop>=1?koNum(l.c.pop*1e6)+"명":Math.round(l.c.pop*1e6).toLocaleString()+"명");
+ const pop=l.c.pop>=1?koNum(l.c.pop*1e6)+"명":Math.round(l.c.pop*1e6).toLocaleString()+"명";
+ /* 나라가 걸릴 확률은 곧 인구 비중이라 인구 옆에 붙여야 "인구가 확률"이 한눈에 읽힌다.
+    나라의 고정 속성이라 성별·도시까지 곱한 생 전체 확률과 달리 줄 수가 늘 일정하다 —
+    그래서 이걸 넣어도 아래 "다시 환생하기" 버튼이 밀리지 않는다. */
+ $("popline").innerHTML="인구 "+pop+' <span class="pop-prob">· 걸릴 확률 '+fmtPct(l.c.pop/TOTAL)+"</span>";
  $("flag").innerHTML=flagHTML(l.c);
  $("country").textContent=l.c.name;
  $("subline").textContent=CONT_NAME[l.c.cont]+" · "+(l.urban?"도시":"농촌")+"에서 "+(l.male?"남자":"여자")+"로 태어났습니다";

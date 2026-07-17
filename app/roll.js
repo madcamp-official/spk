@@ -31,11 +31,17 @@ export function rollLife(fCi,fMale){
  const rel=pickWeighted(REL[c.rel]);
  const eth=pickWeighted(c.eth);
  const lefty=rand()<0.10;
+ /* 안드로겐성 탈모. 성별이 압도적인 변수라 성별로만 뽑는다(왼손잡이와 같은 취급).
+    50세까지 남성 약 50% · 여성 약 20%는 널리 인용되는 대략치다.
+    나라별로 넣지 않은 이유: 키(NCD-RisC)와 달리 탈모는 198개국을 덮는 조사가 없다.
+    동아시아 남성이 유럽계보다 낮다는 건 여러 연구에서 반복 확인되지만, 조사마다 연령대와
+    기준(Norwood 등급 컷오프)이 달라 국가별 숫자로 옮기면 대부분 지어내는 값이 된다. */
+ const balding=rand()<(male?0.50:0.20);
  const lifeExp=clamp(Math.round(c.life+gauss()*7),45,106);
  const income=c.gdp*Math.exp(gauss()*SIGMA);
  const top=incomeTopPct(income);
  const body=rollBody(c,male);
  const iq=rollIQ();
  const pC=c.pop/TOTAL,pG=male?P_MALE:1-P_MALE,pU=urban?c.urban/100:1-c.urban/100;
- return {ci,c,male,urban,rel,eth,lefty,lifeExp,income,top,iq,...body,prob:pC*pG*pU};
+ return {ci,c,male,urban,rel,eth,lefty,balding,lifeExp,income,top,iq,...body,prob:pC*pG*pU};
 }

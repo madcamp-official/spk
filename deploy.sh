@@ -24,7 +24,7 @@ LIVE=https://$HOST
 mapfile -t ASSETS < <(
   cd "$REPO" || exit 1
   printf '%s\n' index.html og-image.png TwemojiCountryFlags.woff2
-  find css js -type f \( -name '*.css' -o -name '*.js' \) | sort
+  find css app -type f \( -name '*.css' -o -name '*.js' \) | sort
 )
 
 PULL=0
@@ -136,7 +136,7 @@ font_code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 25 "$LIVE/TwemojiC
 # 라이브로 찌르면 아직 없는 파일의 응답을 Cloudflare가 캐시해 버려 오히려 사고가 난다.
 missing=""
 n=0
-for f in $(cd "$REPO" && find css js -type f \( -name '*.css' -o -name '*.js' \) | sort); do
+for f in $(cd "$REPO" && find css app -type f \( -name '*.css' -o -name '*.js' \) | sort); do
   n=$((n+1))
   ct=$(curl -s -o /dev/null -w '%{content_type}' -H "Host: $HOST" "$LOCAL/$f" || echo "?")
   case "$f:$ct" in

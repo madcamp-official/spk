@@ -60,6 +60,7 @@ h1{
   transition:border-color .5s,box-shadow .5s;
 }
 .popline{font-size:13px;color:var(--muted);margin:0 0 14px;min-height:20px}
+.pop-prob{font-size:.85em;opacity:.75;white-space:nowrap}
 .flag{
   font-size:clamp(72px,16vw,104px);
   line-height:1.15;
