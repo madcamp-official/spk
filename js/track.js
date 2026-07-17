@@ -7,13 +7,26 @@ import {probPct,isAutomated} from "./util.js";
 if(!ST.dev)ST.dev=Math.random().toString(36).slice(2,10);
 if(ST.ab!=="a"&&ST.ab!=="b")ST.ab=Math.random()<0.5?"a":"b";
 const QS=new URLSearchParams(location.search);
-const REF=QS.get("ref")||"";
+/* ref는 홍보처마다 자유롭게 붙이는 태그라 via처럼 목록으로 못 막는다. 대신 모양을 강제한다.
+   이 값은 "모든" 이벤트에 복사돼 실리므로, 길이를 안 막으면 ?ref=<5000자> 링크 하나로
+   배치가 서버의 MAX_BODY(8192)를 넘겨 413으로 잘린다 — sendBeacon은 응답을 안 보니
+   그 사람의 계측이 통째로, 소리 없이 죽는다. 짧은 쓰레기 값도 유입 채널 표를 더럽힌다. */
+const RAW=QS.get("ref")||"";
+const REF=/^[a-z0-9_-]{1,24}$/i.test(RAW)?RAW:"";
 if(REF&&!ST.refFirst)ST.refFirst=REF;
 /* vin = 나를 데려온 공유 카피, ab = 내가 공유할 때 쓸 카피. 한 기기가 유입자이자
    공유자라 둘을 한 필드로 합치면 A/B 유입 비교가 자기 동전던지기에 묻힌다. */
 const VQ=QS.get("v");
 const VIN=(VQ==="a"||VQ==="b")?VQ:"";
 if(VIN&&!ST.vIn)ST.vIn=VIN;
+/* via = 나를 데려온 공유 채널(카톡/X/…). 보내는 쪽은 share_kakao·share_x로 채널을
+   구분해 기록하는데 받는 쪽 URL이 전부 같으면 "어느 채널이 사람을 데려오나"에
+   답할 수 없다. vin과 같은 규칙으로 첫 유입값만 고정한다.
+   화이트리스트로 거른다 — 남이 URL에 아무 문자열이나 넣어 지표를 더럽힐 수 있다. */
+export const VIA_CHANNELS=["clip","kakao","insta","x","native","card"];
+const AQ=QS.get("via");
+const VIA=VIA_CHANNELS.includes(AQ)?AQ:"";
+if(VIA&&!ST.viaIn)ST.viaIn=VIA;
 export const RETURNING=ST.total>0;
 /* ===== 이벤트 큐 =====
    리롤 클릭 경로에서는 배열에 push만 한다. 실제 전송은 3초 유휴 또는 이탈 시점에
@@ -40,7 +53,7 @@ export function track(ev,props){
   /* ref/vin/v 각인은 전송 경로와 무관하게 여기서 끝난다. 큐에는 각인된 뒤의 것이
      들어간다 — 여기서 빠지면 vin이 사라져 문구 A/B를 영영 못 읽는다. */
   const p=Object.assign({ref:REF||ST.refFirst||"direct",v:ST.ab,
-   vin:VIN||ST.vIn||"none"},props||{});
+   vin:VIN||ST.vIn||"none",via:VIA||ST.viaIn||"none"},props||{});
   if(!isAutomated){
    _q.push({e:ev,p});
    if(_q.length>500)_q.splice(0,_q.length-500); /* 전송이 계속 실패해도 무한정 쌓지 않는다 */
@@ -70,9 +83,12 @@ export function markRoll(){
 export function sendDwell(reason){
  if(!session.currentLife||!session.lifeShownAt||session.dwellSent)return;
  session.dwellSent=true;
+ /* fromLink = 내가 뽑은 게 아니라 링크로 받아 본 남의 생.
+    안 나누면 "내 생 만족도" 분석에 남의 생이 섞인다. 대신 이것만 따로 보면
+    "받은 사람이 얼마나 들여다보다 자기 걸 굴리나"라는 활성화 신호가 된다. */
  track("dwell",{ms:Math.round(performance.now()-session.lifeShownAt),
   country:session.currentLife.c.name,prob:probPct(session.currentLife.prob),
-  shared:session.lifeShared,reason});
+  shared:session.lifeShared,fromLink:!!session.currentLife.shared,reason});
 }
 /* pagehide/visibilitychange만 모바일에서 신뢰할 수 있다(beforeunload는 안 뜬다).
    탭 전환마다 중복 발사되지 않도록 세션당 1회로 막는다. */

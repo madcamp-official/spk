@@ -1,8 +1,40 @@
 # 배포 노트 (camp-15 VM)
 
-> `/api/track` 추가에 따라 **서버 쪽에서 손봐야 하는 것**만 적는다.
+> `/api/track`·`/api/roll` 추가에 따라 **서버 쪽에서 손봐야 하는 것**만 적는다.
 > 아래 nginx·systemd 스니펫은 VM에서 검증하지 못했다 (로컬에는 VM이 없다).
 > 코드 자체(`counter.js` + 클라이언트)는 실제로 띄워서 브라우저로 검증했다.
+
+## 0. ⚠ 이번 배포에 반드시 필요한 환경변수 2개
+
+이 둘이 없으면 **서명이 통째로 꺼진 채로 뜬다**. 앱은 돌지만 공유 링크에 생이 실리지
+않아서(`?l=` 없음) 받는 쪽은 그냥 첫 화면만 본다. `systemctl status`에 경고가 찍힌다.
+
+```ini
+[Service]
+# ① 서명 키. 절대 재시작마다 바뀌면 안 된다 — 바뀌는 순간 어제 뿌린 링크가
+#    전부 "위조된 링크"로 찍힌다. 한 번 만들어 고정하고 레포에는 넣지 않는다.
+Environment=LIFE_SECRET=<openssl rand -hex 32 결과>
+# ② 서버가 생을 뽑을 때 쓰는 클라이언트 소스 위치.
+#    기본값은 counter.js 옆의 ../js 인데, 배포하면 counter.js만 /opt/life-reroll/로
+#    가므로(deploy.sh) 그 기본값은 VM에서 존재하지 않는다. 반드시 명시한다.
+Environment=APP_JS_DIR=/var/www/life-reroll/js
+Environment=ROLL_RATE_PER_MIN=600
+```
+
+`APP_JS_DIR`이 `/var/www/life-reroll/js`인 건 우연이 아니다 — **브라우저가 받는 바로 그
+파일을 서버도 읽어야** 뽑기 로직이 갈라지지 않는다. 서버만 옛 `data.js`를 들고 있으면
+서명은 통과하는데 확률 분포가 다른, 아무도 못 잡는 버그가 된다.
+
+키를 만들고 유닛에 넣기:
+
+```bash
+openssl rand -hex 32                       # 결과를 아래에 붙인다
+sudo systemctl edit life-reroll-counter    # [Service] 아래 Environment= 3줄
+sudo systemctl restart life-reroll-counter
+curl -s localhost:1558/api/counter/health  # {"ok":true,...,"roll":true,"signing":true}
+```
+
+`roll`이나 `signing`이 `false`면 위 둘 중 하나가 안 먹은 것이다.
 
 ## 1. systemd — 이벤트 파일 경로
 
@@ -72,10 +104,19 @@ jq -r 'select(.e=="exit")' /var/lib/life-reroll/events.jsonl | tail -1
 
 # 3) 각인이 살아 있는가 — ?ref=everytime&v=a 로 들어가서
 jq -r 'select(.e=="visit") | "\(.p.ref) vin=\(.p.vin)"' /var/lib/life-reroll/events.jsonl | tail -3
+
+# 4) 서명이 도는가
+curl -s "localhost:1558/api/roll?n=1"     # {"lives":[{"l":"...","sig":"..."}]}
+curl -s "localhost:1558/api/verify?l=MC-1-1-1-0-0-106-999999999-150-215-2000&sig=deadbeefdeadbeef"
+                                          # {"ok":false} 여야 한다 — true면 키가 새고 있는 것
 ```
 
 리롤 체감 확인: DevTools Network를 켜고 리롤 → **클릭에서 결과가 뜰 때까지
-`/api/track` 요청이 없어야 한다** (3초 뒤에 한 번에 나간다).
+`/api/track`도 `/api/roll`도 없어야 한다** (track은 3초 뒤 한 번에, roll은 20개를
+미리 받아 두므로 6개 남았을 때만 나간다).
+
+위조 확인: 공유 링크의 `l=` 값에서 아무 숫자나 한 글자 고쳐서 열어 본다 →
+**생이 그려지지 않고 "⚠️ 확인할 수 없는 링크예요" 배너가 떠야 한다.**
 
 ## 5. 로그 로테이션
 

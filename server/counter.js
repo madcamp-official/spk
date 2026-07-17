@@ -1,11 +1,25 @@
 'use strict';
 /*
- * 모두의 환생 횟수 카운터 + 이벤트 수집.
+ * 모두의 환생 횟수 카운터 + 이벤트 수집 + 생 뽑기/서명.
  * 의존성 없는 단일 Node 프로세스. nginx가 /api/ 를 이 포트로 프록시한다.
  *
  *   GET  /api/counter      -> {"total":N}
  *   POST /api/counter/inc  -> {"total":N+1}
  *   POST /api/track        -> 204 (이벤트 1개 또는 배열을 JSONL로 append)
+ *   GET  /api/roll?n=20    -> {"lives":[{"l":"KR-1-...","sig":"a3f9..."}, ...]}
+ *   GET  /api/fortune?...  -> {"l":"...","sig":"..."}  (날짜+기기 시드라 하루 동안 같은 값)
+ *   POST /api/verify       -> {"ok":true|false}
+ *
+ * ===== 왜 서버가 생을 뽑는가 =====
+ * 공유 링크(?l=)는 생의 값을 그대로 싣는다. 값만 보고는 "정말 뽑힌 생인가"를 알 수 없어서
+ * 손으로 모나코·IQ150을 적어 넣으면 진짜처럼 보인다. 브라우저에서 해시를 붙여도 소용없다 —
+ * 그 키가 JS에 실려 나가므로 위조하는 쪽도 똑같이 서명할 수 있다.
+ * 서버가 클라이언트가 보낸 생에 도장만 찍어주는 것도 무의미하다(가짜에도 찍어준다).
+ * 서명이 뜻을 가지려면 서명하는 쪽이 값을 직접 만들어야 한다. 그래서 여기서 뽑는다.
+ *
+ * 보증 범위: "이 생을 서버가 실제로 뽑았다"까지다. "몇 번 만에 뽑았다"는 보증하지 않는다 —
+ * /api/roll을 계속 불러 제일 희귀한 걸 골라 공유할 수는 있다. 그건 리롤을 많이 누른 것과
+ * 같아서 막을 것도 아니고, 애초에 존재하지 않는 확률을 지어내는 것과는 다른 문제다.
  *
  * counter 레이트리밋은 nginx(limit_req)가 담당한다.
  * /api/track은 배치 전송이라 counter와 트래픽 모양이 완전히 달라서(한 번에 최대 50개,
@@ -16,6 +30,7 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const { pathToFileURL } = require('url');
 
 const HOST = process.env.COUNTER_HOST || '127.0.0.1';
 const PORT = Number(process.env.COUNTER_PORT || 1558);
@@ -24,6 +39,16 @@ const EVENTS_FILE = process.env.EVENTS_FILE || '/var/lib/life-reroll/events.json
 const MAX_BODY = 8192;      /* suggest 본문(80자) 포함 배치 50개도 충분히 들어간다 */
 const MAX_BATCH = 50;
 const RATE_PER_MIN = Number(process.env.TRACK_RATE_PER_MIN || 240); /* IP당 분당 이벤트 */
+/* 생 뽑기는 track과 트래픽 모양이 달라서(선불로 20개씩) 창을 따로 센다.
+   200,000분의 1인 모나코를 갈아서 낚으려면 이 리밋으로 5시간이 넘는다. */
+const ROLL_RATE_PER_MIN = Number(process.env.ROLL_RATE_PER_MIN || 600);
+const MAX_N = 20;
+/* 서명 키. 비어 있으면 서명 기능 전체를 끈다(로컬에서 index.html만 띄우는 경우).
+   재시작마다 바뀌면 어제 뿌린 링크가 전부 '위조'로 찍히므로 반드시 고정값을 준다. */
+const SECRET = process.env.LIFE_SECRET || '';
+/* 클라이언트 소스를 그대로 import한다 — 뽑기 로직이 서버와 브라우저에서 갈라지면
+   서명은 통과하는데 확률 분포가 다른, 아무도 못 잡는 버그가 된다. */
+const APP_JS_DIR = process.env.APP_JS_DIR || path.join(__dirname, '..', 'js');
 
 let total = 0;
 try {
@@ -94,6 +119,81 @@ function rateLimited(key, cost) {
   return n > RATE_PER_MIN;
 }
 
+/* 뽑기는 track과 창을 따로 쓴다 — 같이 세면 리롤을 많이 한 사람의 이벤트가 버려진다 */
+let rollWindow = 0;
+let rollCounts = new Map();
+function rollLimited(key, cost) {
+  const now = Math.floor(Date.now() / 60000);
+  if (now !== rollWindow) { rollWindow = now; rollCounts = new Map(); }
+  const n = (rollCounts.get(key) || 0) + cost;
+  rollCounts.set(key, n);
+  return n > ROLL_RATE_PER_MIN;
+}
+
+/* ===== 뽑기 모듈 =====
+   클라이언트 소스(ESM)를 그대로 쓴다. CJS에서는 동적 import만 가능해서 비동기로 들어온다 —
+   로드 전에 들어온 요청은 503을 받고, 클라이언트는 그동안 로컬 뽑기로 버틴다. */
+let APP = null;
+(async () => {
+  const u = n => pathToFileURL(path.join(APP_JS_DIR, n)).href;
+  const [roll, perma, util] = await Promise.all([
+    import(u('roll.js')), import(u('permalink.js')), import(u('util.js')),
+  ]);
+  APP = { rollLife: roll.rollLife, encodeLife: perma.encodeLife,
+          setRNG: util.setRNG, mulberry32: util.mulberry32, strHash: util.strHash };
+  console.log('[counter] 뽑기 모듈 로드 완료' +
+    (SECRET ? '' : ' — LIFE_SECRET이 비어 있어 서명·검증은 꺼짐(공유 링크가 전부 미검증이 된다)'));
+})().catch(e => console.error('[counter] 뽑기 모듈 로드 실패 — /api/roll은 503:', e.message));
+
+function sign(l) { return crypto.createHmac('sha256', SECRET).update(l).digest('hex').slice(0, 16); }
+/* 상수시간 비교. 길이가 다르면 timingSafeEqual이 throw하므로 먼저 거른다. */
+function sigOK(l, s) {
+  if (!SECRET || typeof l !== 'string' || typeof s !== 'string') return false;
+  const a = Buffer.from(sign(l)), b = Buffer.from(s);
+  return a.length === b.length && crypto.timingSafeEqual(a, b);
+}
+
+function handleRoll(req, res, q) {
+  if (!APP || !SECRET) return json(res, 503, { error: 'unavailable' });
+  const n = Math.min(MAX_N, Math.max(1, Math.floor(Number(q.get('n'))) || 1));
+  if (rollLimited(ipHash(clientIp(req)), n)) return json(res, 429, { error: 'slow down' });
+  const lives = [];
+  for (let i = 0; i < n; i++) {
+    const l = APP.encodeLife(APP.rollLife());
+    lives.push({ l, sig: sign(l) });
+  }
+  json(res, 200, { lives });
+}
+
+/* 클라이언트의 '오늘'은 그 기기의 시간대 기준이라 서버 UTC와 최대 하루 어긋난다.
+   그렇다고 아무 날짜나 받아주면 날짜를 갈아가며 희귀한 운세를 낚을 수 있어서 ±36h만 받는다
+   (시간대 최대 ±14h + 하루). */
+function nearToday(key) {
+  const [y, m, d] = key.split('-').map(Number);
+  if (m < 1 || m > 12 || d < 1 || d > 31) return false;
+  return Math.abs(Date.UTC(y, m - 1, d) - Date.now()) <= 36 * 3600 * 1000;
+}
+function handleFortune(req, res, q) {
+  if (!APP || !SECRET) return json(res, 503, { error: 'unavailable' });
+  const dev = String(q.get('dev') || ''), key = String(q.get('key') || '');
+  if (!/^[a-z0-9]{1,16}$/i.test(dev)) return json(res, 400, { error: 'bad dev' });
+  if (!/^\d{4}-\d{1,2}-\d{1,2}$/.test(key) || !nearToday(key)) return json(res, 400, { error: 'bad key' });
+  if (rollLimited(ipHash(clientIp(req)), 1)) return json(res, 429, { error: 'slow down' });
+  /* setRNG는 util.js의 모듈 전역이다. 아래 구간에 await가 없어야 다른 요청이 끼어들지 못한다 —
+     하나라도 넣으면 남의 운세가 내 시드로 뽑힌다. */
+  const rng = APP.mulberry32(APP.strHash(key + '|' + dev));
+  let l;
+  APP.setRNG(rng);
+  try { l = APP.encodeLife(APP.rollLife()); } finally { APP.setRNG(Math.random); }
+  json(res, 200, { l, sig: sign(l) });
+}
+
+function handleVerify(req, res, q) {
+  if (!SECRET) return json(res, 503, { error: 'unavailable' });
+  if (rollLimited(ipHash(clientIp(req)), 1)) return json(res, 429, { error: 'slow down' });
+  json(res, 200, { ok: sigOK(String(q.get('l') || ''), String(q.get('sig') || '')) });
+}
+
 /* ===== 이벤트 append =====
    한 줄 = 이벤트 하나(JSONL). 쓰기는 fire-and-forget이라 클라이언트를 절대 기다리게 하지
    않는다. 클라이언트는 응답을 보지 않으므로(sendBeacon) 실패해도 조용히 버린다. */
@@ -138,7 +238,8 @@ function json(res, code, obj) {
 }
 
 http.createServer((req, res) => {
-  const url = (req.url || '').split('?')[0].replace(/\/+$/, '') || '/';
+  const u = new URL(req.url || '/', 'http://x');
+  const url = u.pathname.replace(/\/+$/, '') || '/';
   if (req.method === 'GET' && url === '/api/counter') return json(res, 200, { total });
   if (req.method === 'POST' && url === '/api/counter/inc') {
     total++;
@@ -146,9 +247,15 @@ http.createServer((req, res) => {
     return json(res, 200, { total });
   }
   if (req.method === 'POST' && url === '/api/track') return handleTrack(req, res);
-  if (req.method === 'GET' && url === '/api/counter/health') return json(res, 200, { ok: true, total });
+  if (req.method === 'GET' && url === '/api/roll') return handleRoll(req, res, u.searchParams);
+  if (req.method === 'GET' && url === '/api/fortune') return handleFortune(req, res, u.searchParams);
+  if (req.method === 'GET' && url === '/api/verify') return handleVerify(req, res, u.searchParams);
+  if (req.method === 'GET' && url === '/api/counter/health')
+    return json(res, 200, { ok: true, total, roll: !!APP, signing: !!SECRET });
   json(res, 404, { error: 'not found' });
 }).listen(PORT, HOST, () => {
   console.log(`[counter] ${HOST}:${PORT} 에서 시작. 현재 값 ${total}, 저장 위치 ${FILE}`);
   console.log(`[counter] 이벤트 기록: ${EVENTS_FILE} (IP당 분당 ${RATE_PER_MIN}개)`);
+  console.log(`[counter] 뽑기: ${APP_JS_DIR} (IP당 분당 ${ROLL_RATE_PER_MIN}생)`);
+  if (!SECRET) console.warn('[counter] ⚠ LIFE_SECRET 없음 — 위조 방지가 꺼진 상태로 뜬다');
 });
