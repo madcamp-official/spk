@@ -14,6 +14,14 @@ if(REF&&!ST.refFirst)ST.refFirst=REF;
 const VQ=QS.get("v");
 const VIN=(VQ==="a"||VQ==="b")?VQ:"";
 if(VIN&&!ST.vIn)ST.vIn=VIN;
+/* via = 나를 데려온 공유 채널(카톡/X/…). 보내는 쪽은 share_kakao·share_x로 채널을
+   구분해 기록하는데 받는 쪽 URL이 전부 같으면 "어느 채널이 사람을 데려오나"에
+   답할 수 없다. vin과 같은 규칙으로 첫 유입값만 고정한다.
+   화이트리스트로 거른다 — 남이 URL에 아무 문자열이나 넣어 지표를 더럽힐 수 있다. */
+export const VIA_CHANNELS=["clip","kakao","insta","x","native","card"];
+const AQ=QS.get("via");
+const VIA=VIA_CHANNELS.includes(AQ)?AQ:"";
+if(VIA&&!ST.viaIn)ST.viaIn=VIA;
 export const RETURNING=ST.total>0;
 /* ===== 이벤트 큐 =====
    리롤 클릭 경로에서는 배열에 push만 한다. 실제 전송은 3초 유휴 또는 이탈 시점에
@@ -40,7 +48,7 @@ export function track(ev,props){
   /* ref/vin/v 각인은 전송 경로와 무관하게 여기서 끝난다. 큐에는 각인된 뒤의 것이
      들어간다 — 여기서 빠지면 vin이 사라져 문구 A/B를 영영 못 읽는다. */
   const p=Object.assign({ref:REF||ST.refFirst||"direct",v:ST.ab,
-   vin:VIN||ST.vIn||"none"},props||{});
+   vin:VIN||ST.vIn||"none",via:VIA||ST.viaIn||"none"},props||{});
   _q.push({e:ev,p});
   if(_q.length>500)_q.splice(0,_q.length-500); /* 전송이 계속 실패해도 무한정 쌓지 않는다 */
   if(!_qTimer)_qTimer=setTimeout(flushEvents,3000);
