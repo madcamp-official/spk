@@ -119,7 +119,11 @@ def main():
     rolls = by(rows, "roll")
     dwells = by(rows, "dwell")
     exits = by(rows, "exit")
-    shares = [r for r in rows if str(r.get("e", "")).startswith("share_")]
+    # share_open 은 "공유 시트를 열었다"이지 공유가 아니다. 이걸 분모에 넣으면
+    # 바이럴 계수가 실제의 절반으로 축소된다.
+    SHARE_SENT = {"share_text", "share_kakao", "share_insta", "share_x", "share_native", "share_card"}
+    shares = [r for r in rows if r.get("e") in SHARE_SENT]
+    opens = by(rows, "share_open")
     fortunes = by(rows, "fortune")
     dex = by(rows, "collection_open")
     suggests = by(rows, "suggest")
@@ -177,12 +181,39 @@ def main():
     # ---------- REFERRAL ----------
     h("REFERRAL · 추천")
     kinds = collections.Counter(r["e"] for r in shares)
-    print(f"  공유 {len(shares):,}건  " + (" · ".join(f"{k.replace('share_','')} {v}" for k, v in kinds.most_common()) or ""))
+    print(f"  공유 시트 열기 {len(opens):,}건 → 실제 공유 {len(shares):,}건"
+          + (f" (전환 {pct(len(shares), len(opens))})" if opens else ""))
+    if opens and len(shares) < len(opens) * 0.5:
+        print("    ↑ 열어 놓고 절반 이상이 그냥 닫습니다. 채널 목록이 기대와 다른지 보세요")
+    print("  " + (" · ".join(f"{k.replace('share_','')} {v}" for k, v in kinds.most_common()) or "(공유 없음)"))
     from_share = [r for r in visits if prop(r, "ref") == "share"]
     print(f"  ref=share 유입 {len(from_share):,}건")
     if shares:
         print(f"  바이럴 계수 = 유입 ÷ 공유 = {len(from_share)/len(shares):.2f}")
         print("    ↑ 1을 넘으면 공유 한 번이 한 명 넘게 데려온다는 뜻")
+
+    # 채널별 바이럴 계수. via 는 링크에 실려 오므로 "그 채널이 실제로 데려온 수"다.
+    # 인스타·카드 저장은 링크가 아니라 이미지만 나가므로 유입이 0으로 잡히는 게 정상이다
+    # (카드에 QR을 넣기 전까지는 스토리 유입이 direct 로 새어 들어간다).
+    CH = [("kakao", "share_kakao", "카카오톡"), ("x", "share_x", "X"),
+          ("native", "share_native", "다른 앱"), ("clip", "share_text", "클립보드"),
+          ("insta", "share_insta", "인스타(이미지)"), ("card", "share_card", "카드저장(이미지)")]
+    sent = collections.Counter(r["e"] for r in shares)
+    got = collections.Counter(prop(r, "via", "none") for r in visits)
+    print("\n  채널별 (공유 발생 → 그 링크로 들어온 수)")
+    print(f"    {'채널':<14}{'공유':>5}{'유입':>7}{'계수':>8}")
+    for via, ev, label in CH:
+        s, g = sent.get(ev, 0), got.get(via, 0)
+        if not s and not g:
+            continue
+        k = f"{g/s:.2f}" if s else "—"
+        note = ""
+        if via in ("insta", "card") and s:
+            note = "  ← 링크 없음(이미지만). QR 넣기 전엔 유입 추적 불가"
+        print(f"    {label:<14}{s:>5}{g:>7}{k:>8}{note}")
+    legacy = got.get("none", 0) - len([r for r in visits if prop(r, "ref") != "share"])
+    if legacy > 0:
+        print(f"    via 없는 share 유입 {legacy}건 — via 태깅 배포 전에 뿌려진 옛 링크")
 
     # 문구 A/B 는 반드시 vin 으로 읽는다 (v 는 그 기기가 공유할 때 쓸 문구라 유입과 무관)
     vin = collections.Counter(prop(r, "vin", "none") for r in visits)
