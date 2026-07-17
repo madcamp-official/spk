@@ -1214,9 +1214,16 @@ async function shareVia(ch){
  }else if(ch==="kakao"){
   track("share_kakao",props);
   if(!(await kakaoShare(l))){
-   const ok=await copyText(t);
-   toast(ok?"문구를 복사했어요. 카카오톡 채팅방에 붙여넣어 주세요 💬":"복사에 실패했어요 😢");
-   if(ok&&IS_MOBILE)setTimeout(()=>{location.href="kakaotalk://launch";},700);
+   /* 키가 없으면 톡공유 창을 직접 못 연다. 모바일은 시스템 공유 시트에서
+      카카오톡을 고르면 실제 채팅방 선택 화면으로 이어지므로 그쪽으로 보낸다.
+      텍스트만 실어야 카톡이 링크 미리보기를 만들어 준다(파일을 실으면 링크가 죽는다). */
+   if(IS_MOBILE&&navigator.share){
+    toast("목록에서 카카오톡을 선택해 주세요 💬");
+    try{await navigator.share({text:t});}catch(e){}
+   }else{
+    const ok=await copyText(t);
+    toast(ok?"문구를 복사했어요. 카카오톡 채팅방에 붙여넣어 주세요 💬":"복사에 실패했어요 😢");
+   }
   }
  }else if(ch==="insta"){
   track("share_insta",props);
