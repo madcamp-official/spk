@@ -59,6 +59,15 @@ h1{
   box-shadow:0 0 0 1px rgba(255,255,255,.02),0 0 46px -18px var(--rarity-color);
   transition:border-color .5s,box-shadow .5s;
 }
+.shared-note{
+  font-size:12px;color:var(--gold);background:var(--gold-dim);
+  border:1px solid rgba(243,201,92,.3);border-radius:99px;
+  padding:6px 14px;margin:0 auto 14px;display:inline-block;
+}
+/* 위조·구버전 링크. 금색(=좋은 것)과 같은 배지로 보이면 안 된다. */
+.shared-note.bad{
+  color:#ff9c8a;background:rgba(255,120,100,.12);border-color:rgba(255,120,100,.4);
+}
 .popline{font-size:13px;color:var(--muted);margin:0 0 14px;min-height:20px}
 .pop-prob{font-size:.85em;opacity:.75;white-space:nowrap}
 .flag{

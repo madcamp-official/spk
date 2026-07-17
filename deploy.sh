@@ -19,7 +19,7 @@ SERVICE=life-reroll-counter
 HOST=life-reroll.madcamp-kaist.org
 LOCAL=http://127.0.0.1:1557
 LIVE=https://$HOST
-# 루트 파일 + css/ js/ 아래 전부. 모듈은 하나라도 빠지면 앱이 통째로 죽으므로
+# 루트 파일 + css/ app/ 아래 전부. 모듈은 하나라도 빠지면 앱이 통째로 죽으므로
 # 목록을 손으로 관리하지 않고 레포에 있는 것을 그대로 훑는다.
 mapfile -t ASSETS < <(
   cd "$REPO" || exit 1

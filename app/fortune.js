@@ -4,6 +4,7 @@ import {rollLife} from "./roll.js";
 import {renderLife,recordLife} from "./render.js";
 import {track,sendDwell} from "./track.js";
 import {toast} from "./effects.js";
+import {takeFortune} from "./lifepool.js";
 
 /* ===== 오늘의 환생 운세 (날짜+기기 시드라 하루 동안 같은 결과) ===== */
 const FORTUNES=[
@@ -21,17 +22,22 @@ const FORTUNES=[
  "가장 귀한 생은 언제나 지금 이번 생입니다",
 ];
 function todayKey(){const d=new Date();return d.getFullYear()+"-"+(d.getMonth()+1)+"-"+d.getDate();}
-$("fortuneBtn").addEventListener("click",()=>{
+/* 운세 문구는 "내가 뽑은 생"이라는 주장이 아니라서 서명할 것이 없다. 생과 시드를 나눠 두면
+   서버가 생만 재현하면 되고, 클라는 문구를 알아서 고른다(둘이 같은 rng를 나눠 쓰면
+   서버가 생을 뽑느라 rng를 몇 번 당겼는지까지 맞춰야 한다). */
+function fortuneMsg(key){return FORTUNES[Math.floor(mulberry32(strHash(key+"|"+ST.dev+"|msg"))()*FORTUNES.length)];}
+/* 운세는 날짜+기기 시드라 하루 동안 값이 같고, 그래서 서버도 똑같이 재현해 서명할 수 있다.
+   여기서 서버를 기다려도 되는 건 하루 한 번 누르는 버튼이라서다 — 리롤 같은 연타 경로가 아니다. */
+$("fortuneBtn").addEventListener("click",async()=>{
  sendDwell("fortune");
  const key=todayKey();
- const rng=mulberry32(strHash(key+"|"+ST.dev));
- let life,msg;
- setRNG(rng);
- try{
-  life=rollLife();
-  msg=FORTUNES[Math.floor(rng()*FORTUNES.length)];
- }finally{setRNG(Math.random);}
- life.fortune="오늘의 운세: "+msg;
+ let life=await takeFortune(key,ST.dev);
+ if(!life){ /* 서버가 없으면 예전처럼 로컬에서. sig가 없어 공유 링크에 실리지 않는다. */
+  const rng=mulberry32(strHash(key+"|"+ST.dev));
+  setRNG(rng);
+  try{life=rollLife();}finally{setRNG(Math.random);}
+ }
+ life.fortune="오늘의 운세: "+fortuneMsg(key);
  const first=ST.fortuneDay!==key;
  if(first){ST.fortuneDay=key;recordLife(life);}
  renderLife(life);

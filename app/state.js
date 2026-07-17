@@ -1,5 +1,5 @@
 /* ===== 저장 상태 (localStorage) ===== */
-export let ST={total:0,seen:[],best:null,dev:null,ab:null,vIn:null,refFirst:null,metrics:{},suggests:[],fortuneDay:null};
+export let ST={total:0,seen:[],best:null,dev:null,ab:null,vIn:null,viaIn:null,refFirst:null,metrics:{},suggests:[],fortuneDay:null};
 try{const s=localStorage.getItem("rebirth_state");if(s)ST=Object.assign(ST,JSON.parse(s));}catch(e){}
 /* 손상·구버전 저장 데이터 방어 */
 if(!Array.isArray(ST.seen))ST.seen=[];
