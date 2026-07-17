@@ -76,9 +76,12 @@ export function markRoll(){
 export function sendDwell(reason){
  if(!session.currentLife||!session.lifeShownAt||session.dwellSent)return;
  session.dwellSent=true;
+ /* fromLink = 내가 뽑은 게 아니라 링크로 받아 본 남의 생.
+    안 나누면 "내 생 만족도" 분석에 남의 생이 섞인다. 대신 이것만 따로 보면
+    "받은 사람이 얼마나 들여다보다 자기 걸 굴리나"라는 활성화 신호가 된다. */
  track("dwell",{ms:Math.round(performance.now()-session.lifeShownAt),
   country:session.currentLife.c.name,prob:probPct(session.currentLife.prob),
-  shared:session.lifeShared,reason});
+  shared:session.lifeShared,fromLink:!!session.currentLife.shared,reason});
 }
 /* pagehide/visibilitychange만 모바일에서 신뢰할 수 있다(beforeunload는 안 뜬다).
    탭 전환마다 중복 발사되지 않도록 세션당 1회로 막는다. */
