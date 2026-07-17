@@ -5,15 +5,20 @@ import {flagOK,FLAG_FONT} from "./flags.js";
 import {rarityColor} from "./roll.js";
 import {track} from "./track.js";
 import {toast} from "./effects.js";
+import {encodeLife} from "./permalink.js";
 
 /* ===== 공유 =====
    문구 A/B 테스트: 기기별로 스토리형(a)/성과형(b)이 고정 배정되고,
    공유 URL의 ?v= 파라미터로 어느 문구가 사람을 데려왔는지 추적한다.
    ?via= 는 어느 채널로 나간 링크인지다. 이게 없으면 카톡·X·기타 공유가 받는 쪽에서
    전부 ref=share 한 덩어리가 되어, 채널별 바이럴 계수를 못 낸다. */
-export function shareURL(via){
- const u=location.origin+location.pathname+"?ref=share&v="+ST.ab;
- return via?u+"&via="+via:u;
+export function shareURL(via,l){
+ let u=location.origin+location.pathname+"?ref=share&v="+ST.ab;
+ if(via)u+="&via="+via;
+ /* 받는 사람이 내가 뽑은 생을 그대로 보게 링크에 싣는다. 없으면 링크를 눌러도
+    자기 생이 새로 뽑혀서 "무슨 생을 받았는지"가 텍스트에만 남는다. */
+ if(l)u+="&l="+encodeLife(l);
+ return u;
 }
 export function shareText(l,via){
  const flag=flagOK?l.c.flag+" ":"";
@@ -30,7 +35,7 @@ export function shareText(l,via){
  if(l.lefty)badges.push("🫲 왼손잡이");
  if(l.top<=1)badges.push("💎 소득 상위 1%");
  if(badges.length)lines.push(badges.join(" · "));
- lines.push("나도 환생해 보기 👉 "+shareURL(via));
+ lines.push("나도 환생해 보기 👉 "+shareURL(via,l));
  return lines.join("\n");
 }
 export async function copyText(t){
@@ -62,7 +67,7 @@ export function loadKakao(){
 export async function kakaoShare(l){
  if(!(await loadKakao()))return false;
  try{
-  const url=shareURL("kakao");
+  const url=shareURL("kakao",l);
   Kakao.Share.sendDefault({
    objectType:"feed",
    content:{
