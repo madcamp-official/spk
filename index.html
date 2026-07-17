@@ -226,6 +226,14 @@ details.card summary::marker{color:var(--gold)}
 .dex-name{font-size:11px;line-height:1.3}
 .dex-prob{font-size:10px;font-weight:800;color:var(--tc);font-variant-numeric:tabular-nums}
 
+.share-modal{width:min(400px,100%)}
+.share-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
+.share-opt{
+  display:flex;flex-direction:column;align-items:center;gap:7px;
+  padding:14px 6px;font-size:12px;border-radius:12px;
+}
+.share-opt .so-ico{font-size:24px;line-height:1}
+
 footer{margin-top:36px;text-align:center;color:var(--muted);font-size:12px;line-height:1.7}
 footer a{color:var(--gold)}
 
@@ -269,8 +277,7 @@ footer a{color:var(--gold)}
     </div>
     <div class="share-row" id="shareRow" hidden>
       <button id="shareImg">🖼️ 결과 카드 저장</button>
-      <button id="shareTxt">📋 텍스트 복사</button>
-      <button id="shareNative">📤 공유하기</button>
+      <button id="shareBtn">📤 공유하기</button>
     </div>
   </div>
 
@@ -315,6 +322,21 @@ footer a{color:var(--gold)}
     </div>
     <p class="hint" id="dexProgress"></p>
     <div class="dex-grid" id="dexGrid"></div>
+  </div>
+</div>
+<div class="modal-backdrop" id="shareModal" hidden>
+  <div class="modal share-modal" role="dialog" aria-modal="true" aria-label="공유하기">
+    <div class="modal-head">
+      <h3>📤 공유하기</h3>
+      <button id="shareClose" aria-label="닫기">✕</button>
+    </div>
+    <div class="share-grid">
+      <button class="share-opt" data-ch="clip"><span class="so-ico">📋</span>클립보드 복사</button>
+      <button class="share-opt" data-ch="kakao"><span class="so-ico">💬</span>카카오톡</button>
+      <button class="share-opt" data-ch="insta"><span class="so-ico">📸</span>인스타 스토리</button>
+      <button class="share-opt" data-ch="x"><span class="so-ico">🐦</span>X (트위터)</button>
+      <button class="share-opt" data-ch="native" id="shareOptNative"><span class="so-ico">📱</span>다른 앱으로…</button>
+    </div>
   </div>
 </div>
 <div class="toast" id="toast" hidden></div>
@@ -1153,35 +1175,92 @@ async function copyText(t){
   ta.remove();return ok;
  }
 }
-$("shareTxt").addEventListener("click",async()=>{
+/* ── 공유 시트 ──
+   버튼 하나 → 채널 선택. 카카오는 JS 키가 있으면 톡공유 SDK를 쓰고, 없으면
+   문구 복사 후 앱 열기로 대신한다(웹에서 키 없이 톡공유 창은 못 띄운다).
+   인스타는 웹 공유 URL 자체가 없어서 카드 저장 + 스토리 카메라 열기가 최선이다. */
+const IS_MOBILE=/Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+const KAKAO_JS_KEY="";/* developers.kakao.com JavaScript 키. 도메인 등록 후 채우면 카카오 버튼이 톡공유 창을 띄운다 */
+let kakaoReady=null;
+function loadKakao(){
+ if(!KAKAO_JS_KEY)return Promise.resolve(false);
+ if(!kakaoReady)kakaoReady=new Promise(res=>{
+  const s=document.createElement("script");
+  s.src="https://t1.kakaocdn.net/kakao_js_sdk/2.7.4/kakao.min.js";
+  s.onload=()=>{try{if(!Kakao.isInitialized())Kakao.init(KAKAO_JS_KEY);res(true);}catch(e){res(false);}};
+  s.onerror=()=>res(false);
+  document.head.appendChild(s);
+ });
+ return kakaoReady;
+}
+async function kakaoShare(l){
+ if(!(await loadKakao()))return false;
+ try{
+  const url=shareURL();
+  Kakao.Share.sendDefault({
+   objectType:"feed",
+   content:{
+    title:(flagOK?l.c.flag+" ":"")+l.c.name+"에서 태어났습니다",
+    description:"확률 "+fmtPct(l.prob)+" · 나의 "+ST.total.toLocaleString()+"번째 생",
+    imageUrl:document.querySelector('meta[property="og:image"]').content,
+    link:{mobileWebUrl:url,webUrl:url},
+   },
+   buttons:[{title:"나도 환생해 보기",link:{mobileWebUrl:url,webUrl:url}}],
+  });
+  return true;
+ }catch(e){return false;}
+}
+async function nativeShare(l,t){
+ let payload={text:t};
+ try{
+  const blob=await new Promise(res=>drawCard(l).toBlob(res,"image/png"));
+  if(blob){
+   const file=new File([blob],"rebirth.png",{type:"image/png"});
+   if(navigator.canShare&&navigator.canShare({files:[file],text:t}))payload={files:[file],text:t};
+  }
+ }catch(e){}
+ try{await navigator.share(payload);}catch(e){}
+}
+function openShare(){
  if(!currentLife)return;
+ track("share_open",{country:currentLife.c.name,prob:probPct(currentLife.prob)});
+ $("shareModal").hidden=false;document.body.style.overflow="hidden";
+}
+function closeShare(){$("shareModal").hidden=true;document.body.style.overflow="";}
+$("shareBtn").addEventListener("click",openShare);
+$("shareClose").addEventListener("click",closeShare);
+$("shareModal").addEventListener("click",e=>{if(e.target===$("shareModal"))closeShare();});
+if(!navigator.share)$("shareOptNative").hidden=true;
+async function shareVia(ch){
+ const l=currentLife;if(!l)return;
+ closeShare();
  lifeShared=true;
- track("share_text",{country:currentLife.c.name,prob:probPct(currentLife.prob)});
- const ok=await copyText(shareText(currentLife));
- $("shareTxt").textContent=ok?"✅ 복사됨!":"복사 실패";
- setTimeout(()=>$("shareTxt").textContent="📋 텍스트 복사",1600);
-});
-$("shareNative").addEventListener("click",async()=>{
- if(!currentLife)return;
- lifeShared=true;
- track("share_native",{country:currentLife.c.name,prob:probPct(currentLife.prob)});
- const t=shareText(currentLife);
- if(navigator.share){
-  let payload={text:t};
-  try{
-   const blob=await new Promise(res=>drawCard(currentLife).toBlob(res,"image/png"));
-   if(blob){
-    const file=new File([blob],"rebirth.png",{type:"image/png"});
-    if(navigator.canShare&&navigator.canShare({files:[file],text:t}))payload={files:[file],text:t};
-   }
-  }catch(e){}
-  try{await navigator.share(payload);}catch(e){}
+ const props={country:l.c.name,prob:probPct(l.prob)};
+ const t=shareText(l);
+ if(ch==="clip"){
+  track("share_text",props);
+  toast(await copyText(t)?"공유 문구를 복사했어요 ✅":"복사에 실패했어요 😢");
+ }else if(ch==="kakao"){
+  track("share_kakao",props);
+  if(!(await kakaoShare(l))){
+   const ok=await copyText(t);
+   toast(ok?"문구를 복사했어요. 카카오톡 채팅방에 붙여넣어 주세요 💬":"복사에 실패했어요 😢");
+   if(ok&&IS_MOBILE)setTimeout(()=>{location.href="kakaotalk://launch";},700);
+  }
+ }else if(ch==="insta"){
+  track("share_insta",props);
+  downloadCard(l);
+  toast("결과 카드를 저장했어요. 스토리에 올려 보세요 📸");
+  if(IS_MOBILE)setTimeout(()=>{location.href="instagram://story-camera";},900);
+ }else if(ch==="x"){
+  track("share_x",props);
+  open("https://x.com/intent/tweet?text="+encodeURIComponent(t),"_blank","noopener");
  }else{
-  const ok=await copyText(t);
-  $("shareNative").textContent=ok?"✅ 복사됨!":"공유 미지원";
-  setTimeout(()=>$("shareNative").textContent="📤 공유하기",1600);
+  track("share_native",props);
+  await nativeShare(l,t);
  }
-});
+}
+document.querySelectorAll(".share-opt").forEach(b=>b.addEventListener("click",()=>shareVia(b.dataset.ch)));
 
 /* 결과 카드 이미지 (1080x1350) */
 function drawCard(l){
@@ -1236,18 +1315,21 @@ function roundRect(x,px,py,w,h,r){
  x.beginPath();x.moveTo(px+r,py);x.arcTo(px+w,py,px+w,py+h,r);
  x.arcTo(px+w,py+h,px,py+h,r);x.arcTo(px,py+h,px,py,r);x.arcTo(px,py,px+w,py,r);x.closePath();
 }
+function downloadCard(l){
+ drawCard(l).toBlob(b=>{
+  if(!b)return;
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(b);
+  a.download="rebirth-"+isoCode(l.c.flag)+"-"+ST.total+".png";
+  a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+ },"image/png");
+}
 $("shareImg").addEventListener("click",()=>{
  if(!currentLife)return;
  lifeShared=true;
  track("share_card",{country:currentLife.c.name,prob:probPct(currentLife.prob)});
- drawCard(currentLife).toBlob(b=>{
-  if(!b)return;
-  const a=document.createElement("a");
-  a.href=URL.createObjectURL(b);
-  a.download="rebirth-"+isoCode(currentLife.c.flag)+"-"+ST.total+".png";
-  a.click();
-  setTimeout(()=>URL.revokeObjectURL(a.href),4000);
- },"image/png");
+ downloadCard(currentLife);
 });
 
 /* ===== 확률 표 ===== */
@@ -1370,7 +1452,11 @@ function closeDex(){$("dexModal").hidden=true;document.body.style.overflow="";}
 $("dexBtn").addEventListener("click",openDex);
 $("dexClose").addEventListener("click",closeDex);
 $("dexModal").addEventListener("click",e=>{if(e.target===$("dexModal"))closeDex();});
-addEventListener("keydown",e=>{if(e.key==="Escape"&&!$("dexModal").hidden)closeDex();});
+addEventListener("keydown",e=>{
+ if(e.key!=="Escape")return;
+ if(!$("dexModal").hidden)closeDex();
+ if(!$("shareModal").hidden)closeShare();
+});
 
 updateStats();
 if(ST.total>0)$("lifeNo").textContent="지금까지 "+ST.total.toLocaleString()+"번 환생했습니다";
