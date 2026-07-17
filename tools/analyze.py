@@ -22,7 +22,7 @@ DEFAULT_PATHS = [
     "./events.jsonl",
 ]
 # 배포 점검용으로 쏜 합성 이벤트. 사람이 아니므로 기본으로 제외한다.
-TEST_EVENTS = {"probe", "captest", "rltest", "singletest", "iptest", "flood", "innocent"}
+TEST_EVENTS = {"probe", "test", "captest", "rltest", "singletest", "iptest", "flood", "innocent"}
 
 
 def find_file(given):
@@ -60,10 +60,17 @@ def load(path, since=None, keep_test=False):
     return rows, bad
 
 
+# 사용자가 한국에 있으므로 하루의 경계는 KST 자정이어야 한다. UTC로 끊으면 경계가
+# 오전 9시가 되어, 새벽 0~9시 활동이 전날로 잡히고 고유 방문자 집계가 한창 쓰는 시간에 리셋된다.
+# server/counter.js 의 솔트 회전과 반드시 같은 기준을 써야 한다 — 어긋나면 한 버킷 안에
+# 서로 다른 솔트의 해시가 섞여 고유 방문자가 부풀려진다.
+KST = __import__("datetime").timezone(__import__("datetime").timedelta(hours=9))
+
+
 def day_of(ms):
     import datetime
     try:
-        return datetime.datetime.fromtimestamp(ms / 1000, datetime.timezone.utc).strftime("%Y-%m-%d")
+        return datetime.datetime.fromtimestamp(ms / 1000, KST).strftime("%Y-%m-%d")
     except Exception:
         return "?"
 
@@ -119,7 +126,9 @@ def main():
     rolls = by(rows, "roll")
     dwells = by(rows, "dwell")
     exits = by(rows, "exit")
-    shares = [r for r in rows if str(r.get("e", "")).startswith("share_")]
+    # share_open 은 시트를 연 것일 뿐이라 실제 공유와 분리한다 (바이럴 계수 분모가 달라진다)
+    share_opens = by(rows, "share_open")
+    shares = [r for r in rows if str(r.get("e", "")).startswith("share_") and r.get("e") != "share_open"]
     fortunes = by(rows, "fortune")
     dex = by(rows, "collection_open")
     suggests = by(rows, "suggest")
@@ -176,12 +185,17 @@ def main():
 
     # ---------- REFERRAL ----------
     h("REFERRAL · 추천")
+    # share_open 은 "공유 시트를 열었다"일 뿐 아직 공유가 아니다. 분모에 넣으면
+    # 열어만 보고 닫은 사람까지 공유자로 세어 바이럴 계수가 실제보다 낮게 나온다.
+    print(f"  공유 시트 열기 {len(share_opens):,}건 → 실제 공유 {len(shares):,}건"
+          f" (완료율 {pct(len(shares), len(share_opens))})")
     kinds = collections.Counter(r["e"] for r in shares)
-    print(f"  공유 {len(shares):,}건  " + (" · ".join(f"{k.replace('share_','')} {v}" for k, v in kinds.most_common()) or ""))
+    if kinds:
+        print("    " + " · ".join(f"{k.replace('share_','')} {v}" for k, v in kinds.most_common()))
     from_share = [r for r in visits if prop(r, "ref") == "share"]
     print(f"  ref=share 유입 {len(from_share):,}건")
     if shares:
-        print(f"  바이럴 계수 = 유입 ÷ 공유 = {len(from_share)/len(shares):.2f}")
+        print(f"  바이럴 계수 = 유입 ÷ 실제 공유 = {len(from_share)/len(shares):.2f}")
         print("    ↑ 1을 넘으면 공유 한 번이 한 명 넘게 데려온다는 뜻")
 
     # 문구 A/B 는 반드시 vin 으로 읽는다 (v 는 그 기기가 공유할 때 쓸 문구라 유입과 무관)

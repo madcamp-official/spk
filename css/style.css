@@ -230,3 +230,49 @@ footer a{color:var(--gold)}
   .chip,.chip.reveal{opacity:1;transform:none;transition:none}
   .btn-primary{transition:none}
 }
+
+/* ===== 휴대폰: 국가 + 칩 11개 + 다시 환생하기를 한 화면에 =====
+   기본 레이아웃은 전부 보려면 1,250px이 필요한데, 모바일 브라우저는 주소창·툴바를 빼면
+   550~750px밖에 안 남는다. 그래서 700px 가까이 줄인다.
+   폭(휴대폰)과 높이(낮은 창) 둘 다 걸어야 한다 — 높이만 걸면 화면이 큰 폰(745·830px)이
+   빠져나가 옛 레이아웃 그대로 1,235px을 요구하게 된다.
+   줄이는 원칙: 칩에 이미 있는 정보(성별·태어난 곳)와 장식을 먼저 버리고, 값 자체는 남긴다. */
+@media (max-width:480px), (max-height:720px){
+  .wrap{padding-top:14px;padding-bottom:32px}
+
+  /* 헤더는 결과를 보러 온 화면에서 가장 덜 중요하다 */
+  .eyebrow,.tagline{display:none}
+  h1{font-size:26px;margin-bottom:4px}
+  header{margin-bottom:10px}
+  .lifeno{font-size:12px;margin-top:4px;min-height:16px}
+
+  /* subline(대륙·도시/농촌·성별)은 칩의 "태어난 곳"·"성별"과 겹친다 */
+  .hero{padding:14px 14px 12px;border-radius:16px}
+  .popline{font-size:11px;margin-bottom:6px;min-height:0}
+  .flag{font-size:44px}
+  .country{font-size:26px;margin:4px 0 2px}
+  .subline{display:none}
+  .badges{margin-top:8px;min-height:24px}
+  .badge{font-size:11px;padding:3px 9px}
+
+  .controls{margin-top:12px}
+  .btn-primary{padding:12px 26px;font-size:15px}
+
+  /* 칩 11개를 631px → 200px대로. 설명줄(.s)은 값이 아니라 해설이라 여기서만 접는다.
+     3열이면 "주로 쓰는 손" 같은 긴 라벨도 안 깨진다. */
+  .chips{grid-template-columns:repeat(3,1fr);gap:6px;margin-top:10px}
+  .chip{padding:6px 8px;border-radius:10px}
+  .chip .k{font-size:9px;letter-spacing:.06em}
+  .chip .v{font-size:13px;margin-top:1px;line-height:1.25}
+  .chip .s{display:none}
+}
+
+/* 세로가 넉넉한 휴대폰이면 설명줄("국가 내 약 99.7%")을 되살린다.
+   이걸 켜도 필요 높이가 화면 안에 들어오는 구간에서만 적용한다. */
+@media (max-width:480px) and (min-height:700px){
+  .chip .s{display:block;font-size:10px;margin-top:1px}
+}
+@media (prefers-reduced-motion:reduce){
+  .chip,.chip.reveal{opacity:1;transform:none;transition:none}
+  .btn-primary{transition:none}
+}

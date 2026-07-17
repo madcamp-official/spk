@@ -1,5 +1,5 @@
 import {ST,session} from "./state.js";
-import {probPct} from "./util.js";
+import {probPct,isAutomated} from "./util.js";
 
 /* ===== 유입 추적 · 이벤트 트래킹 =====
    공유 URL에 ?ref=출처&v=문구변형 이 붙는다. 분석 도구(GA4/PostHog/Plausible)
@@ -41,9 +41,11 @@ export function track(ev,props){
      들어간다 — 여기서 빠지면 vin이 사라져 문구 A/B를 영영 못 읽는다. */
   const p=Object.assign({ref:REF||ST.refFirst||"direct",v:ST.ab,
    vin:VIN||ST.vIn||"none"},props||{});
-  _q.push({e:ev,p});
-  if(_q.length>500)_q.splice(0,_q.length-500); /* 전송이 계속 실패해도 무한정 쌓지 않는다 */
-  if(!_qTimer)_qTimer=setTimeout(flushEvents,3000);
+  if(!isAutomated){
+   _q.push({e:ev,p});
+   if(_q.length>500)_q.splice(0,_q.length-500); /* 전송이 계속 실패해도 무한정 쌓지 않는다 */
+   if(!_qTimer)_qTimer=setTimeout(flushEvents,3000);
+  }
   /* 외부 스니펫을 붙였을 때만 동작. 경로 A(자체 수집)에서는 전부 no-op이다. */
   if(window.gtag)gtag("event",ev,p);
   if(window.posthog&&window.posthog.capture)posthog.capture(ev,p);

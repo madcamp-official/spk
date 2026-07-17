@@ -61,8 +61,15 @@ process.on('SIGINT', shutdown);
    재시작하면 그날 해시가 갈리지만, 그건 IP를 남기지 않기 위해 치르는 값이다. */
 let saltDay = '';
 let salt = '';
+/* 하루의 경계는 KST 자정. UTC로 끊으면 경계가 오전 9시가 되어 한창 쓰는 시간에
+   고유 방문자 집계가 리셋된다(같은 사람이 오전 8시·10시에 오면 2명으로 잡힌다).
+   tools/analyze.py 의 day_of 와 반드시 같은 기준이어야 한다 — 어긋나면 한 버킷 안에
+   서로 다른 솔트의 해시가 섞여 고유 방문자가 부풀려진다. 한국은 서머타임이 없어 +9 고정. */
+function kstDay() {
+  return new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10);
+}
 function ipHash(ip) {
-  const day = new Date().toISOString().slice(0, 10);
+  const day = kstDay();
   if (day !== saltDay) { saltDay = day; salt = crypto.randomBytes(16).toString('hex'); }
   return crypto.createHash('sha256').update(salt + '|' + (ip || '')).digest('hex').slice(0, 16);
 }

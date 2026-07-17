@@ -1,6 +1,11 @@
 /* 공용 헬퍼: DOM 단축, 난수원, 숫자 포맷 */
 export const $=id=>document.getElementById(id);
 export const reduceMotion=matchMedia("(prefers-reduced-motion: reduce)").matches;
+/* 헤드리스 자동화(배포 검증 스크립트 등)는 사람이 아니다. 항상 버튼을 누르고 수십 번씩
+   굴려서 활성화율·세션당 리롤·공유수를 통째로 왜곡한다. 화면 동작은 그대로 두고
+   서버로 보내는 것만 건너뛴다 — 분석 스니펫(gtag 등)은 그대로 발화하므로
+   자동화 테스트는 여전히 이벤트 발생을 확인할 수 있다. */
+export const isAutomated=navigator.webdriver===true;
 /* 확률 롤 전용 난수원. 오늘의 운세는 날짜 시드로 교체해 하루 동안 같은 결과를 만든다 */
 let RNG=Math.random;
 export const rand=()=>RNG();
