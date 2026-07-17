@@ -26,6 +26,9 @@
   --sans:"Pretendard Variable",Pretendard,"Apple SD Gothic Neo","Malgun Gothic","Segoe UI",system-ui,sans-serif;
 }
 *{box-sizing:border-box}
+/* .feedback{display:flex} 같은 작성자 규칙은 UA의 [hidden]{display:none}을 무조건
+   이긴다(명시도 무관). !important 없이는 hidden 속성이 조용히 무시된다. */
+[hidden]{display:none !important}
 html,body{margin:0;padding:0}
 body{
   background:var(--void);
@@ -53,22 +56,16 @@ h1{
 .lifeno{color:var(--gold);font-size:13px;margin:10px 0 0;font-variant-numeric:tabular-nums;min-height:20px}
 
 .hero{
-  --tier-color:var(--line);
+  --rarity-color:var(--line);
   background:linear-gradient(180deg,var(--surface) 0%,#10152b 100%);
-  border:1px solid var(--tier-color);
+  border:1px solid var(--rarity-color);
   border-radius:20px;
   padding:34px 24px 28px;
   text-align:center;
-  box-shadow:0 0 0 1px rgba(255,255,255,.02),0 0 46px -18px var(--tier-color);
+  box-shadow:0 0 0 1px rgba(255,255,255,.02),0 0 46px -18px var(--rarity-color);
   transition:border-color .5s,box-shadow .5s;
 }
-.tierline{display:flex;justify-content:center;align-items:center;gap:10px;margin-bottom:14px;min-height:26px}
-.tier-badge{
-  font-size:12px;font-weight:800;letter-spacing:.12em;
-  padding:3px 12px;border-radius:99px;
-  color:#0a0d1c;background:var(--tier-color);
-}
-.tier-desc{font-size:13px;color:var(--muted)}
+.popline{font-size:13px;color:var(--muted);margin:0 0 14px;min-height:20px}
 .flag{
   font-size:clamp(72px,16vw,104px);
   line-height:1.15;
@@ -145,21 +142,6 @@ button:disabled{opacity:.45;cursor:not-allowed}
 }
 .card h3{margin:0 0 6px;font-size:16px}
 .card .hint{color:var(--muted);font-size:13px;margin:0 0 14px}
-.wish-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
-.wish-grid label{display:block;font-size:11px;letter-spacing:.12em;color:var(--muted);margin-bottom:5px;text-transform:uppercase}
-select{
-  width:100%;font-family:var(--sans);font-size:14px;
-  background:var(--surface2);color:var(--ink);
-  border:1px solid var(--line);border-radius:10px;padding:9px 10px;
-}
-select:focus-visible{outline:2px solid var(--gold);outline-offset:1px}
-.wish-prob{color:var(--gold);font-size:13px;margin:14px 0 12px;font-variant-numeric:tabular-nums;min-height:20px}
-.wish-actions{display:flex;gap:10px;flex-wrap:wrap}
-.auto-status{
-  margin-top:14px;font-size:14px;color:var(--muted);
-  font-variant-numeric:tabular-nums;min-height:22px;
-}
-.auto-status.success{color:var(--gold);font-weight:700}
 
 .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:22px}
 .stat{
@@ -189,6 +171,20 @@ button.fb{font-size:18px;padding:6px 12px;border-radius:99px;background:var(--su
 button.fb.picked{border-color:var(--gold);background:var(--gold-dim)}
 button.fb:disabled{opacity:.5}
 button.fb.picked:disabled{opacity:1}
+.suggest{margin-top:14px;padding-top:14px;border-top:1px solid var(--line)}
+.sg-label{display:block;font-size:13px;color:var(--muted);margin-bottom:8px}
+.sg-row{display:flex;gap:8px}
+.sg-input{
+  flex:1;min-width:0;padding:9px 12px;border-radius:10px;
+  border:1px solid var(--line);background:var(--surface2);
+  color:var(--ink);font-family:var(--sans);font-size:14px;
+}
+.sg-input::placeholder{color:var(--muted);opacity:.7}
+.sg-input:focus{outline:none;border-color:var(--gold)}
+.sg-send{font-size:13px;padding:9px 16px;border-radius:10px;background:var(--surface2);white-space:nowrap}
+.sg-send:disabled{opacity:.5}
+.sg-note{font-size:11px;color:var(--muted);margin:8px 0 0;opacity:.75}
+@media(max-width:420px){.sg-row{flex-wrap:wrap}.sg-send{width:100%}}
 
 .toast{
   position:fixed;left:50%;bottom:26px;transform:translate(-50%,16px);
@@ -228,7 +224,7 @@ button.fb.picked:disabled{opacity:1}
   border-radius:50%;width:32px;height:32px;display:inline-flex;align-items:center;justify-content:center;
 }
 .dex-name{font-size:11px;line-height:1.3}
-.dex-tier{font-size:10px;font-weight:800;color:var(--tc)}
+.dex-prob{font-size:10px;font-weight:800;color:var(--tc);font-variant-numeric:tabular-nums}
 
 footer{margin-top:36px;text-align:center;color:var(--muted);font-size:12px;line-height:1.7}
 footer a{color:var(--gold)}
@@ -256,10 +252,7 @@ footer a{color:var(--gold)}
   </header>
 
   <section class="hero" id="hero">
-    <div class="tierline" id="tierline" hidden>
-      <span class="tier-badge" id="tierBadge"></span>
-      <span class="tier-desc" id="tierDesc"></span>
-    </div>
+    <p class="popline" id="popline" hidden></p>
     <div class="flag" id="flag">🌌</div>
     <h2 class="country" id="country">아직 태어나기 전입니다</h2>
     <p class="subline" id="subline">아래 버튼을 누르면 새로운 생을 받습니다</p>
@@ -272,6 +265,15 @@ footer a{color:var(--gold)}
       <button class="fb" data-fb="😂" aria-label="웃겨요">😂</button>
       <button class="fb" data-fb="🔥" aria-label="최고예요">🔥</button>
     </div>
+    <form class="suggest" id="suggest" hidden>
+      <label class="sg-label" for="sgInput">이런 항목도 환생 결과에 넣어 주세요</label>
+      <div class="sg-row">
+        <input class="sg-input" id="sgInput" type="text" maxlength="80" autocomplete="off"
+               placeholder="예: 형제 수, 태어난 계절, 평균 키…">
+        <button class="sg-send" id="sgSend" type="submit">보내기</button>
+      </div>
+      <p class="sg-note">한 줄이면 충분해요. 개인정보는 적지 말아 주세요.</p>
+    </form>
   </section>
 
   <section class="chips" id="chips" hidden></section>
@@ -288,43 +290,6 @@ footer a{color:var(--gold)}
     </div>
   </div>
 
-  <section class="card">
-    <h3>🙏 소원을 빌면, 이뤄질 때까지 환생합니다</h3>
-    <p class="hint">원하는 조건을 고르면 그 생이 나올 때까지 자동으로 리롤합니다.</p>
-    <div class="wish-grid">
-      <div>
-        <label for="wishCont">대륙</label>
-        <select id="wishCont">
-          <option value="">무관</option>
-          <option value="AS">아시아</option>
-          <option value="EU">유럽</option>
-          <option value="AF">아프리카</option>
-          <option value="NA">북아메리카</option>
-          <option value="SA">남아메리카</option>
-          <option value="OC">오세아니아</option>
-        </select>
-      </div>
-      <div>
-        <label for="wishCountry">국가</label>
-        <select id="wishCountry"><option value="">무관</option></select>
-      </div>
-      <div>
-        <label for="wishGender">성별</label>
-        <select id="wishGender">
-          <option value="">무관</option>
-          <option value="m">남자</option>
-          <option value="f">여자</option>
-        </select>
-      </div>
-    </div>
-    <p class="wish-prob" id="wishProb"></p>
-    <div class="wish-actions">
-      <button id="autoBtn">✨ 자동 환생 시작</button>
-      <button id="stopBtn" hidden>⏹ 멈추기</button>
-    </div>
-    <p class="auto-status" id="autoStatus"></p>
-  </section>
-
   <section class="stats">
     <div class="stat"><div class="n" id="stTotal">0</div><div class="l">총 환생 횟수</div></div>
     <button class="stat stat-btn" id="dexBtn" title="환생 도감 열기"><div class="n" id="stSeen">0</div><div class="l">태어나 본 나라 · 도감 📖</div></button>
@@ -340,7 +305,7 @@ footer a{color:var(--gold)}
   <footer>
     국가·인구·도시화율·기대수명·1인당 GDP는 UN World Population Prospects 2024,
     세계은행 등 공개 통계를 바탕으로 한 근사치입니다.<br>
-    종교·혈액형·소득 분위는 국가별 대표 분포 기반 추정이며, 재미로만 즐겨 주세요. 🌏<br>
+    종교·소득은 국가별 대표 분포 기반 추정이며, 재미로만 즐겨 주세요. 🌏<br>
     💬 아이디어·버그 제보: <a href="https://github.com/madcamp-official/spk/issues" target="_blank" rel="noopener">GitHub Issues</a>
   </footer>
 </div>
@@ -607,30 +572,15 @@ mongolia:[["불교",52],["무종교",40],["샤머니즘",5],["이슬람교",3]],
 nk:[["무종교",90],["천도교·기타",10]],
 };
 
-/* 혈액형 분포(%): 대륙별 근사 + Rh- 비율 */
-const BLOOD={
-AS:{abo:[["O",36],["A",27],["B",27],["AB",10]],rhNeg:2},
-AF:{abo:[["O",49],["A",27],["B",20],["AB",4]],rhNeg:4},
-EU:{abo:[["O",42],["A",37],["B",14],["AB",7]],rhNeg:14},
-NA:{abo:[["O",46],["A",35],["B",13],["AB",6]],rhNeg:10},
-SA:{abo:[["O",52],["A",33],["B",11],["AB",4]],rhNeg:8},
-OC:{abo:[["O",45],["A",34],["B",15],["AB",6]],rhNeg:12},
-};
-
 const CONT_NAME={AS:"아시아",EU:"유럽",AF:"아프리카",NA:"북아메리카",SA:"남아메리카",OC:"오세아니아"};
-const TIERS=[
- {min:100,key:"N",desc:"흔한 생",color:"#98a0b8"},
- {min:25,key:"R",desc:"드문 생",color:"#6fb1e8"},
- {min:5,key:"SR",desc:"귀한 생",color:"#b78ef0"},
- {min:0.5,key:"SSR",desc:"아주 귀한 생",color:"#f3c95c"},
- {min:0,key:"UR",desc:"전설의 생",color:"#ff8fb2"},
+/* 희귀도는 등급 이름 없이 색으로만 표현한다. 숫자(확률)가 등급을 대신한다. */
+const RARITY=[
+ {min:100,color:"#98a0b8"},
+ {min:25,color:"#6fb1e8"},
+ {min:5,color:"#b78ef0"},
+ {min:0.5,color:"#f3c95c"},
+ {min:0,color:"#ff8fb2"},
 ];
-const ZODIAC=[
- [1,20,"물병자리","♒"],[2,19,"물고기자리","♓"],[3,21,"양자리","♈"],[4,20,"황소자리","♉"],
- [5,21,"쌍둥이자리","♊"],[6,22,"게자리","♋"],[7,23,"사자자리","♌"],[8,23,"처녀자리","♍"],
- [9,23,"천칭자리","♎"],[10,23,"전갈자리","♏"],[11,23,"사수자리","♐"],[12,22,"염소자리","♑"],
-];
-const MONTH_DAYS=[31,28,31,30,31,30,31,31,30,31,30,31];
 const P_MALE=0.512, SIGMA=0.75;
 
 const DATA=RAW.map(r=>({name:r[0],flag:r[1],pop:r[2],urban:r[3],life:r[4],gdp:r[5],lang:r[6],rel:r[7],cont:r[8]}));
@@ -671,9 +621,14 @@ function fmtPct(p){const pct=p*100;
 function incomeTopPct(v){let a=0;
  for(const c of DATA)a+=(c.pop/TOTAL)*phi((Math.log(v)-Math.log(c.gdp))/SIGMA);
  return clamp((1-a)*100,0.01,99.9);}
-function tierOf(pop){for(const t of TIERS)if(pop>=t.min)return t;return TIERS[TIERS.length-1];}
+function rarityColor(pop){for(const t of RARITY)if(pop>=t.min)return t.color;return RARITY[RARITY.length-1].color;}
+/* 등급 대신 확률(%)을 이벤트에 싣는다. 희귀한 생일수록 공유가 터지는지 볼 수 있어야 한다. */
+function probPct(p){return +(p*100).toFixed(4);}
 /* 소득 상위 % 표시: 반올림으로 "상위 100%"/"상위 0.0%"가 나오지 않게 캡 */
 function fmtTop(t){if(t<0.1)return "0.1% 이내";if(t<1)return t.toFixed(1)+"%";return Math.min(99,Math.round(t))+"%";}
+function fmtUSD(v){ /* 유효숫자 3자리 반올림: $2,430 / $47,800 처럼 읽히게 */
+ const mag=Math.pow(10,Math.max(0,Math.floor(Math.log10(Math.max(v,1)))-2));
+ return "$"+(Math.round(v/mag)*mag).toLocaleString();}
 function isoCode(flag){return [...flag].map(ch=>String.fromCodePoint(ch.codePointAt(0)-0x1F1E6+65)).join("");}
 
 /* 국기 이모지 지원 감지 (윈도우는 글자 2개로 렌더링됨) */
@@ -694,32 +649,16 @@ function rollLife(fCi,fMale){
  const male=fMale!=null?fMale:rand()<P_MALE;
  const urban=rand()<c.urban/100;
  const rel=pickWeighted(REL[c.rel]);
- const bp=BLOOD[c.cont];
- const abo=pickWeighted(bp.abo);
- const rhNeg=rand()<bp.rhNeg/100;
- let doy=1+Math.floor(rand()*365),m=0;
- while(doy>MONTH_DAYS[m]){doy-=MONTH_DAYS[m];m++;}
- const month=m+1,day=doy;
- let zi=ZODIAC.length-1;
- for(let i=0;i<ZODIAC.length;i++){const z=ZODIAC[i];
-  if(month>z[0]||(month===z[0]&&day>=z[1]))zi=i;}
- if(month===1&&day<20)zi=11;
  const lefty=rand()<0.10;
- const twinP=c.cont==="AF"?0.03:0.016;
- const twin=rand()<twinP;
- const identical=twin&&rand()<0.33;
  const lifeExp=clamp(Math.round(c.life+gauss()*7),45,106);
  const income=c.gdp*Math.exp(gauss()*SIGMA);
  const top=incomeTopPct(income);
  const pC=c.pop/TOTAL,pG=male?P_MALE:1-P_MALE,pU=urban?c.urban/100:1-c.urban/100;
- return {ci,c,male,urban,rel,abo,rhNeg,month,day,zodiac:ZODIAC[zi],lefty,twin,identical,
-  twinP,lifeExp,top,prob:pC*pG*pU,tier:tierOf(c.pop)};
+ return {ci,c,male,urban,rel,lefty,lifeExp,income,top,prob:pC*pG*pU};
 }
-/* 자동 환생용 경량 롤: 소원 조건(국가·성별)만 굴림 */
-function rollFast(){return {ci:pickCountryIdx(),male:rand()<P_MALE};}
 
 /* ===== 저장 상태 ===== */
-let ST={total:0,seen:[],best:null,dev:null,ab:null,refFirst:null,metrics:{},fortuneDay:null};
+let ST={total:0,seen:[],best:null,dev:null,ab:null,vIn:null,refFirst:null,metrics:{},suggests:[],fortuneDay:null};
 try{const s=localStorage.getItem("rebirth_state");if(s)ST=Object.assign(ST,JSON.parse(s));}catch(e){}
 /* 손상·구버전 저장 데이터 방어 */
 if(!Array.isArray(ST.seen))ST.seen=[];
@@ -736,19 +675,47 @@ if(ST.ab!=="a"&&ST.ab!=="b")ST.ab=Math.random()<0.5?"a":"b";
 const QS=new URLSearchParams(location.search);
 const REF=QS.get("ref")||"";
 if(REF&&!ST.refFirst)ST.refFirst=REF;
+/* vin = 나를 데려온 공유 카피, ab = 내가 공유할 때 쓸 카피. 한 기기가 유입자이자
+   공유자라 둘을 한 필드로 합치면 A/B 유입 비교가 자기 동전던지기에 묻힌다. */
+const VQ=QS.get("v");
+const VIN=(VQ==="a"||VQ==="b")?VQ:"";
+if(VIN&&!ST.vIn)ST.vIn=VIN;
+const RETURNING=ST.total>0;
 function track(ev,props){
  try{
   ST.metrics=ST.metrics||{};ST.metrics[ev]=(ST.metrics[ev]||0)+1;
-  const p=Object.assign({ref:REF||ST.refFirst||"direct",v:ST.ab},props||{});
+  const p=Object.assign({ref:REF||ST.refFirst||"direct",v:ST.ab,
+   vin:VIN||ST.vIn||"none"},props||{});
   if(window.gtag)gtag("event",ev,p);
   if(window.posthog&&window.posthog.capture)posthog.capture(ev,p);
   if(window.plausible)plausible(ev,{props:p});
  }catch(e){}
 }
+/* ===== 세션 계측 =====
+   activate: 첫 방문에서 첫 리롤까지 걸린 시간 (Activation 문턱)
+   exit: 떠날 때까지 굴린 횟수 */
+const T_LOAD=performance.now();
+let sessionRolls=0,activated=false,exitSent=false;
+function markRoll(){
+ sessionRolls++;
+ if(activated)return;
+ activated=true;
+ track("activate",{ms:Math.round(performance.now()-T_LOAD),returning:RETURNING});
+}
+/* pagehide/visibilitychange만 모바일에서 신뢰할 수 있다(beforeunload는 안 뜬다).
+   탭 전환마다 중복 발사되지 않도록 세션당 1회로 막는다. */
+function sendExit(){
+ if(exitSent)return;exitSent=true;
+ track("exit",{rolls:sessionRolls,activated});
+}
+addEventListener("pagehide",sendExit);
+addEventListener("visibilitychange",()=>{if(document.visibilityState==="hidden")sendExit();});
+
 function updateStats(){
  $("stTotal").textContent=ST.total.toLocaleString();
  $("stSeen").textContent=seenSet.size+"/"+DATA.length;
- $("stBest").textContent=ST.best?ST.best.name+" "+ST.best.tier:"·";
+ /* 예전 저장본에는 prob 없이 tier만 있을 수 있어 확률이 없으면 이름만 보여준다 */
+ $("stBest").textContent=ST.best?(ST.best.prob!=null?ST.best.name+" "+fmtPct(ST.best.prob):ST.best.name):"·";
 }
 
 /* ===== 렌더링 ===== */
@@ -758,23 +725,16 @@ const CHIP_DEFS=[
  {k:"태어난 곳",f:l=>({v:l.urban?"도시 🏙️":"농촌 🌾",s:"이 나라 도시화율 "+l.c.urban+"%"})},
  {k:"모국어",f:l=>({v:l.c.lang,s:"국가 대표 언어"})},
  {k:"종교",f:l=>({v:l.rel[0],s:"국가 내 약 "+l.rel[1]+"%"})},
- {k:"혈액형",f:l=>{const bp=BLOOD[l.c.cont];
-   const pct=l.abo[1]*(l.rhNeg?bp.rhNeg:100-bp.rhNeg)/100;
-   return {v:l.abo[0]+(l.rhNeg?"−":"+"),s:"지역 분포 기준 약 "+(pct<1?pct.toFixed(1):Math.round(pct))+"%"};}},
- {k:"생일",f:l=>({v:l.month+"월 "+l.day+"일 "+l.zodiac[3],s:l.zodiac[2]})},
  {k:"주로 쓰는 손",f:l=>({v:l.lefty?"왼손잡이 🫲":"오른손잡이 🫱",s:l.lefty?"10%":"90%"})},
- {k:"쌍둥이",f:l=>({v:l.twin?(l.identical?"일란성 쌍둥이 👯":"이란성 쌍둥이 👯"):"단태아",
-   s:l.twin?"확률 "+(l.twinP*100).toFixed(1)+"%":"쌍둥이 아님 "+(100-l.twinP*100).toFixed(1)+"%"})},
  {k:"기대수명",f:l=>({v:l.lifeExp+"세",s:"국가 평균 "+l.c.life+"세"})},
- {k:"소득",f:l=>({v:"세계 상위 "+fmtTop(l.top),s:"1인당 GDP 기반 추정"})},
+ {k:"연 소득",f:l=>({v:fmtUSD(l.income),s:"세계 상위 "+fmtTop(l.top)+" · 1인당 GDP 기반 추정"})},
 ];
 function renderLife(l){
  currentLife=l;
  const hero=$("hero");
- hero.style.setProperty("--tier-color",l.tier.color);
- $("tierline").hidden=false;
- const tb=$("tierBadge");tb.textContent=l.tier.key;tb.style.background=l.tier.color;
- $("tierDesc").textContent=l.tier.desc+" · 인구 "+(l.c.pop>=1?koNum(l.c.pop*1e6)+"명":Math.round(l.c.pop*1e6).toLocaleString()+"명");
+ hero.style.setProperty("--rarity-color",rarityColor(l.c.pop));
+ $("popline").hidden=false;
+ $("popline").textContent="인구 "+(l.c.pop>=1?koNum(l.c.pop*1e6)+"명":Math.round(l.c.pop*1e6).toLocaleString()+"명");
  $("flag").innerHTML=flagHTML(l.c);
  $("flag").classList.remove("rolling");
  $("country").textContent=l.c.name;
@@ -782,9 +742,8 @@ function renderLife(l){
  const pl=$("probline");pl.hidden=false;
  pl.textContent="이 인생을 받을 확률 "+fmtPct(l.prob)+" · 약 "+koNum(1/l.prob)+"번 중 1번";
  const badges=[];
- if(l.tier.key==="UR")badges.push("🌟 인구 50만 미만의 나라");
- if(l.tier.key==="SSR")badges.push("✨ 인구 500만 미만의 나라");
- if(l.twin)badges.push("👯 쌍둥이");
+ if(l.c.pop<0.5)badges.push("🌟 인구 50만 미만의 나라");
+ else if(l.c.pop<5)badges.push("✨ 인구 500만 미만의 나라");
  if(l.lefty)badges.push("🫲 왼손잡이");
  if(l.lifeExp>=100)badges.push("💯 100세 장수 예정");
  if(l.top<=1)badges.push("💎 소득 상위 1%");
@@ -803,20 +762,22 @@ function renderLife(l){
  else fl.hidden=true;
  const fb=$("feedback");fb.hidden=false;
  fb.querySelectorAll(".fb").forEach(b=>{b.disabled=false;b.classList.remove("picked");});
- if(l.tier.key==="SSR"||l.tier.key==="UR")burstConfetti(l.tier.color);
+ $("suggest").hidden=false;
+ if(l.c.pop<5)burstConfetti(rarityColor(l.c.pop));
 }
 function recordLife(l){
  ST.total++;seenSet.add(l.ci);
- if(!ST.best||l.prob<ST.best.prob)ST.best={name:l.c.name,tier:l.tier.key,prob:l.prob};
+ if(!ST.best||l.prob<ST.best.prob)ST.best={name:l.c.name,prob:l.prob};
  persist();updateStats();
 }
 
 /* ===== 리롤 연출 ===== */
 let rolling=false;
 function doRoll(){
- if(rolling||autoTimer)return;rolling=true;
+ if(rolling)return;rolling=true;
  const life=rollLife();recordLife(life);
- track("roll",{country:life.c.name,tier:life.tier.key});
+ markRoll();
+ track("roll",{country:life.c.name,prob:probPct(life.prob)});
  if(reduceMotion){renderLife(life);rolling=false;return;}
  const flag=$("flag"),country=$("country");
  flag.classList.add("rolling");
@@ -839,7 +800,7 @@ const FORTUNES=[
  "지도를 펼쳐 보세요. 다음 여행지가 오늘의 나라일지도 모릅니다",
  "오늘 배운 외국어 한 마디가 언젠가 당신을 구합니다",
  "이번 생은 연습이 아닙니다. 오늘 하루도 본편입니다",
- "오늘의 별자리가 당신의 결정을 조용히 응원하고 있습니다",
+ "오늘의 우연이 당신의 결정을 조용히 응원하고 있습니다",
  "잃어버린 물건이 서랍 두 번째 칸에서 기다립니다",
  "누군가에게 이 결과를 공유하면 웃음이 두 배가 됩니다",
  "오늘은 평소보다 한 정거장 일찍 내려 걸어 보세요",
@@ -848,7 +809,7 @@ const FORTUNES=[
 ];
 function todayKey(){const d=new Date();return d.getFullYear()+"-"+(d.getMonth()+1)+"-"+d.getDate();}
 $("fortuneBtn").addEventListener("click",()=>{
- if(rolling||autoTimer)return;
+ if(rolling)return;
  const key=todayKey();
  const rng=mulberry32(strHash(key+"|"+ST.dev));
  let life,msg;
@@ -867,89 +828,6 @@ $("fortuneBtn").addEventListener("click",()=>{
  $("hero").scrollIntoView({behavior:reduceMotion?"auto":"smooth"});
 });
 
-/* ===== 소원(자동 환생) ===== */
-const wishCountrySel=$("wishCountry");
-[...DATA].map((c,i)=>({c,i})).sort((a,b)=>a.c.name.localeCompare(b.c.name,"ko"))
- .forEach(({c,i})=>{const o=document.createElement("option");o.value=i;o.textContent=c.name;wishCountrySel.appendChild(o);});
-function wishSpec(){
- return {cont:$("wishCont").value,country:wishCountrySel.value===""?null:+wishCountrySel.value,
-  gender:$("wishGender").value};
-}
-function wishP(w){
- let pC=1;
- if(w.country!=null)pC=DATA[w.country].pop/TOTAL;
- else if(w.cont)pC=DATA.filter(c=>c.cont===w.cont).reduce((a,c)=>a+c.pop,0)/TOTAL;
- let pG=1;if(w.gender==="m")pG=P_MALE;if(w.gender==="f")pG=1-P_MALE;
- return pC*pG;
-}
-function wishMatch(w,r){
- if(w.country!=null&&r.ci!==w.country)return false;
- if(w.country==null&&w.cont&&DATA[r.ci].cont!==w.cont)return false;
- if(w.gender==="m"&&!r.male)return false;
- if(w.gender==="f"&&r.male)return false;
- return true;
-}
-function updateWishProb(){
- const w=wishSpec();
- if(!w.cont&&w.country==null&&!w.gender){$("wishProb").textContent="조건을 고르면 확률을 계산해 드립니다.";return;}
- const p=wishP(w);
- $("wishProb").textContent="이 조건이 나올 확률 "+fmtPct(p)+" · 평균 약 "+koNum(1/p)+"번 환생해야 나옵니다";
-}
-["wishCont","wishCountry","wishGender"].forEach(id=>$(id).addEventListener("change",()=>{
- if(id==="wishCont")wishCountrySel.value="";
- if(id==="wishCountry"&&wishCountrySel.value!=="")$("wishCont").value="";
- updateWishProb();
-}));
-updateWishProb();
-
-let autoTimer=null;
-function stopAuto(msg){
- if(autoTimer){clearInterval(autoTimer);autoTimer=null;}
- $("autoBtn").hidden=false;$("stopBtn").hidden=true;$("rollBtn").disabled=false;
- if(msg)$("autoStatus").textContent=msg;
- persist();updateStats();
-}
-$("autoBtn").addEventListener("click",()=>{
- if(rolling)return; /* 리롤 연출 중 시작하면 910ms 뒤 수동 결과가 자동 결과를 덮어씀 */
- const w=wishSpec();
- if(!w.cont&&w.country==null&&!w.gender){$("autoStatus").textContent="먼저 조건을 하나 이상 골라 주세요.";return;}
- const p=wishP(w);
- let attempts=0;const CAP=2000000;
- $("autoBtn").hidden=true;$("stopBtn").hidden=false;$("rollBtn").disabled=true;
- track("auto_start",{target:(w.country!=null?DATA[w.country].name:w.cont||"any")+"/"+(w.gender||"any")});
- const status=$("autoStatus");status.classList.remove("success");
- autoTimer=setInterval(()=>{
-  let matched=false,last=null;
-  for(let i=0;i<200;i++){
-   attempts++;ST.total++;
-   last=rollFast();seenSet.add(last.ci);
-   if(wishMatch(w,last)){matched=true;break;}
-   if(attempts>=CAP)break;
-  }
-  if(matched){
-   /* 당첨된 국가·성별을 고정하고 나머지 속성을 완성 */
-   const life=rollLife(last.ci,last.male);
-   const c=DATA[last.ci];
-   ST.total--; /* 매칭된 시도는 이미 세었으므로 recordLife의 +1 상쇄 */
-   recordLife(life);
-   renderLife(life);
-   status.classList.add("success");
-   status.textContent="✨ "+attempts.toLocaleString()+"번 만에 소원 성취! "+c.name+"에서 태어났습니다.";
-   track("auto_success",{attempts,country:c.name});
-   stopAuto();
-   burstConfetti("#f3c95c");
-   $("hero").scrollIntoView({behavior:reduceMotion?"auto":"smooth"});
-  }else if(attempts>=CAP){
-   stopAuto("😢 "+CAP.toLocaleString()+"번을 환생했지만 나오지 않았습니다. 조건을 조금 넓혀 보세요.");
-  }else{
-   const c=DATA[last.ci];
-   status.textContent="환생 중… "+attempts.toLocaleString()+"번째 시도 · 방금: "+c.name+" ("+(last.male?"남":"여")+")";
-   if(attempts%2000<200){persist();updateStats();}
-  }
- },30);
-});
-$("stopBtn").addEventListener("click",()=>stopAuto("자동 환생을 멈췄습니다."));
-
 /* ===== 공유 =====
    문구 A/B 테스트: 기기별로 스토리형(a)/성과형(b)이 고정 배정되고,
    공유 URL의 ?v= 파라미터로 어느 문구가 사람을 데려왔는지 추적한다. */
@@ -958,14 +836,15 @@ function shareText(l){
  const flag=flagOK?l.c.flag+" ":"";
  const head=ST.ab==="a"
   ?"🌏 나는 "+flag+l.c.name+" "+(l.urban?"도시":"농촌")+"에서 "+(l.male?"남자":"여자")+"로 태어났다"
-  :"🎰 확률 "+fmtPct(l.prob)+"의 환생 뽑기 성공! "+flag+l.c.name+" "+l.tier.key+" 등급";
+  :"🎰 확률 "+fmtPct(l.prob)+"의 환생 뽑기 성공! "+flag+l.c.name;
  const lines=[
   head,
-  "등급 "+l.tier.key+" ("+l.tier.desc+") · 나의 "+ST.total.toLocaleString()+"번째 생",
-  "🗣 "+l.c.lang+" · 🙏 "+l.rel[0]+" · 🩸 "+l.abo[0]+(l.rhNeg?"−":"+")+" · ⏳ 기대수명 "+l.lifeExp+"세",
+  /* b(성과형)는 머리줄에서 이미 확률을 말했으므로 되풀이하지 않는다 */
+  (ST.ab==="a"?"이 생을 받을 확률 "+fmtPct(l.prob)+" · ":"")+"나의 "+ST.total.toLocaleString()+"번째 생",
+  "🗣 "+l.c.lang+" · 🙏 "+l.rel[0]+" · ⏳ 기대수명 "+l.lifeExp+"세 · 💰 연 "+fmtUSD(l.income),
  ];
  const badges=[];
- if(l.twin)badges.push("👯 쌍둥이");if(l.lefty)badges.push("🫲 왼손잡이");
+ if(l.lefty)badges.push("🫲 왼손잡이");
  if(l.top<=1)badges.push("💎 소득 상위 1%");
  if(badges.length)lines.push(badges.join(" · "));
  lines.push("나도 환생해 보기 👉 "+shareURL());
@@ -981,14 +860,14 @@ async function copyText(t){
 }
 $("shareTxt").addEventListener("click",async()=>{
  if(!currentLife)return;
- track("share_text",{country:currentLife.c.name,tier:currentLife.tier.key});
+ track("share_text",{country:currentLife.c.name,prob:probPct(currentLife.prob)});
  const ok=await copyText(shareText(currentLife));
  $("shareTxt").textContent=ok?"✅ 복사됨!":"복사 실패";
  setTimeout(()=>$("shareTxt").textContent="📋 텍스트 복사",1600);
 });
 $("shareNative").addEventListener("click",async()=>{
  if(!currentLife)return;
- track("share_native",{country:currentLife.c.name,tier:currentLife.tier.key});
+ track("share_native",{country:currentLife.c.name,prob:probPct(currentLife.prob)});
  const t=shareText(currentLife);
  if(navigator.share){
   let payload={text:t};
@@ -1035,23 +914,21 @@ function drawCard(l){
  x.fillText(l.c.name,W/2,610);
  x.fillStyle="#9a98b5";x.font="36px 'Malgun Gothic',sans-serif";
  x.fillText(CONT_NAME[l.c.cont]+" · "+(l.urban?"도시":"농촌")+" · "+(l.male?"남자":"여자"),W/2,672);
- /* 등급 배지 */
- x.fillStyle=l.tier.color;
- const bw=300;roundRect(x,W/2-bw/2,710,bw,64,32);x.fill();
- x.fillStyle="#0a0d1c";x.font="800 38px 'Segoe UI','Malgun Gothic',sans-serif";
- x.fillText(l.tier.key+" · "+l.tier.desc,W/2,754);
- x.fillStyle="#f3c95c";x.font="34px 'Malgun Gothic',sans-serif";
- x.fillText("이 인생을 받을 확률 "+fmtPct(l.prob),W/2,840);
+ /* 등급 배지가 있던 자리. 이제 확률 자체가 희귀도를 말하므로 숫자를 크게 세운다. */
+ x.fillStyle=rarityColor(l.c.pop);x.font="800 56px 'Malgun Gothic',sans-serif";
+ x.fillText("확률 "+fmtPct(l.prob),W/2,762);
+ x.fillStyle="#9a98b5";x.font="30px 'Malgun Gothic',sans-serif";
+ x.fillText("약 "+koNum(1/l.prob)+"번 중 1번",W/2,810);
  x.fillStyle="#ece9f5";x.font="34px 'Malgun Gothic',sans-serif";
  const rows=[
   "🗣 "+l.c.lang+"    🙏 "+l.rel[0],
-  "🩸 "+l.abo[0]+(l.rhNeg?"−":"+")+"    🎂 "+l.month+"월 "+l.day+"일 "+l.zodiac[2],
-  "⏳ 기대수명 "+l.lifeExp+"세    💰 세계 소득 상위 "+fmtTop(l.top),
+  "⏳ 기대수명 "+l.lifeExp+"세    💰 연 "+fmtUSD(l.income),
+  "🌍 세계 소득 상위 "+fmtTop(l.top),
  ];
  const extra=[];
- if(l.twin)extra.push("👯 쌍둥이");if(l.lefty)extra.push("🫲 왼손잡이");
+ if(l.lefty)extra.push("🫲 왼손잡이");
  if(extra.length)rows.push(extra.join("    "));
- rows.forEach((r,i)=>x.fillText(r,W/2,930+i*64));
+ rows.forEach((r,i)=>x.fillText(r,W/2,900+i*64));
  x.fillStyle="#9a98b5";x.font="28px 'Malgun Gothic',sans-serif";
  x.fillText("당신의 다음 생은 어디에서 시작될까요?",W/2,H-120);
  x.fillStyle="#f3c95c";
@@ -1064,7 +941,7 @@ function roundRect(x,px,py,w,h,r){
 }
 $("shareImg").addEventListener("click",()=>{
  if(!currentLife)return;
- track("share_card",{country:currentLife.c.name,tier:currentLife.tier.key});
+ track("share_card",{country:currentLife.c.name,prob:probPct(currentLife.prob)});
  drawCard(currentLife).toBlob(b=>{
   if(!b)return;
   const a=document.createElement("a");
@@ -1154,20 +1031,34 @@ $("feedback").addEventListener("click",e=>{
  const b=e.target.closest(".fb");if(!b||b.disabled||!currentLife)return;
  $("feedback").querySelectorAll(".fb").forEach(x=>{x.disabled=true;});
  b.classList.add("picked");
- track("feedback",{emoji:b.dataset.fb,country:currentLife.c.name,tier:currentLife.tier.key});
+ track("feedback",{emoji:b.dataset.fb,country:currentLife.c.name,prob:probPct(currentLife.prob)});
  persist();
  toast("소중한 "+b.dataset.fb+" 잘 받았어요!");
+});
+
+/* ===== 한 줄 제안 (직접 의견 수집 통로) =====
+   정적 페이지라 서버가 없다. track()으로 분석 도구에 실어 보내고, 스니펫이 아직
+   없을 때를 대비해 localStorage에도 남긴다(스니펫 연결 전까지는 팀이 읽을 수 없음). */
+$("suggest").addEventListener("submit",e=>{
+ e.preventDefault();
+ const inp=$("sgInput"),text=inp.value.trim();
+ if(!text)return;
+ ST.suggests=(ST.suggests||[]).concat([{t:text,at:Date.now()}]).slice(-20);
+ track("suggest",{text,country:currentLife?currentLife.c.name:"none"});
+ persist();
+ inp.value="";inp.blur();
+ toast("제안 고마워요! 다음 개선 후보로 담아 둘게요 📝");
 });
 
 /* ===== 환생 도감 ===== */
 function openDex(){
  const sorted=[...DATA].map((c,i)=>({c,i})).sort((a,b)=>b.c.pop-a.c.pop);
  $("dexGrid").innerHTML=sorted.map(({c,i})=>{
-  const owned=seenSet.has(i);const t=tierOf(c.pop);
+  const owned=seenSet.has(i);
   const fl=flagOK?'<span class="dex-flag">'+c.flag+'</span>'
    :'<span class="dex-flag dex-code">'+isoCode(c.flag)+'</span>';
-  return '<div class="dex-item'+(owned?" owned":"")+'" style="--tc:'+t.color+'">'
-   +fl+'<span class="dex-name">'+c.name+'</span><span class="dex-tier">'+t.key+"</span></div>";
+  return '<div class="dex-item'+(owned?" owned":"")+'" style="--tc:'+rarityColor(c.pop)+'">'
+   +fl+'<span class="dex-name">'+c.name+'</span><span class="dex-prob">'+fmtPct(c.pop/TOTAL)+"</span></div>";
  }).join("");
  $("dexProgress").textContent="수집한 나라 "+seenSet.size+" / "+DATA.length
   +" ("+Math.round(seenSet.size/DATA.length*100)+"%) · 밝은 칸이 태어나 본 나라입니다";
