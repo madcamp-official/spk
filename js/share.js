@@ -16,8 +16,11 @@ export function shareURL(via,l){
  let u=location.origin+location.pathname+"?ref=share&v="+ST.ab;
  if(via)u+="&via="+via;
  /* 받는 사람이 내가 뽑은 생을 그대로 보게 링크에 싣는다. 없으면 링크를 눌러도
-    자기 생이 새로 뽑혀서 "무슨 생을 받았는지"가 텍스트에만 남는다. */
- if(l)u+="&l="+encodeLife(l);
+    자기 생이 새로 뽑혀서 "무슨 생을 받았는지"가 텍스트에만 남는다.
+    sig는 서버가 이 생을 실제로 뽑았다는 증거다. 없는 생(서버가 죽어 로컬에서 뽑은 것)은
+    l= 자체를 싣지 않는다 — 보증 못 하는 값을 실어 봐야 받는 쪽에서 위조로 걸릴 뿐이고,
+    그러느니 예전처럼 문구로만 전하는 게 낫다. */
+ if(l&&l.sig)u+="&l="+encodeLife(l)+"&sig="+l.sig;
  return u;
 }
 export function shareText(l,via){
