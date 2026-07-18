@@ -1,6 +1,6 @@
 import {$} from "../core/util.js";
 import {ST,persist,session} from "../core/state.js";
-import {track} from "../track.js";
+import {track} from "../analytics/track.js";
 import {toast} from "./effects.js";
 import {t} from "../i18n/i18n.js";
 

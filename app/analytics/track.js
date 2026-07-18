@@ -1,5 +1,5 @@
-import {ST,session} from "./core/state.js";
-import {probPct,isAutomated} from "./core/util.js";
+import {ST,session} from "../core/state.js";
+import {probPct,isAutomated} from "../core/util.js";
 
 /* ===== 유입 추적 · 이벤트 트래킹 =====
    공유 URL에 ?ref=출처&v=문구변형 이 붙는다. 분석 도구(GA4/PostHog/Plausible)

@@ -4,7 +4,7 @@ import {$} from "./core/util.js";
 import {ST,session,persist} from "./core/state.js";
 import {rollLife,rollIQ,iqTopPct} from "./engine/roll.js";
 import {renderLife,recordLife,updateStats} from "./ui/render.js";
-import {track,markRoll,sendDwell,sendExit,flushEvents,daysSinceFirst} from "./track.js";
+import {track,markRoll,sendDwell,sendExit,flushEvents,daysSinceFirst} from "./analytics/track.js";
 import {probPct} from "./core/util.js";
 import {closeDex} from "./ui/dex.js";
 import {closeShare,shareURL,shareText} from "./ui/share.js";
@@ -16,7 +16,7 @@ import "./ui/fortune.js";
 import "./ui/suggest.js";
 import "./ui/effects.js";
 import "./ui/ads.js";
-import "./reach.js";
+import "./analytics/reach.js";
 
 /* ===== 리롤 ===== */
 /* 결과를 바로 보여준다. 뽑기 연출이 없어 동기 실행이고, 그래서 재진입 가드도 필요 없다. */

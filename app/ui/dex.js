@@ -3,7 +3,7 @@ import {$,fmtPct,isoCode} from "../core/util.js";
 import {seenSet} from "../core/state.js";
 import {flagOK} from "./flags.js";
 import {rarityColor} from "../engine/roll.js";
-import {track} from "../track.js";
+import {track} from "../analytics/track.js";
 import {t,countryName} from "../i18n/i18n.js";
 
 /* ===== 환생 도감 ===== */

@@ -2,7 +2,7 @@ import {$,reduceMotion,mulberry32,strHash,setRNG} from "../core/util.js";
 import {ST} from "../core/state.js";
 import {rollLife} from "../engine/roll.js";
 import {renderLife,recordLife} from "./render.js";
-import {track,sendDwell} from "../track.js";
+import {track,sendDwell} from "../analytics/track.js";
 import {toast} from "./effects.js";
 import {takeFortune} from "../engine/lifepool.js";
 import {t} from "../i18n/i18n.js";
