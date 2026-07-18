@@ -91,7 +91,9 @@ export async function kakaoShare(l){
    objectType:"feed",
    content:{
     title:(flagOK?l.c.flag+" ":"")+l.c.name+"에서 태어났습니다",
-    description:"확률 "+fmtPct(l.prob)+" · 나의 "+ST.total.toLocaleString()+"번째 생",
+    /* 카카오 카드 설명에도 12개 항목을 담는다. 카드는 줄바꿈을 접으므로 · 로 잇는다. */
+    description:"확률 "+fmtPct(l.prob)+" · 나의 "+ST.total.toLocaleString()+"번째 생\n"
+     +lifeStatLines(l).join(" · "),
     imageUrl:document.querySelector('meta[property="og:image"]').content,
     link:{mobileWebUrl:url,webUrl:url},
    },
@@ -147,7 +149,11 @@ export async function shareVia(ch){
  }else if(ch==="insta"){
   track("share_insta",props);
   downloadCard(l);
-  toast("결과 카드를 저장했어요. 스토리에 올려 보세요 📸");
+  /* 인스타는 텍스트 공유 API가 없다. 카드 이미지와 별개로 12개 항목 문구를 클립보드에
+     넣어 두면, 스토리 스티커나 캡션에 바로 붙여넣을 수 있다. */
+  const copied=await copyText(t);
+  toast(copied?"카드를 저장하고 문구도 복사했어요. 스토리에 붙여넣어 보세요 📸"
+              :"결과 카드를 저장했어요. 스토리에 올려 보세요 📸");
   if(IS_MOBILE)setTimeout(()=>{location.href="instagram://story-camera";},900);
  }else if(ch==="x"){
   track("share_x",props);
