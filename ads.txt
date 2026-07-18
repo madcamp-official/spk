@@ -2,10 +2,6 @@
 # 애드센스 승인 후, 아래 pub 번호를 본인 게시자 ID로 바꾼다.
 #   예) google.com, pub-1234567890123456, DIRECT, f08c47fec0942fa0
 #
-# ⚠ 서브도메인(life-reroll.madcamp-kaist.org) 주의:
-#   IAB 규격상 크롤러는 루트 도메인(madcamp-kaist.org)의 ads.txt 를 먼저 본다.
-#   루트 ads.txt 에 다음 한 줄이 있어야 이 서브도메인 ads.txt 가 인정된다:
-#       subdomain=life-reroll.madcamp-kaist.org
-#   이 위임 한 줄은 루트 도메인 소유자(캠프 운영진)만 넣을 수 있다.
-#   그 줄이 없으면 애드센스에 "ads.txt 없음 · 수익 위험" 경고가 계속 뜬다(광고는 뜬다).
+# life-reroll.com 은 루트 도메인이라 이 파일이 곧 정본이다 —
+# 서브도메인 시절(madcamp-kaist.org) 필요했던 루트 위임 한 줄은 더 이상 필요 없다.
 google.com, pub-0000000000000000, DIRECT, f08c47fec0942fa0
