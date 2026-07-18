@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# life-reroll.madcamp-kaist.org 배포 스크립트 (캠프 VM camp-15 전용)
+# life-reroll.com 배포 스크립트 (캠프 VM camp-15 전용)
 #
 #   sudo ./deploy.sh          레포 작업트리를 그대로 배포
 #   sudo ./deploy.sh --pull   git pull 먼저 하고 배포
@@ -16,7 +16,7 @@ WWW=/var/www/life-reroll
 COUNTER_SRC=server/counter.js
 COUNTER_DST=/opt/life-reroll/counter.js
 SERVICE=life-reroll-counter
-HOST=life-reroll.madcamp-kaist.org
+HOST=life-reroll.com
 LOCAL=http://127.0.0.1:1557
 LIVE=https://$HOST
 # 루트 파일 + css/ app/ 아래 전부. 모듈은 하나라도 빠지면 앱이 통째로 죽으므로
