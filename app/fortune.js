@@ -5,6 +5,7 @@ import {renderLife,recordLife} from "./render.js";
 import {track,sendDwell} from "./track.js";
 import {toast} from "./effects.js";
 import {takeFortune} from "./lifepool.js";
+import {t} from "./i18n.js";
 
 /* ===== 오늘의 환생 운세 (날짜+기기 시드라 하루 동안 같은 결과) ===== */
 const FORTUNES=[
@@ -37,12 +38,13 @@ $("fortuneBtn").addEventListener("click",async()=>{
   setRNG(rng);
   try{life=rollLife();}finally{setRNG(Math.random);}
  }
- life.fortune="오늘의 운세: "+fortuneMsg(key);
+ /* 문구 인덱스는 시드가 정하고(언어와 무관하게 같은 운세), 표시할 때만 번역한다 */
+ life.fortune=t("오늘의 운세: ")+t(fortuneMsg(key));
  const first=ST.fortuneDay!==key;
  if(first){ST.fortuneDay=key;recordLife(life);}
  renderLife(life);
- $("lifeNo").textContent="오늘("+key+")의 운세 환생";
+ $("lifeNo").textContent=t("오늘({d})의 운세 환생",{d:key});
  track("fortune",{country:life.c.name,first});
- if(!first)toast("오늘의 운세는 하루 동안 같아요. 내일 또 만나요 🌙");
+ if(!first)toast(t("오늘의 운세는 하루 동안 같아요. 내일 또 만나요 🌙"));
  $("hero").scrollIntoView({behavior:reduceMotion?"auto":"smooth"});
 });

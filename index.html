@@ -12,11 +12,19 @@
 <meta property="og:url" content="https://life-reroll.madcamp-kaist.org/">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌏</text></svg>">
-<link rel="stylesheet" href="css/style.css?v=3">
+<link rel="stylesheet" href="css/style.css?v=4">
 </head>
 <body>
 
 <canvas id="stars"></canvas>
+
+<!-- 언어 전환. 표시 언어만 바꾼다 — 데이터·확률·저장 상태는 언어와 무관하다.
+     번역 사전은 app/i18n.js(문구)·app/i18n-terms.js(데이터 값). README의 i18n 규칙 참고. -->
+<nav class="lang-switch" id="langSwitch" aria-label="Language">
+  <button type="button" data-lang="ko" lang="ko">한국어</button>
+  <button type="button" data-lang="en" lang="en">EN</button>
+  <button type="button" data-lang="ja" lang="ja">日本語</button>
+</nav>
 
 <div class="wrap">
   <header>

@@ -1,5 +1,5 @@
-import {CONT_NAME} from "./data.js";
-import {$,fmtPct,fmtUSD,koNum,isoCode,probPct} from "./util.js";
+import {$,fmtPct,fmtUSD,isoCode,probPct} from "./util.js";
+import {t,term,countryName,contName,bigNum} from "./i18n.js";
 import {ST,session} from "./state.js";
 import {flagOK,FLAG_FONT} from "./flags.js";
 import {rarityColor} from "./roll.js";
@@ -27,33 +27,34 @@ export function shareURL(via,l){
    한쪽에만 항목을 추가해 둘이 어긋나는 일을 막는다. 화면 칩(CHIP_DEFS)과 순서를 맞췄다. */
 export function lifeStatLines(l){
  return [
-  "🚻 "+(l.male?"남자":"여자"),
-  "🏙 "+(l.urban?"도시":"농촌"),
-  "🗣 "+l.c.lang,
-  "🧬 "+l.eth[0],
-  "🙏 "+l.rel[0],
-  "📏 키 "+l.height+"cm",
-  "⚖ 몸무게 "+l.weight+"kg",
+  "🚻 "+t(l.male?"남자":"여자"),
+  "🏙 "+t(l.urban?"도시":"농촌"),
+  "🗣 "+term(l.c.lang),
+  "🧬 "+term(l.eth[0]),
+  "🙏 "+term(l.rel[0]),
+  t("📏 키 {v}cm",{v:l.height}),
+  t("⚖ 몸무게 {v}kg",{v:l.weight}),
   "🧠 IQ "+l.iq,
-  (l.lefty?"🫲 왼손잡이":"🫱 오른손잡이"),
-  (l.balding?"🧑‍🦲 탈모 예정":"💇 숱 유지"),
-  "⏳ 기대수명 "+l.lifeExp+"세",
-  "💰 연 "+fmtUSD(l.income),
+  t(l.lefty?"🫲 왼손잡이":"🫱 오른손잡이"),
+  t(l.balding?"🧑‍🦲 탈모 예정":"💇 숱 유지"),
+  t("⏳ 기대수명 {n}세",{n:l.lifeExp}),
+  t("💰 연 {v}",{v:fmtUSD(l.income)}),
  ];
 }
 export function shareText(l,via){
  const flag=flagOK?l.c.flag+" ":"";
  const head=ST.ab==="a"
-  ?"🌏 나는 "+flag+l.c.name+" "+(l.urban?"도시":"농촌")+"에서 "+(l.male?"남자":"여자")+"로 태어났다"
-  :"🎰 확률 "+fmtPct(l.prob)+"의 환생 뽑기 성공! "+flag+l.c.name;
+  ?t("🌏 나는 {flag}{country} {urban}에서 {gender}로 태어났다",
+    {flag,country:countryName(l.c),urban:t(l.urban?"도시":"농촌"),gender:t(l.male?"남자":"여자")})
+  :t("🎰 확률 {p}의 환생 뽑기 성공! {flag}{country}",{p:fmtPct(l.prob),flag,country:countryName(l.c)});
  const lines=[
   head,
   /* b(성과형)는 머리줄에서 이미 확률을 말했으므로 되풀이하지 않는다 */
-  (ST.ab==="a"?"이 생을 받을 확률 "+fmtPct(l.prob)+" · ":"")+"나의 "+ST.total.toLocaleString()+"번째 생",
+  (ST.ab==="a"?t("이 생을 받을 확률 {p} · ",{p:fmtPct(l.prob)}):"")+t("나의 {n}번째 생",{n:ST.total.toLocaleString()}),
   "",
   ...lifeStatLines(l),   /* 12개 항목 전부 */
   "",
-  "나도 환생해 보기 👉 "+shareURL(via,l),
+  t("나도 환생해 보기 👉 {url}",{url:shareURL(via,l)}),
  ];
  return lines.join("\n");
 }
@@ -90,25 +91,25 @@ export async function kakaoShare(l){
   Kakao.Share.sendDefault({
    objectType:"feed",
    content:{
-    title:(flagOK?l.c.flag+" ":"")+l.c.name+"에서 태어났습니다",
+    title:t("{flag}{country}에서 태어났습니다",{flag:flagOK?l.c.flag+" ":"",country:countryName(l.c)}),
     /* 카카오 카드 설명에도 12개 항목을 담는다. 카드는 줄바꿈을 접으므로 · 로 잇는다. */
-    description:"확률 "+fmtPct(l.prob)+" · 나의 "+ST.total.toLocaleString()+"번째 생\n"
+    description:t("확률 {p} · 나의 {n}번째 생",{p:fmtPct(l.prob),n:ST.total.toLocaleString()})+"\n"
      +lifeStatLines(l).join(" · "),
     imageUrl:document.querySelector('meta[property="og:image"]').content,
     link:{mobileWebUrl:url,webUrl:url},
    },
-   buttons:[{title:"나도 환생해 보기",link:{mobileWebUrl:url,webUrl:url}}],
+   buttons:[{title:t("나도 환생해 보기"),link:{mobileWebUrl:url,webUrl:url}}],
   });
   return true;
  }catch(e){return false;}
 }
-export async function nativeShare(l,t){
- let payload={text:t};
+export async function nativeShare(l,txt){
+ let payload={text:txt};
  try{
   const blob=await new Promise(res=>drawCard(l).toBlob(res,"image/png"));
   if(blob){
    const file=new File([blob],"rebirth.png",{type:"image/png"});
-   if(navigator.canShare&&navigator.canShare({files:[file],text:t}))payload={files:[file],text:t};
+   if(navigator.canShare&&navigator.canShare({files:[file],text:txt}))payload={files:[file],text:txt};
   }
  }catch(e){}
  try{await navigator.share(payload);}catch(e){}
@@ -128,10 +129,10 @@ export async function shareVia(ch){
  closeShare();
  session.lifeShared=true;
  const props={country:l.c.name,prob:probPct(l.prob)};
- const t=shareText(l,ch);   /* 링크에 이 채널을 각인해서 내보낸다 */
+ const txt=shareText(l,ch);   /* 링크에 이 채널을 각인해서 내보낸다 */
  if(ch==="clip"){
   track("share_text",props);
-  toast(await copyText(t)?"공유 문구를 복사했어요 ✅":"복사에 실패했어요 😢");
+  toast(await copyText(txt)?t("공유 문구를 복사했어요 ✅"):t("복사에 실패했어요 😢"));
  }else if(ch==="kakao"){
   track("share_kakao",props);
   if(!(await kakaoShare(l))){
@@ -139,11 +140,11 @@ export async function shareVia(ch){
       카카오톡을 고르면 실제 채팅방 선택 화면으로 이어지므로 그쪽으로 보낸다.
       텍스트만 실어야 카톡이 링크 미리보기를 만들어 준다(파일을 실으면 링크가 죽는다). */
    if(IS_MOBILE&&navigator.share){
-    toast("목록에서 카카오톡을 선택해 주세요 💬");
-    try{await navigator.share({text:t});}catch(e){}
+    toast(t("목록에서 카카오톡을 선택해 주세요 💬"));
+    try{await navigator.share({text:txt});}catch(e){}
    }else{
-    const ok=await copyText(t);
-    toast(ok?"문구를 복사했어요. 카카오톡 채팅방에 붙여넣어 주세요 💬":"복사에 실패했어요 😢");
+    const ok=await copyText(txt);
+    toast(ok?t("문구를 복사했어요. 카카오톡 채팅방에 붙여넣어 주세요 💬"):t("복사에 실패했어요 😢"));
    }
   }
  }else if(ch==="insta"){
@@ -151,16 +152,16 @@ export async function shareVia(ch){
   downloadCard(l);
   /* 인스타는 텍스트 공유 API가 없다. 카드 이미지와 별개로 12개 항목 문구를 클립보드에
      넣어 두면, 스토리 스티커나 캡션에 바로 붙여넣을 수 있다. */
-  const copied=await copyText(t);
-  toast(copied?"카드를 저장하고 문구도 복사했어요. 스토리에 붙여넣어 보세요 📸"
-              :"결과 카드를 저장했어요. 스토리에 올려 보세요 📸");
+  const copied=await copyText(txt);
+  toast(copied?t("카드를 저장하고 문구도 복사했어요. 스토리에 붙여넣어 보세요 📸")
+              :t("결과 카드를 저장했어요. 스토리에 올려 보세요 📸"));
   if(IS_MOBILE)setTimeout(()=>{location.href="instagram://story-camera";},900);
  }else if(ch==="x"){
   track("share_x",props);
-  open("https://x.com/intent/tweet?text="+encodeURIComponent(t),"_blank","noopener");
+  open("https://x.com/intent/tweet?text="+encodeURIComponent(txt),"_blank","noopener");
  }else{
   track("share_native",props);
-  await nativeShare(l,t);
+  await nativeShare(l,txt);
  }
 }
 document.querySelectorAll(".share-opt").forEach(b=>b.addEventListener("click",()=>shareVia(b.dataset.ch)));
@@ -176,10 +177,12 @@ export function drawCard(l){
   const r=Math.random()*1.8+.4;
   x.beginPath();x.arc(Math.random()*W,Math.random()*H,r,0,7);x.fill();}
  x.textAlign="center";
- x.fillStyle="#f3c95c";x.font="600 34px 'Malgun Gothic','Apple SD Gothic Neo',sans-serif";
- x.fillText("환 생 시 뮬 레 이 터",W/2,120);
- x.fillStyle="#9a98b5";x.font="30px 'Malgun Gothic',sans-serif";
- x.fillText("나의 "+ST.total.toLocaleString()+"번째 생",W/2,175);
+ /* 일본어 글리프는 Malgun Gothic에 없을 수 있어 Yu Gothic·Meiryo를 뒤에 받친다 */
+ const SANS="'Malgun Gothic','Apple SD Gothic Neo','Yu Gothic','Meiryo',sans-serif";
+ x.fillStyle="#f3c95c";x.font="600 34px "+SANS;
+ x.fillText(t("환 생 시 뮬 레 이 터"),W/2,120);
+ x.fillStyle="#9a98b5";x.font="30px "+SANS;
+ x.fillText(t("나의 {n}번째 생",{n:ST.total.toLocaleString()}),W/2,175);
  if(flagOK){
   x.font="240px "+FLAG_FONT;
   x.fillText(l.c.flag,W/2,470);
@@ -189,29 +192,29 @@ export function drawCard(l){
   x.fillStyle="#f3c95c";x.font="800 96px 'Segoe UI',sans-serif";
   x.fillText(isoCode(l.c.flag),W/2,415);
  }
- x.fillStyle="#ece9f5";x.font="800 88px Batang,'Malgun Gothic',serif";
- x.fillText(l.c.name,W/2,610);
- x.fillStyle="#9a98b5";x.font="36px 'Malgun Gothic',sans-serif";
- x.fillText(CONT_NAME[l.c.cont]+" · "+(l.urban?"도시":"농촌")+" · "+(l.male?"남자":"여자"),W/2,672);
+ x.fillStyle="#ece9f5";x.font="800 88px Batang,'Malgun Gothic','Yu Mincho',serif";
+ x.fillText(countryName(l.c),W/2,610);
+ x.fillStyle="#9a98b5";x.font="36px "+SANS;
+ x.fillText(contName(l.c.cont)+" · "+t(l.urban?"도시":"농촌")+" · "+t(l.male?"남자":"여자"),W/2,672);
  /* 등급 배지가 있던 자리. 이제 확률 자체가 희귀도를 말하므로 숫자를 크게 세운다. */
- x.fillStyle=rarityColor(l.c.pop);x.font="800 56px 'Malgun Gothic',sans-serif";
- x.fillText("확률 "+fmtPct(l.prob),W/2,762);
- x.fillStyle="#9a98b5";x.font="30px 'Malgun Gothic',sans-serif";
- x.fillText("약 "+koNum(1/l.prob)+"번 중 1번",W/2,810);
+ x.fillStyle=rarityColor(l.c.pop);x.font="800 56px "+SANS;
+ x.fillText(t("확률 {p}",{p:fmtPct(l.prob)}),W/2,762);
+ x.fillStyle="#9a98b5";x.font="30px "+SANS;
+ x.fillText(t("약 {n}번 중 1번",{n:bigNum(1/l.prob)}),W/2,810);
  /* 12개 항목을 2열 × 6줄로. 공유 문구와 같은 lifeStatLines()를 써서 둘이 어긋나지 않는다. */
  const stats=lifeStatLines(l);
- x.font="30px 'Malgun Gothic',sans-serif";x.textAlign="left";
+ x.font="30px "+SANS;x.textAlign="left";
  const colX=[96,W/2+30], rowY0=880, rowGap=56;
- stats.forEach((t,i)=>{
+ stats.forEach((line,i)=>{
   const col=i%2, row=(i-col)/2;
   x.fillStyle="#ece9f5";
-  x.fillText(t,colX[col],rowY0+row*rowGap);
+  x.fillText(line,colX[col],rowY0+row*rowGap);
  });
  x.textAlign="center";
- x.fillStyle="#9a98b5";x.font="28px 'Malgun Gothic',sans-serif";
- x.fillText("당신의 다음 생은 어디에서 시작될까요?",W/2,H-116);
+ x.fillStyle="#9a98b5";x.font="28px "+SANS;
+ x.fillText(t("당신의 다음 생은 어디에서 시작될까요?"),W/2,H-116);
  x.fillStyle="#f3c95c";
- x.fillText(location.host||"환생 시뮬레이터",W/2,H-68);
+ x.fillText(location.host||t("환생 시뮬레이터"),W/2,H-68);
  return cv;
 }
 export function roundRect(x,px,py,w,h,r){

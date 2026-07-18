@@ -2,6 +2,7 @@ import {$} from "./util.js";
 import {ST,persist,session} from "./state.js";
 import {track} from "./track.js";
 import {toast} from "./effects.js";
+import {t} from "./i18n.js";
 
 /* ===== 한 줄 제안 (직접 의견 수집 통로) =====
    정적 페이지라 서버가 없다. track()으로 분석 도구에 실어 보내고, 스니펫이 아직
@@ -14,5 +15,5 @@ $("suggest").addEventListener("submit",e=>{
  track("suggest",{text,country:session.currentLife?session.currentLife.c.name:"none"});
  persist();
  inp.value="";inp.blur();
- toast("제안 고마워요! 다음 개선 후보로 담아 둘게요 📝");
+ toast(t("제안 고마워요! 다음 개선 후보로 담아 둘게요 📝"));
 });
