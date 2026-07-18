@@ -236,6 +236,29 @@ python3 tools/analyze.py events.jsonl
 앱은 그대로 동작한다. 단, 붙일 거면 반드시 `defer` + 첫 페인트 이후 로드 —
 외부 스크립트를 크리티컬 패스에 넣지 않는다.
 
+#### GA4 (붙어 있음, G-168CKEDWJR)
+
+GA4로 가는 복사본은 [app/track.js](app/track.js)의 `toGA4()`가 이름을 고쳐 보낸다.
+**events.jsonl·analyze.py의 내부 이름은 그대로다** — 여기를 바꿀 때 둘이 어긋나면
+안 되는 게 아니라, 애초에 서로 독립이다:
+
+| 내부 이벤트 | GA4에서 |
+|---|---|
+| `visit` | 안 보냄 (자동 `page_view`와 중복) |
+| `share_text`/`share_kakao`/`share_insta`/`share_x`/`share_native`/`share_card` | `share` + `method`(clip/kakao/insta/x/native/card) |
+| `share_open` | 그대로 (공유가 아니라 시트 열기 — 합치면 완료율을 못 본다) |
+| `dwell`의 `ms` | `dwell_ms` |
+| `activate`의 `ms` | `ms_to_first_roll` |
+| `exit`의 `rolls` | `session_rolls` |
+
+**콘솔 설정 없이는 파라미터가 안 보인다.** 이벤트 수만 나오고 `country`·`method` 등은
+버려진다. GA4 관리 → 맞춤 정의에서 등록해야 한다 (반영은 등록 *이후* 데이터부터):
+
+- 맞춤 측정기준(이벤트 범위): `ref` `v` `vin` `via` `country` `method` `reason`
+  `returning` `first` `shared` `fromLink` `activated`
+- 맞춤 측정항목: `prob`(%) `dwell_ms`(ms) `ms_to_first_roll`(ms) `session_rolls` `owned`
+- 키 이벤트 지정: `activate`(진짜 Activation 문턱), `share`(Referral의 분자)
+
 ## 로컬 실행 · 배포
 
 ```bash

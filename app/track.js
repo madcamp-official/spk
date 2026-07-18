@@ -6,6 +6,17 @@ import {probPct,isAutomated} from "./util.js";
    스니펫을 페이지에 붙이면 track()이 자동으로 이벤트를 흘려보낸다. */
 if(!ST.dev)ST.dev=Math.random().toString(36).slice(2,10);
 if(ST.ab!=="a"&&ST.ab!=="b")ST.ab=Math.random()<0.5?"a":"b";
+/* ===== 리텐션 각인 =====
+   ip_h는 솔트가 매일 갈려 어제와 이어붙일 수 없다(IP를 안 남기려는 의도적 설계).
+   그래서 "다시 온 사람"은 서버가 아니라 기기 스스로만 말할 수 있다. 첫 방문의 달력
+   날짜를 저장해 두고 visit마다 며칠째인지 싣는다 — D1 리텐션의 정의가 "다음 날
+   또 왔는가"라서 24시간 창이 아니라 달력 날짜로 센다.
+   이 계측 이전부터 쓰던 기기는 첫 방문일을 알 수 없어 오늘을 0일째로 잡는다
+   (그 기기의 재방문 여부는 activate의 returning이 대신 말해 준다). */
+const DAY_MS=86400000;
+const localDayNum=()=>Math.floor((Date.now()-new Date().getTimezoneOffset()*60000)/DAY_MS);
+if(typeof ST.firstDayNum!=="number"||!isFinite(ST.firstDayNum))ST.firstDayNum=localDayNum();
+export function daysSinceFirst(){return Math.max(0,localDayNum()-ST.firstDayNum);}
 const QS=new URLSearchParams(location.search);
 /* ref는 홍보처마다 자유롭게 붙이는 태그라 via처럼 목록으로 못 막는다. 대신 모양을 강제한다.
    이 값은 "모든" 이벤트에 복사돼 실리므로, 길이를 안 막으면 ?ref=<5000자> 링크 하나로
@@ -47,6 +58,30 @@ export function flushEvents(){
   }catch(e){break;}
  }
 }
+/* ===== GA4 전용 이름 변환 =====
+   events.jsonl·PostHog·Plausible에는 원래 이름 그대로 나간다 — analyze.py가 이벤트
+   이름을 정확히 매칭하므로 내부 이름은 여기서 절대 건드리지 않는다. GA4로 가는 복사본만
+   고친다:
+   - visit: GA4가 자동으로 찍는 page_view와 중복이라 아예 안 보낸다
+   - share_text 등 6종: GA4 권장 이벤트 share 하나에 method(clip/kakao/…)로 합친다.
+     이름이 6개로 갈라져 있으면 GA4 화면에서 "몇 명이 공유했나"를 한 줄로 못 본다.
+     share_open은 시트를 연 것이지 공유가 아니라서 합치지 않는다(analyze.py와 같은 이유).
+   - ms·rolls: 콘솔에 맞춤 측정항목으로 등록했을 때 이름만 보고 뜻이 읽히게 바꾼다 */
+const GA4_SHARE_METHOD={share_text:"clip",share_kakao:"kakao",share_insta:"insta",
+ share_x:"x",share_native:"native",share_card:"card"};
+const GA4_RENAME={dwell:{ms:"dwell_ms"},activate:{ms:"ms_to_first_roll"},
+ exit:{rolls:"session_rolls"}};
+function toGA4(ev,p){
+ if(ev==="visit")return null;
+ const method=GA4_SHARE_METHOD[ev];
+ if(method)return{ev:"share",p:Object.assign({method},p)};
+ const ren=GA4_RENAME[ev];
+ if(ren){
+  p=Object.assign({},p);
+  for(const k in ren){if(k in p){p[ren[k]]=p[k];delete p[k];}}
+ }
+ return{ev,p};
+}
 export function track(ev,props){
  try{
   ST.metrics=ST.metrics||{};ST.metrics[ev]=(ST.metrics[ev]||0)+1;
@@ -60,7 +95,7 @@ export function track(ev,props){
    if(!_qTimer)_qTimer=setTimeout(flushEvents,3000);
   }
   /* 외부 스니펫을 붙였을 때만 동작. 경로 A(자체 수집)에서는 전부 no-op이다. */
-  if(window.gtag)gtag("event",ev,p);
+  if(window.gtag){const g=toGA4(ev,p);if(g)gtag("event",g.ev,g.p);}
   if(window.posthog&&window.posthog.capture)posthog.capture(ev,p);
   if(window.plausible)plausible(ev,{props:p});
  }catch(e){}

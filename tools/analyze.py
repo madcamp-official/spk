@@ -14,6 +14,7 @@ import argparse
 import collections
 import json
 import os
+import re
 import statistics
 import sys
 
@@ -102,6 +103,22 @@ def h(title):
     print("─" * 58)
 
 
+def load_changes():
+    """IMPROVEMENT_LOG.md 표에서 (날짜, 개선 요약)을 뽑는다. 지표가 움직인 날짜와
+    그날 배포된 변경을 대조하기 위해서다 — 로그가 없거나 형식이 달라도 조용히 넘어간다."""
+    p = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "IMPROVEMENT_LOG.md")
+    out = []
+    try:
+        with open(p, encoding="utf-8") as f:
+            for line in f:
+                c = [x.strip() for x in line.split("|")]
+                if len(c) >= 6 and re.match(r"^\d{4}-\d{2}-\d{2}$", c[2]):
+                    out.append((c[2], c[4]))
+    except OSError:
+        pass
+    return out
+
+
 def main():
     ap = argparse.ArgumentParser(description="환생 시뮬레이터 AARRR 퍼널")
     ap.add_argument("file", nargs="?", help="events.jsonl 경로")
@@ -136,6 +153,40 @@ def main():
     dex = by(rows, "collection_open")
     suggests = by(rows, "suggest")
 
+    # ---------- 오늘의 병목 ----------
+    # 각 단계를 기준치와 비교해 가장 뒤처진 단계 하나를 지목한다. 기준치는 목표가 아니라
+    # "이보다 낮으면 이 단계부터 본다"는 트리아지 선(가설)이다 — 데이터가 쌓이면 갱신할 것.
+    # 하루에 한 단계만 고친다. 같은 날 두 개를 고치면 KST 일 버킷 비교로 귀속이 안 된다.
+    h("오늘의 병목 — 어디부터 고칠까")
+    from_share_v = [r for r in visits if prop(r, "ref") == "share"]
+    from_share_a = [r for r in acts if prop(r, "ref") == "share"]
+    stages = [
+        ("활성화", "visit → activate", len(acts), len(visits), 0.50,
+         "첫 화면 문구·버튼 (ms_to_first_roll도 같이 볼 것)"),
+        ("공유의도", "activate → share_open", len(share_opens), len(acts), 0.15,
+         "결과 화면의 공유 유도 — 연출·버튼 위치"),
+        ("공유완료", "share_open → share", len(shares), len(share_opens), 0.50,
+         "공유 시트 채널 구성 (kakao 톡공유 키가 아직 없다)"),
+        ("확산", "share → ref=share 유입", len(from_share_v), len(shares), 0.50,
+         "공유 문구(vin A/B)·링크 미리보기(OG)"),
+        ("수신활성화", "ref=share visit → activate", len(from_share_a), len(from_share_v), 0.50,
+         "공유받은 화면의 '나도 환생해 보기' CTA"),
+    ]
+    worst = None
+    for name, label, n, d, target, fix in stages:
+        if d < 10:
+            print(f"  {name:<6} {label:<28} {n}/{d}  (표본<10 — 판단 보류)")
+            continue
+        r = n / d
+        mark = "✅" if r >= target else "⚠"
+        print(f"  {name:<6} {label:<28} {r*100:4.0f}%  (기준 {target*100:.0f}%) {mark}")
+        if r < target and (worst is None or r / target < worst[0]):
+            worst = (r / target, name, fix)
+    if worst:
+        print(f"\n  → 오늘 고칠 곳: {worst[1]} — {worst[2]}")
+    else:
+        print("\n  → 기준 미달 단계 없음. 표본이 부족한 단계부터 트래픽을 모으세요.")
+
     # ---------- ACQUISITION ----------
     h("ACQUISITION · 획득")
     # ip_h 의 솔트는 매일 바뀐다. 그래서 고유 방문자는 "그날 안에서만" 셀 수 있고,
@@ -144,6 +195,20 @@ def main():
     print(f"  visit {len(visits):,}건")
     print(f"  일별 고유 방문자(ip_h): " + " · ".join(f"{d[5:]} {uniq_by_day.get(d,0)}" for d in days))
     print("    ↑ 솔트가 매일 바뀌므로 날짜별로만 셉니다. 기간 합계는 같은 사람을 중복해 셉니다.")
+
+    # 지표가 움직인 날짜에 무엇이 배포됐는지. 같은 날 두 개가 나갔다면 그 움직임은 귀속 불가.
+    changed = collections.defaultdict(list)
+    for d, s in load_changes():
+        if days[0] <= d <= days[-1]:
+            changed[d].append(s)
+    if changed:
+        print("\n  그날 배포된 것 (IMPROVEMENT_LOG.md)")
+        for d in sorted(changed):
+            items = changed[d]
+            for s in items[:3]:
+                print(f"    {d}  {s[:52]}{'…' if len(s) > 52 else ''}")
+            if len(items) > 3:
+                print(f"    {d}  … 외 {len(items)-3}건 (같은 날 여러 건 = 지표 변화 귀속 불가)")
 
     # 모든 방문이 한 해시로 뭉쳤다면 IP 복원이 깨진 것이다. nginx가 CF-Connecting-IP 를
     # 넘기지 않으면 터널 뒤라 전부 127.0.0.1 로 보여 방문자가 영원히 1이 되고,
@@ -177,7 +242,40 @@ def main():
 
     # ---------- RETENTION ----------
     h("RETENTION · 리텐션")
-    first = [r for r in fortunes if prop(r, "first") is True]
+    # days_since_first 는 기기가 "첫 방문으로부터 며칠째"인지 스스로 신고한 값이다.
+    # ip_h 는 솔트가 매일 갈려 날짜를 넘겨 이어붙일 수 없으므로(의도) 이것만이 리텐션의 근거다.
+    known = [(r, prop(r, "days_since_first")) for r in visits
+             if isinstance(prop(r, "days_since_first"), (int, float))]
+    if known:
+        newv = [r for r, d in known if d == 0]
+        retv = [r for r, d in known if d >= 1]
+        miss = len(visits) - len(known)
+        print(f"  visit 중 신규(0일째) {len(newv)} · 재방문(1일 이상) {len(retv)}"
+              + (f" · 미계측 {miss} (계측 배포 전 클라)" if miss else ""))
+        # D1 = 어제 처음 온 기기가 오늘 다시 왔는가. 신원을 잇는 게 아니라(솔트 때문에 불가능)
+        # "d일에 dsf=0인 수" 대 "d+1일에 dsf=1인 수"를 비교한다. 같은 날 중복 방문은 ip_h로 접는다.
+        for i in range(len(days) - 1):
+            d0, d1 = days[i], days[i + 1]
+            cohort = {r.get("ip_h") for r, d in known if r["_day"] == d0 and d == 0}
+            back = {r.get("ip_h") for r, d in known if r["_day"] == d1 and d == 1}
+            if cohort:
+                print(f"  D1 {d0} 신규 {len(cohort)}명 → 이튿날 복귀 {len(back)}명 = {pct(len(back), len(cohort))}")
+        # 운세가 재방문 고리인가. 신규 방문의 used_fortune 은 거의 항상 false다(visit 이
+        # 로드 시점에 발화하니 아직 써 볼 틈이 없다). 그래서 비교 기준선은 visit 이 아니라
+        # "신규 기기 중 운세를 한 번이라도 써 본 비율"(fortune first=true ÷ 신규 수)로 잡는다.
+        uf = [(r, d) for r, d in known if isinstance(prop(r, "used_fortune"), bool)]
+        rets = [r for r, d in uf if d >= 1]
+        first = [r for r in fortunes if prop(r, "first") is True]
+        new_dev = len({(r["_day"], r.get("ip_h")) for r, d in uf if d == 0})
+        if rets and new_dev:
+            f_ret = len([r for r in rets if prop(r, "used_fortune")])
+            print(f"  재방문 visit 중 운세 써 본 기기 {pct(f_ret, len(rets))}"
+                  f" · 신규 기기 중 운세 사용률 {pct(min(len(first), new_dev), new_dev)}")
+            print("    ↑ 왼쪽이 오른쪽보다 뚜렷이 높으면 운세가 재방문 고리로 작동한다는 신호.")
+            print("      (상관이지 인과는 아님 — 애초에 몰입한 사람이 운세도 씁니다)")
+    else:
+        first = [r for r in fortunes if prop(r, "first") is True]
+        print("  days_since_first 없음 — 리텐션 계측(2026-07-18) 배포 후부터 쌓입니다.")
     print(f"  fortune {len(fortunes):,}건 (그중 first=true {len(first)} = 그날의 첫 방문)")
     print(f"  도감 열기 {len(dex):,}건")
     if exits:
