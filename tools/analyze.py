@@ -220,13 +220,22 @@ def main():
         print("      nginx 가 CF-Connecting-IP 를 넘기지 않으면 이렇게 됩니다 (server/DEPLOY.md 2번).")
         print("      이 상태면 고유 방문자를 셀 수 없고, 레이트리밋이 전체를 한 IP로 묶습니다.")
 
-    refs = collections.Counter(prop(r, "ref", "?") for r in visits)
-    if refs:
-        print("\n  유입 채널 (ref)")
-        top = refs.most_common()
-        for name, n in top:
-            print(f"    {name:<12} {n:>5}  {bar(n, len(visits))}")
-        if len(top) == 1 and top[0][0] == "direct":
+    # 채널(ref)별 획득 — 방문 수만이 아니라 그 채널이 데려온 사람이 활성화·공유까지
+    # 갔는지 함께 본다. reddit·instagram 같은 외부 채널을 "양"이 아니라 "질"로 비교하기 위해서다.
+    # ref 는 첫 유입값이 기기에 각인되므로(track.js) 한 기기의 visit·activate·share 는 같은
+    # ref 를 달고 나온다 — 그래서 이벤트를 종류별로 세어도 같은 채널로 묶인다(첫 유입 기준 귀속).
+    ch_visit = collections.Counter(prop(r, "ref", "?") for r in visits)
+    ch_act = collections.Counter(prop(r, "ref", "?") for r in acts)
+    ch_share = collections.Counter(prop(r, "ref", "?") for r in shares)
+    if ch_visit:
+        print("\n  유입 채널 (ref) — 방문 → 활성화 → 공유")
+        print(f"    {'채널':<12}{'방문':>6}{'활성화':>9}{'공유':>8}")
+        for name, n in ch_visit.most_common():
+            av = pct(ch_act.get(name, 0), n)
+            sv = pct(ch_share.get(name, 0), n)
+            print(f"    {name:<12}{n:>6}{av:>9}{sv:>8}  {bar(n, len(visits))}")
+        print("    ↑ 활성화·공유는 각 채널 방문 대비 비율. 낮으면 그 채널이 데려온 사람이 겉돕니다.")
+        if list(ch_visit) == ["direct"]:
             print("    ⚠ 전부 direct 입니다. 홍보 링크에 ?ref= 를 붙이지 않으면 채널 성과를 못 잽니다.")
 
     # ---------- ACTIVATION ----------
