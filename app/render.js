@@ -9,8 +9,13 @@ import {burstConfetti} from "./effects.js";
 export function updateStats(){
  $("stTotal").textContent=ST.total.toLocaleString();
  $("stSeen").textContent=seenSet.size+"/"+DATA.length;
- /* 예전 저장본에는 prob 없이 tier만 있을 수 있어 확률이 없으면 이름만 보여준다 */
- $("stBest").textContent=ST.best?(ST.best.prob!=null?ST.best.name+" "+fmtPct(ST.best.prob):ST.best.name):"·";
+ /* 최고 희귀 기록 = 태어나 본 나라(seenSet) 중 인구가 가장 적은 나라.
+    도감이 나라별로 보여주는 "걸릴 확률"(c.pop/TOTAL)과 똑같은 척도로 계산해,
+    같은 나라가 도감과 최고 기록에서 다른 %로 보이던 문제를 없앤다.
+    seenSet에서 매번 뽑으므로 옛 저장본(생 전체 확률로 기록된 best)도 자동 교정된다. */
+ let rarest=null;
+ for(const i of seenSet){const c=DATA[i];if(c&&(!rarest||c.pop<rarest.pop))rarest=c;}
+ $("stBest").textContent=rarest?rarest.name+" "+fmtPct(rarest.pop/TOTAL):"·";
 }
 
 /* ===== 렌더링 ===== */
@@ -66,6 +71,7 @@ export function renderLife(l){
 }
 export function recordLife(l){
  ST.total++;seenSet.add(l.ci);
- if(!ST.best||l.prob<ST.best.prob)ST.best={name:l.c.name,prob:l.prob};
+ /* 최고 희귀 기록은 seenSet에서 updateStats가 직접 계산한다(도감과 같은 척도).
+    여기서 따로 ST.best를 관리하지 않는다 — 두 값이 어긋나던 원인이었다. */
  persist();updateStats();bumpGlobal();
 }

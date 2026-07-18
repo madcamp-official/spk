@@ -286,3 +286,17 @@ footer a{color:var(--gold)}
   .chip,.chip.reveal{opacity:1;transform:none;transition:none}
   .btn-primary{transition:none}
 }
+
+/* ===== 광고 슬롯 =====
+   화면 밖(통계·확률표 아래)에만 놓는다. 게시자 ID가 없으면 app/ads.js가 이 요소를
+   통째로 제거하므로, 미설정 상태에서는 이 스타일이 적용될 대상 자체가 없다.
+   "광고" 라벨은 콘텐츠와 광고를 구분하라는 애드센스 정책 요건이기도 하다. */
+.ad-slot{
+  max-width:720px;margin:22px auto 0;padding:0 4px;
+  text-align:center;min-height:0;
+}
+.ad-slot .ad-label{
+  display:block;font-size:10px;letter-spacing:.2em;color:var(--muted);
+  text-transform:uppercase;margin-bottom:6px;opacity:.6;
+}
+.ad-slot .adsbygoogle{min-height:90px}

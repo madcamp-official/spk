@@ -70,6 +70,15 @@
     <p class="odds-note" id="oddsNote"></p>
   </details>
 
+  <!-- 광고 슬롯. 게시자 ID(app/ads.js의 ADSENSE_CLIENT)가 비어 있으면 app/ads.js가
+       이 블록을 통째로 제거한다 — 빈 회색칸도, 밀림도 남기지 않는다.
+       위치: 리롤 결과·버튼(화면 위)과 분리된 화면 밖. 스크롤을 내려야 나온다. -->
+  <aside class="ad-slot" id="adSlot" hidden aria-label="광고">
+    <span class="ad-label">광고</span>
+    <ins class="adsbygoogle" style="display:block"
+         data-ad-format="auto" data-full-width-responsive="true"></ins>
+  </aside>
+
   <form class="card suggest" id="suggest">
     <h3>💡 이런 항목도 환생 결과에 넣어 주세요</h3>
     <p class="hint">한 줄이면 충분해요. 다음 개선 후보로 담아 둡니다.</p>

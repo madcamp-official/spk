@@ -23,7 +23,7 @@ LIVE=https://$HOST
 # 목록을 손으로 관리하지 않고 레포에 있는 것을 그대로 훑는다.
 mapfile -t ASSETS < <(
   cd "$REPO" || exit 1
-  printf '%s\n' index.html og-image.png TwemojiCountryFlags.woff2
+  printf '%s\n' index.html og-image.png TwemojiCountryFlags.woff2 ads.txt
   find css app -type f \( -name '*.css' -o -name '*.js' \) | sort
 )
 
