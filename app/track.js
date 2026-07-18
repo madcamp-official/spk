@@ -104,26 +104,64 @@ export function track(ev,props){
    activate: 첫 방문에서 첫 리롤까지 걸린 시간 (Activation 문턱)
    exit: 떠날 때까지 굴린 횟수 */
 const T_LOAD=performance.now();
-let sessionRolls=0,activated=false,exitSent=false;
+let sessionRolls=0,activated=false,exitSent=false,lastRollAt=T_LOAD;
+export function rollsThisSession(){return sessionRolls;}
 export function markRoll(){
+ const now=performance.now();
  sessionRolls++;
+ /* 이 리롤이 세션 안에서 몇 번째인지, 직전 리롤과 몇 ms 떨어졌는지. main.js가 roll
+    이벤트에 실어 보낸다 — dwell을 세션 위치와 함께 읽어야 "2번째 리롤의 긴 dwell(신기함)"과
+    "90번째의 긴 dwell(자리 비움)"을 가른다. quick = 1초도 안 보고 다시 굴린 리롤. */
+ session.rollIdx=sessionRolls;
+ session.sincePrevRollMs=Math.round(now-lastRollAt);
+ session.quickReroll=sessionRolls>1&&(now-lastRollAt)<1000;
+ lastRollAt=now;
  if(activated)return;
  activated=true;
- track("activate",{ms:Math.round(performance.now()-T_LOAD),returning:RETURNING});
+ track("activate",{ms:Math.round(now-T_LOAD),returning:RETURNING});
 }
+/* ===== 자리 비움 감지 =====
+   dwell 시계는 렌더~다음 행동으로 도는데, 탭이 앞에 떠 있어도(visibilitychange가 안 뜬다)
+   사람이 자리를 비우면 그 시간까지 "오래 들여다봤다"로 잡힌다. 마지막 상호작용 뒤
+   IDLE_MS가 지나면 그 뒤는 빼고, idle 이유로 dwell을 닫는다. 상호작용이 다시 오면 미뤄진다. */
+const IDLE_MS=20000;
+let idleTimer=null,lastMark=0;
+function clearIdle(){if(idleTimer){clearTimeout(idleTimer);idleTimer=null;}}
+function armIdle(){clearIdle();idleTimer=setTimeout(()=>sendDwell("idle"),IDLE_MS);}
+export function markActive(){
+ session.lastActiveAt=performance.now();
+ if(!session.dwellSent&&session.currentLife)armIdle();
+}
+/* 이 생을 보기 시작한 시각부터 dwell 시계를 켠다(renderLife가 부른다). */
+export function startDwellClock(){
+ const now=performance.now();
+ session.lifeShownAt=now;session.lastActiveAt=now;
+ session.dwellSent=false;session.lifeShared=false;
+ armIdle();
+}
+/* 상호작용은 끊임없이 오므로 1초에 한 번만 마크한다 — idle 창이 20초라 초 단위면 충분하다. */
+function onActivity(){const n=performance.now();if(n-lastMark<1000)return;lastMark=n;markActive();}
+for(const t of ["pointerdown","pointermove","keydown","scroll","touchstart","wheel"])
+ addEventListener(t,onActivity,{passive:true});
 /* ===== 체류 시간 = "이번 생 어때요?"의 답 =====
    이모지 평가를 대신한다. 결과를 오래 들여다볼수록 마음에 든 것이고, 1초도 안 돼
    다시 굴렸으면 심심했다는 뜻이다. 클릭을 요구하지 않아 모든 생에서 수집된다.
-   reason: 이 생을 왜 떠났는가 (reroll=다시 굴림 / exit=이탈) */
+   reason: 이 생을 왜 떠났는가 (reroll=다시 굴림 / fortune=운세 / exit=이탈 / idle=자리 비움) */
 export function sendDwell(reason){
  if(!session.currentLife||!session.lifeShownAt||session.dwellSent)return;
  session.dwellSent=true;
+ clearIdle();
+ /* 마지막 상호작용 + IDLE_MS 까지만 인정한다. 계속 움직이며 읽은 사람은 lastActiveAt이
+    같이 밀려 실제 시간에 가깝고, 자리를 뜬 사람은 여기서 잘려 부풀지 않는다. */
+ const active=session.lastActiveAt||session.lifeShownAt;
+ const ms=Math.round(Math.min(performance.now(),active+IDLE_MS)-session.lifeShownAt);
  /* fromLink = 내가 뽑은 게 아니라 링크로 받아 본 남의 생.
     안 나누면 "내 생 만족도" 분석에 남의 생이 섞인다. 대신 이것만 따로 보면
-    "받은 사람이 얼마나 들여다보다 자기 걸 굴리나"라는 활성화 신호가 된다. */
- track("dwell",{ms:Math.round(performance.now()-session.lifeShownAt),
-  country:session.currentLife.c.name,prob:probPct(session.currentLife.prob),
-  shared:session.lifeShared,fromLink:!!session.currentLife.shared,reason});
+    "받은 사람이 얼마나 들여다보다 자기 걸 굴리나"라는 활성화 신호가 된다.
+    roll_idx = 이 생이 세션 안 몇 번째 리롤인지(남의 생은 0). */
+ track("dwell",{ms,country:session.currentLife.c.name,prob:probPct(session.currentLife.prob),
+  shared:session.lifeShared,fromLink:!!session.currentLife.shared,
+  roll_idx:session.rollIdx||0,reason});
 }
 /* pagehide/visibilitychange만 모바일에서 신뢰할 수 있다(beforeunload는 안 뜬다).
    탭 전환마다 중복 발사되지 않도록 세션당 1회로 막는다. */

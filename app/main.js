@@ -16,6 +16,7 @@ import "./fortune.js";
 import "./suggest.js";
 import "./effects.js";
 import "./ads.js";
+import "./reach.js";
 
 /* ===== 리롤 ===== */
 /* 결과를 바로 보여준다. 뽑기 연출이 없어 동기 실행이고, 그래서 재진입 가드도 필요 없다. */
@@ -24,8 +25,9 @@ function doRoll(){
  /* 서버가 미리 뽑아 서명해 둔 생을 버퍼에서 꺼낸다(lifepool.js). 동기라 네트워크를
     기다리지 않는다. 버퍼가 비면 로컬에서 뽑고, 그 생은 공유 링크에 실리지 않는다. */
  const life=takeLife();recordLife(life);
- markRoll();
- track("roll",{country:life.c.name,prob:probPct(life.prob)});
+ markRoll(); /* 먼저 세션 리롤 번호·간격을 찍는다 — 그 값을 roll 이벤트에 싣는다 */
+ track("roll",{country:life.c.name,prob:probPct(life.prob),
+  idx:session.rollIdx,since_prev_ms:session.sincePrevRollMs,quick:session.quickReroll});
  renderLife(life);
  /* 이제 내 생이다. 배너를 걷고 URL의 ?l=도 지운다 — 안 지우면 새로고침했을 때
     친구 생이 되살아나 자기가 뽑은 걸 잃은 것처럼 보인다.

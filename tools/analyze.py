@@ -152,6 +152,7 @@ def main():
     fortunes = by(rows, "fortune")
     dex = by(rows, "collection_open")
     suggests = by(rows, "suggest")
+    reaches = by(rows, "reach")
 
     # ---------- 오늘의 병목 ----------
     # 각 단계를 기준치와 비교해 가장 뒤처진 단계 하나를 지목한다. 기준치는 목표가 아니라
@@ -339,17 +340,29 @@ def main():
 
     # ---------- 결과 만족도 ----------
     h("반응 · 결과별 체류 시간 (dwell)")
+    # reason 별로 나눠 본다. reroll/fortune 은 사용자가 "돌아와서" 뭔가 한 dwell이라
+    # 진짜 몰입을 반영한다. exit 은 떠나며 닫힌 것, idle 은 자리를 비워 idle 타이머가 닫은 것 —
+    # 둘은 신뢰도가 낮은 쪽이다. (idle 은 마지막 상호작용+20초에서 잘려 부풀지 않는다.)
+    dwell_reason = collections.Counter(prop(r, "reason", "?") for r in dwells)
+    if dwells:
+        print("  이유별 dwell: " + " · ".join(
+            f"{k} {v}" for k, v in dwell_reason.most_common()))
+        print("    ↑ reroll·fortune=돌아와 행동한 신뢰 dwell · exit·idle=떠남/자리 비움(신뢰 낮음)")
+    # 희귀도 비교는 "돌아와 행동한" dwell(reroll·fortune)로만 한다 — exit·idle 이 섞이면
+    # 자리 비움 시간이 만족도로 오독된다. idle 은 캡이 걸려도 애초에 몰입 신호가 아니다.
+    trusted = [r for r in dwells if prop(r, "reason") in ("reroll", "fortune")]
     buckets = collections.OrderedDict([(">=1% 흔함", []), ("0.1–1%", []), ("<0.1% 희귀", [])])
-    for r in dwells:
+    for r in trusted:
         p = prop(r, "prob", 0) or 0
         ms_ = prop(r, "ms", 0)
         k = ">=1% 흔함" if p >= 1 else ("0.1–1%" if p >= 0.1 else "<0.1% 희귀")
         buckets[k].append(ms_)
+    print(f"\n  희귀도별 median (reroll·fortune dwell만, n={len(trusted)})")
     for k, v in buckets.items():
         if v:
-            print(f"  {k:<12} n={len(v):<5} median {med(v):>6.0f}ms")
+            print(f"    {k:<12} n={len(v):<5} median {med(v):>6.0f}ms")
         else:
-            print(f"  {k:<12} n=0")
+            print(f"    {k:<12} n=0")
     print("\n  ⚠ 희귀도별 비교는 그대로 믿지 마세요. 희귀한 생은 배지가 하나 더 붙고")
     print("    컨페티가 약 4.3초 재생돼서, 재미와 무관하게 체류가 길게 나옵니다.")
     print("    → 신뢰할 수 있는 건 '짧은 쪽'입니다. 0.5초대면 아무것도 안 읽고 떠난 것.")
@@ -358,12 +371,75 @@ def main():
     if dwells:
         print(f"  0.8초 미만으로 떠난 생 {pct(len(fast), len(dwells))} ({len(fast)}/{len(dwells)})")
 
+    # roll_idx: 세션 안 몇 번째 리롤을 들여다본 dwell인가. 초반(신기함)과 후반(익숙/자리비움)의
+    # dwell을 나눠, 긴 dwell이 몰입인지 방치인지 가른다. 남의 생(roll_idx=0)은 뺀다.
+    with_idx = [prop(r, "roll_idx") for r in dwells
+                if isinstance(prop(r, "roll_idx"), (int, float)) and prop(r, "roll_idx") >= 1]
+    if with_idx:
+        early = [r for r in trusted if (prop(r, "roll_idx") or 0) in (1, 2, 3)]
+        late = [r for r in trusted if (prop(r, "roll_idx") or 0) >= 10]
+        e_ms = [prop(r, "ms", 0) for r in early]
+        l_ms = [prop(r, "ms", 0) for r in late]
+        if e_ms or l_ms:
+            print(f"  초반(1–3번째) median {med(e_ms):.0f}ms (n={len(e_ms)})"
+                  f" · 후반(10번째~) median {med(l_ms):.0f}ms (n={len(l_ms)})")
+            print("    ↑ 후반이 초반보다 길면 자리 비움(idle) 의심, 짧으면 흥미가 식은 것")
+
     shared = [r for r in dwells if prop(r, "shared") is True]
     if shared:
         print(f"\n  공유까지 간 생 {len(shared)}건 — 공유가 터지는 결과 유형")
         cc = collections.Counter(prop(r, "country", "?") for r in shared)
         for name, n in cc.most_common(8):
             print(f"    {name:<14} {n}")
+
+    # ---------- 몰입 · 리롤 리듬 ----------
+    h("몰입 · 리롤 리듬 (roll)")
+    # quick = 직전 리롤로부터 1초도 안 돼 다시 굴린 것. 아무것도 안 읽고 넘긴 리롤이다.
+    # 높으면 결과를 "읽는" 게 아니라 "넘기며" 뭔가를 찾는 것(희귀도 사냥 등).
+    quicks = [r for r in rolls if prop(r, "quick") is True]
+    have_quick = [r for r in rolls if isinstance(prop(r, "quick"), bool)]
+    if have_quick:
+        print(f"  1초 미만 즉시 리롤 {pct(len(quicks), len(have_quick))} ({len(quicks)}/{len(have_quick)})")
+        # 즉시 리롤이 흔한 결과에 몰리고 희귀한 결과는 오래 보면 = 희귀도 사냥의 신호.
+        qr = collections.Counter()
+        qd = collections.Counter()
+        for r in have_quick:
+            p = prop(r, "prob", 0) or 0
+            k = ">=1% 흔함" if p >= 1 else ("0.1–1%" if p >= 0.1 else "<0.1% 희귀")
+            qd[k] += 1
+            if prop(r, "quick") is True:
+                qr[k] += 1
+        for k in (">=1% 흔함", "0.1–1%", "<0.1% 희귀"):
+            if qd[k]:
+                print(f"    {k:<12} 즉시 리롤율 {pct(qr[k], qd[k])} ({qr[k]}/{qd[k]})")
+        print("    ↑ 흔한 결과일수록 즉시 리롤율이 높으면 '희귀한 나라를 찾아 넘기는' 사냥 패턴")
+    # since_prev_ms: 리롤 간격 중앙값 = 결과 하나를 소비하는 평균 리듬.
+    gaps = [prop(r, "since_prev_ms") for r in rolls
+            if isinstance(prop(r, "since_prev_ms"), (int, float)) and (prop(r, "idx") or 0) > 1]
+    if gaps:
+        print(f"  리롤 간격 median {med(gaps)/1000:.1f}초 (n={len(gaps)})")
+    # roll_idx 분포: 리롤이 몇 번째까지 이어지는가 = 몰입이 꺾이는 지점(세션당 median은 리텐션에).
+    idxs = [prop(r, "idx") for r in rolls if isinstance(prop(r, "idx"), (int, float))]
+    if idxs:
+        deep = len([x for x in idxs if x >= 10])
+        print(f"  10번째 이후까지 이어진 리롤 {pct(deep, len(idxs))} · 관측된 최고 번호 {max(idxs)}")
+
+    # ---------- 스크롤 깊이 ----------
+    if reaches:
+        h("스크롤 깊이 · 어디까지 내려 보나 (reach)")
+        # 히어로 아래로 내려간 사람만 reach를 낸다. activate(첫 리롤) 대비 비율로 읽는다.
+        rc = collections.Counter(prop(r, "section", "?") for r in reaches)
+        base = len(acts) or len(visits)
+        label = "activate" if acts else "visit"
+        for sec, lbl in [("odds", "확률표"), ("suggest", "제안함"), ("footer", "푸터")]:
+            n = rc.get(sec, 0)
+            print(f"  {lbl:<6} {n:>5}  {label} 대비 {pct(n, base)}  {bar(n, base)}")
+        print(f"    ↑ 확률표까지도 안 내려가면(비율 낮음) 결과·버튼 아래는 사실상 안 보입니다")
+        # 안 굴리고 훑기만 한 사람: reach인데 rolls_so_far=0.
+        browse = [r for r in reaches if prop(r, "rolls_so_far") == 0]
+        if browse:
+            bc = collections.Counter(prop(r, "section", "?") for r in browse)
+            print("  안 굴리고 스크롤만: " + " · ".join(f"{k} {v}" for k, v in bc.most_common()))
 
     # ---------- 직접 의견 ----------
     h("직접 의견 · 한 줄 제안")
