@@ -3,19 +3,19 @@ import {DATA} from "./core/data.js";
 import {$} from "./core/util.js";
 import {ST,session,persist} from "./core/state.js";
 import {rollLife,rollIQ,iqTopPct} from "./engine/roll.js";
-import {renderLife,recordLife,updateStats} from "./render.js";
+import {renderLife,recordLife,updateStats} from "./ui/render.js";
 import {track,markRoll,sendDwell,sendExit,flushEvents,daysSinceFirst} from "./track.js";
 import {probPct} from "./core/util.js";
-import {closeDex} from "./dex.js";
-import {closeShare,shareURL,shareText} from "./share.js";
+import {closeDex} from "./ui/dex.js";
+import {closeShare,shareURL,shareText} from "./ui/share.js";
 import {decodeLife,encodeLife} from "./engine/permalink.js";
 import {takeLife,verifyLife} from "./engine/lifepool.js";
 import {t} from "./i18n/i18n.js";
-import "./odds.js";
-import "./fortune.js";
-import "./suggest.js";
-import "./effects.js";
-import "./ads.js";
+import "./ui/odds.js";
+import "./ui/fortune.js";
+import "./ui/suggest.js";
+import "./ui/effects.js";
+import "./ui/ads.js";
 import "./reach.js";
 
 /* ===== 리롤 ===== */

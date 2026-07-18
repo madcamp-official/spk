@@ -1,4 +1,4 @@
-import {isoCode} from "./core/util.js";
+import {isoCode} from "../core/util.js";
 
 /* 국기 이모지 지원 감지 (윈도우는 글자 2개로 렌더링됨).
    웹폰트가 로드되기 전에는 아직 false로 나오므로 로드 후 아래에서 다시 판정한다. */

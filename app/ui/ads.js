@@ -8,7 +8,7 @@
  *   3) ads.txt 의 pub 번호도 같은 값으로 바꾼다 (레포 루트의 ads.txt).
  * 두 값 중 하나라도 비어 있으면 광고는 완전히 꺼진 것으로 본다.
  */
-import {$} from "./core/util.js";
+import {$} from "../core/util.js";
 
 const ADSENSE_CLIENT = "";   // "ca-pub-..." 게시자 ID
 const ADSENSE_SLOT   = "";   // "..........." 광고 단위 슬롯 ID

@@ -1,7 +1,7 @@
-import {DATA,TOTAL} from "./core/data.js";
-import {$} from "./core/util.js";
+import {DATA,TOTAL} from "../core/data.js";
+import {$} from "../core/util.js";
 import {flagOK,refreshFlagOK} from "./flags.js";
-import {t,countryName,bigNum} from "./i18n/i18n.js";
+import {t,countryName,bigNum} from "../i18n/i18n.js";
 
 /* ===== 확률 표 ===== */
 export function renderOdds(){
