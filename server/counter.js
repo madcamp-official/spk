@@ -136,8 +136,10 @@ function rollLimited(key, cost) {
 let APP = null;
 (async () => {
   const u = n => pathToFileURL(path.join(APP_JS_DIR, n)).href;
+  /* app/을 역할별 폴더로 나눈 뒤 경로가 바뀌었다: 뽑기 로직은 engine/, 공용 유틸은 core/.
+     이 파일들의 내부 import(../core/…)는 각자 새 위치 기준으로 알아서 풀린다. */
   const [roll, perma, util] = await Promise.all([
-    import(u('roll.js')), import(u('permalink.js')), import(u('core/util.js')),
+    import(u('engine/roll.js')), import(u('engine/permalink.js')), import(u('core/util.js')),
   ]);
   APP = { rollLife: roll.rollLife, encodeLife: perma.encodeLife,
           setRNG: util.setRNG, mulberry32: util.mulberry32, strHash: util.strHash };

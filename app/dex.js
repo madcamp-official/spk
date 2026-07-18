@@ -2,7 +2,7 @@ import {DATA,TOTAL} from "./core/data.js";
 import {$,fmtPct,isoCode} from "./core/util.js";
 import {seenSet} from "./core/state.js";
 import {flagOK} from "./flags.js";
-import {rarityColor} from "./roll.js";
+import {rarityColor} from "./engine/roll.js";
 import {track} from "./track.js";
 import {t,countryName} from "./i18n/i18n.js";
 

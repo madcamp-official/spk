@@ -4,7 +4,7 @@ import {t,term,countryName,contName,bigNum} from "./i18n/i18n.js";
 import {ST,seenSet,persist,session} from "./core/state.js";
 import {startDwellClock} from "./track.js";
 import {flagHTML} from "./flags.js";
-import {rarityColor,iqTopPct} from "./roll.js";
+import {rarityColor,iqTopPct} from "./engine/roll.js";
 import {bumpGlobal} from "./counter.js";
 import {burstConfetti} from "./effects.js";
 

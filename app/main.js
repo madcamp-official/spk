@@ -2,14 +2,14 @@
 import {DATA} from "./core/data.js";
 import {$} from "./core/util.js";
 import {ST,session,persist} from "./core/state.js";
-import {rollLife,rollIQ,iqTopPct} from "./roll.js";
+import {rollLife,rollIQ,iqTopPct} from "./engine/roll.js";
 import {renderLife,recordLife,updateStats} from "./render.js";
 import {track,markRoll,sendDwell,sendExit,flushEvents,daysSinceFirst} from "./track.js";
 import {probPct} from "./core/util.js";
 import {closeDex} from "./dex.js";
 import {closeShare,shareURL,shareText} from "./share.js";
-import {decodeLife,encodeLife} from "./permalink.js";
-import {takeLife,verifyLife} from "./lifepool.js";
+import {decodeLife,encodeLife} from "./engine/permalink.js";
+import {takeLife,verifyLife} from "./engine/lifepool.js";
 import {t} from "./i18n/i18n.js";
 import "./odds.js";
 import "./fortune.js";
