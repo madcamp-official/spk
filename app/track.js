@@ -47,6 +47,30 @@ export function flushEvents(){
   }catch(e){break;}
  }
 }
+/* ===== GA4 전용 이름 변환 =====
+   events.jsonl·PostHog·Plausible에는 원래 이름 그대로 나간다 — analyze.py가 이벤트
+   이름을 정확히 매칭하므로 내부 이름은 여기서 절대 건드리지 않는다. GA4로 가는 복사본만
+   고친다:
+   - visit: GA4가 자동으로 찍는 page_view와 중복이라 아예 안 보낸다
+   - share_text 등 6종: GA4 권장 이벤트 share 하나에 method(clip/kakao/…)로 합친다.
+     이름이 6개로 갈라져 있으면 GA4 화면에서 "몇 명이 공유했나"를 한 줄로 못 본다.
+     share_open은 시트를 연 것이지 공유가 아니라서 합치지 않는다(analyze.py와 같은 이유).
+   - ms·rolls: 콘솔에 맞춤 측정항목으로 등록했을 때 이름만 보고 뜻이 읽히게 바꾼다 */
+const GA4_SHARE_METHOD={share_text:"clip",share_kakao:"kakao",share_insta:"insta",
+ share_x:"x",share_native:"native",share_card:"card"};
+const GA4_RENAME={dwell:{ms:"dwell_ms"},activate:{ms:"ms_to_first_roll"},
+ exit:{rolls:"session_rolls"}};
+function toGA4(ev,p){
+ if(ev==="visit")return null;
+ const method=GA4_SHARE_METHOD[ev];
+ if(method)return{ev:"share",p:Object.assign({method},p)};
+ const ren=GA4_RENAME[ev];
+ if(ren){
+  p=Object.assign({},p);
+  for(const k in ren){if(k in p){p[ren[k]]=p[k];delete p[k];}}
+ }
+ return{ev,p};
+}
 export function track(ev,props){
  try{
   ST.metrics=ST.metrics||{};ST.metrics[ev]=(ST.metrics[ev]||0)+1;
@@ -60,7 +84,7 @@ export function track(ev,props){
    if(!_qTimer)_qTimer=setTimeout(flushEvents,3000);
   }
   /* 외부 스니펫을 붙였을 때만 동작. 경로 A(자체 수집)에서는 전부 no-op이다. */
-  if(window.gtag)gtag("event",ev,p);
+  if(window.gtag){const g=toGA4(ev,p);if(g)gtag("event",g.ev,g.p);}
   if(window.posthog&&window.posthog.capture)posthog.capture(ev,p);
   if(window.plausible)plausible(ev,{props:p});
  }catch(e){}
