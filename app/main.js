@@ -16,6 +16,7 @@ import "./fortune.js";
 import "./suggest.js";
 import "./effects.js";
 import "./ads.js";
+import "./reach.js";
 
 /* ===== 리롤 ===== */
 /* 결과를 바로 보여준다. 뽑기 연출이 없어 동기 실행이고, 그래서 재진입 가드도 필요 없다. */
