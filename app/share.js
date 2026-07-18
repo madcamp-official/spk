@@ -1,5 +1,5 @@
 import {CONT_NAME} from "./data.js";
-import {$,fmtPct,fmtTop,fmtUSD,koNum,isoCode,probPct} from "./util.js";
+import {$,fmtPct,fmtUSD,koNum,isoCode,probPct} from "./util.js";
 import {ST,session} from "./state.js";
 import {flagOK,FLAG_FONT} from "./flags.js";
 import {rarityColor} from "./roll.js";
@@ -23,6 +23,24 @@ export function shareURL(via,l){
  if(l&&l.sig)u+="&l="+encodeLife(l)+"&sig="+l.sig;
  return u;
 }
+/* 12개 항목을 "이모지 라벨 값" 형태로 한 줄씩. 공유 문구와 결과 카드가 같은 목록을 쓴다 —
+   한쪽에만 항목을 추가해 둘이 어긋나는 일을 막는다. 화면 칩(CHIP_DEFS)과 순서를 맞췄다. */
+export function lifeStatLines(l){
+ return [
+  "🚻 "+(l.male?"남자":"여자"),
+  "🏙 "+(l.urban?"도시":"농촌"),
+  "🗣 "+l.c.lang,
+  "🧬 "+l.eth[0],
+  "🙏 "+l.rel[0],
+  "📏 키 "+l.height+"cm",
+  "⚖ 몸무게 "+l.weight+"kg",
+  "🧠 IQ "+l.iq,
+  (l.lefty?"🫲 왼손잡이":"🫱 오른손잡이"),
+  (l.balding?"🧑‍🦲 탈모 예정":"💇 숱 유지"),
+  "⏳ 기대수명 "+l.lifeExp+"세",
+  "💰 연 "+fmtUSD(l.income),
+ ];
+}
 export function shareText(l,via){
  const flag=flagOK?l.c.flag+" ":"";
  const head=ST.ab==="a"
@@ -32,13 +50,11 @@ export function shareText(l,via){
   head,
   /* b(성과형)는 머리줄에서 이미 확률을 말했으므로 되풀이하지 않는다 */
   (ST.ab==="a"?"이 생을 받을 확률 "+fmtPct(l.prob)+" · ":"")+"나의 "+ST.total.toLocaleString()+"번째 생",
-  "🗣 "+l.c.lang+" · 🙏 "+l.rel[0]+" · ⏳ 기대수명 "+l.lifeExp+"세 · 💰 연 "+fmtUSD(l.income),
+  "",
+  ...lifeStatLines(l),   /* 12개 항목 전부 */
+  "",
+  "나도 환생해 보기 👉 "+shareURL(via,l),
  ];
- const badges=[];
- if(l.lefty)badges.push("🫲 왼손잡이");
- if(l.top<=1)badges.push("💎 소득 상위 1%");
- if(badges.length)lines.push(badges.join(" · "));
- lines.push("나도 환생해 보기 👉 "+shareURL(via,l));
  return lines.join("\n");
 }
 export async function copyText(t){
@@ -176,20 +192,20 @@ export function drawCard(l){
  x.fillText("확률 "+fmtPct(l.prob),W/2,762);
  x.fillStyle="#9a98b5";x.font="30px 'Malgun Gothic',sans-serif";
  x.fillText("약 "+koNum(1/l.prob)+"번 중 1번",W/2,810);
- x.fillStyle="#ece9f5";x.font="34px 'Malgun Gothic',sans-serif";
- const rows=[
-  "🗣 "+l.c.lang+"    🙏 "+l.rel[0],
-  "⏳ 기대수명 "+l.lifeExp+"세    💰 연 "+fmtUSD(l.income),
-  "🌍 세계 소득 상위 "+fmtTop(l.top),
- ];
- const extra=[];
- if(l.lefty)extra.push("🫲 왼손잡이");
- if(extra.length)rows.push(extra.join("    "));
- rows.forEach((r,i)=>x.fillText(r,W/2,900+i*64));
+ /* 12개 항목을 2열 × 6줄로. 공유 문구와 같은 lifeStatLines()를 써서 둘이 어긋나지 않는다. */
+ const stats=lifeStatLines(l);
+ x.font="30px 'Malgun Gothic',sans-serif";x.textAlign="left";
+ const colX=[96,W/2+30], rowY0=880, rowGap=56;
+ stats.forEach((t,i)=>{
+  const col=i%2, row=(i-col)/2;
+  x.fillStyle="#ece9f5";
+  x.fillText(t,colX[col],rowY0+row*rowGap);
+ });
+ x.textAlign="center";
  x.fillStyle="#9a98b5";x.font="28px 'Malgun Gothic',sans-serif";
- x.fillText("당신의 다음 생은 어디에서 시작될까요?",W/2,H-120);
+ x.fillText("당신의 다음 생은 어디에서 시작될까요?",W/2,H-116);
  x.fillStyle="#f3c95c";
- x.fillText(location.host||"환생 시뮬레이터",W/2,H-70);
+ x.fillText(location.host||"환생 시뮬레이터",W/2,H-68);
  return cv;
 }
 export function roundRect(x,px,py,w,h,r){
