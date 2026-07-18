@@ -110,13 +110,26 @@ deploy.sh           배포
 
 ### 유입 추적 규약
 
-홍보 채널마다 URL에 `?ref=` 파라미터를 붙여 배포한다.
+홍보 채널마다 URL에 `?ref=` 파라미터를 붙여 배포한다. **표준 태그는 아래 하나로 고정한다** —
+같은 채널을 `kakao`/`Kakao`처럼 다르게 쓰면 [analyze.py](tools/analyze.py)에서 두 줄로 갈려
+합계를 손으로 더해야 한다. 값 규칙은 소문자·`[a-z0-9_-]` 1~24자 ([app/analytics/track.js](app/analytics/track.js)의 `REF` 검증).
 
-```
-https://life-reroll.com/?ref=everytime
-https://life-reroll.com/?ref=instagram
-https://life-reroll.com/?ref=discord
-```
+| 채널 | 링크 |
+|---|---|
+| 카카오톡 | `https://life-reroll.com/?ref=kakao` |
+| X | `https://life-reroll.com/?ref=x` |
+| 인스타그램 | `https://life-reroll.com/?ref=instagram` |
+| 디스코드 | `https://life-reroll.com/?ref=discord` |
+| 레딧 | `https://life-reroll.com/?ref=reddit` |
+| 에브리타임 | `https://life-reroll.com/?ref=everytime` |
+
+> ⚠️ **`ref`(유입)와 `via`(공유 채널)는 다른 필드다.** `ref=kakao`는 *내가* 카톡에 뿌린 홍보
+> 링크를 누른 사람(첫 유입, ACQUISITION 표)이고, `via=kakao`는 *사용자가* 앱의 "카톡 공유"
+> 버튼으로 퍼뜨린 링크를 누른 사람(2차 확산, REFERRAL 표)이다. 이름은 같아도 서로 다른 표에서
+> 읽히고, 유입 링크에는 `via`가 없어 겹쳐 세지 않는다.
+>
+> 인스타는 피드 캡션의 링크가 클릭되지 않는다 — `?ref=instagram` 유입은 프로필 링크·스토리
+> 링크 스티커에서만 나온다. 둘을 가르려면 `?ref=ig_bio`·`?ref=ig_story`로 나눈다.
 
 사용자가 앱에서 공유하면 자동으로 `?ref=share&v=a|b`가 붙는다.
 `v`는 공유 문구 A/B 테스트 변형이다 (기기별 고정 배정).
