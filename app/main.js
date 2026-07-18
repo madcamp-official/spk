@@ -1,11 +1,11 @@
 /* 앱 조립. 각 기능 모듈은 import 되는 것만으로 자기 버튼에 붙는다. */
-import {DATA} from "./data.js";
-import {$} from "./util.js";
-import {ST,session,persist} from "./state.js";
+import {DATA} from "./core/data.js";
+import {$} from "./core/util.js";
+import {ST,session,persist} from "./core/state.js";
 import {rollLife,rollIQ,iqTopPct} from "./roll.js";
 import {renderLife,recordLife,updateStats} from "./render.js";
 import {track,markRoll,sendDwell,sendExit,flushEvents,daysSinceFirst} from "./track.js";
-import {probPct} from "./util.js";
+import {probPct} from "./core/util.js";
 import {closeDex} from "./dex.js";
 import {closeShare,shareURL,shareText} from "./share.js";
 import {decodeLife,encodeLife} from "./permalink.js";

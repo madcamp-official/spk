@@ -1,4 +1,4 @@
-import {$,reduceMotion} from "./util.js";
+import {$,reduceMotion} from "./core/util.js";
 
 /* ===== 별 배경 ===== */
 (function(){

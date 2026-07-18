@@ -1,5 +1,5 @@
-import {DATA,TOTAL} from "./data.js";
-import {$} from "./util.js";
+import {DATA,TOTAL} from "./core/data.js";
+import {$} from "./core/util.js";
 import {flagOK,refreshFlagOK} from "./flags.js";
 import {t,countryName,bigNum} from "./i18n.js";
 

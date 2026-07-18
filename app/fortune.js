@@ -1,5 +1,5 @@
-import {$,reduceMotion,mulberry32,strHash,setRNG} from "./util.js";
-import {ST} from "./state.js";
+import {$,reduceMotion,mulberry32,strHash,setRNG} from "./core/util.js";
+import {ST} from "./core/state.js";
 import {rollLife} from "./roll.js";
 import {renderLife,recordLife} from "./render.js";
 import {track,sendDwell} from "./track.js";

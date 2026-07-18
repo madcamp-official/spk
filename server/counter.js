@@ -137,7 +137,7 @@ let APP = null;
 (async () => {
   const u = n => pathToFileURL(path.join(APP_JS_DIR, n)).href;
   const [roll, perma, util] = await Promise.all([
-    import(u('roll.js')), import(u('permalink.js')), import(u('util.js')),
+    import(u('roll.js')), import(u('permalink.js')), import(u('core/util.js')),
   ]);
   APP = { rollLife: roll.rollLife, encodeLife: perma.encodeLife,
           setRNG: util.setRNG, mulberry32: util.mulberry32, strHash: util.strHash };

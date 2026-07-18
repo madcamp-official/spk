@@ -1,5 +1,5 @@
-import {DATA,REL,TOTAL,P_MALE} from "./data.js";
-import {isoCode} from "./util.js";
+import {DATA,REL,TOTAL,P_MALE} from "./core/data.js";
+import {isoCode} from "./core/util.js";
 import {incomeTopPct} from "./roll.js";
 
 /* ===== 생을 링크에 담기 =====
