@@ -348,6 +348,13 @@ GA4로 가는 복사본은 [app/analytics/track.js](app/analytics/track.js)의 `
   `idx`(리롤 번호) `since_prev_ms`(리롤 간격) `roll_idx`(dwell의 리롤 번호) `rolls_so_far`
 - 키 이벤트 지정: `activate`(진짜 Activation 문턱), `share`(Referral의 분자)
 
+`ref`·`vin`·`v`·`via`는 이벤트 파라미터일 뿐 아니라 track.js 로드 시 **user_property로도** 심는다
+([app/analytics/track.js](app/analytics/track.js)의 `gtag("set","user_properties",…)`). 이벤트 범위
+값은 activate 이후 이벤트에만 붙어 "버튼도 안 누르고 떠난 방문"의 채널이 GA에서 비지만,
+user_property는 자동 `page_view`까지 세션 전체에 붙어 그 이탈까지 채널로 잡힌다. 그래서 이 넷은
+**맞춤 정의에 '사용자 범위'로도 한 번 더 등록**한다 (위 이벤트 범위 등록과 별개 슬롯이다). 배포
+링크에 utm을 붙이지 않고도 GA가 유입 채널을 세션 단위로 가르게 하는 통로다.
+
 ## 로컬 실행 · 배포
 
 ```bash

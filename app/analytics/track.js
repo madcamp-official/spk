@@ -39,6 +39,16 @@ const AQ=QS.get("via");
 const VIA=VIA_CHANNELS.includes(AQ)?AQ:"";
 if(VIA&&!ST.viaIn)ST.viaIn=VIA;
 export const RETURNING=ST.total>0;
+/* ===== GA4 채널 각인 (user_property) =====
+   ref/vin/v/via를 세션 사용자 속성으로 심는다. 배포 링크에 utm을 붙이지 않아도(외부를
+   건드리지 않아도) GA 리포트가 유입 채널로 세션을 가르게 하려는 것. event 파라미터로도 이미
+   실리지만 그건 activate 이후 이벤트에만 붙어서, 버튼도 안 누르고 자동 page_view만 찍고 떠난
+   방문(이탈)은 GA에서 채널이 비어 버린다. user_property는 그 뒤 모든 이벤트(자동 page_view
+   포함)에 붙어 이탈까지 채널로 잡힌다. gtag은 index.html 인라인에서 동기 정의되므로 이 시점에
+   있다. GA4 관리 → 맞춤 정의에서 '사용자 범위'로 등록해야 리포트에 뜬다(이벤트 범위와 별개). */
+if(window.gtag)gtag("set","user_properties",{
+ ref:REF||ST.refFirst||"direct",vin:VIN||ST.vIn||"none",
+ v:ST.ab,via:VIA||ST.viaIn||"none"});
 /* ===== 이벤트 큐 =====
    리롤 클릭 경로에서는 배열에 push만 한다. 실제 전송은 3초 유휴 또는 이탈 시점에
    sendBeacon으로 몰아서 — 응답을 기다리지 않고, 실패해도 무시한다.
