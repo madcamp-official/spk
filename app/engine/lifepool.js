@@ -60,6 +60,22 @@ export async function takeFortune(key,dev){
  return null;
 }
 
+/* 짧은 코드(?s=)로 공유받은 생을 서버에서 가져온다. 서버는 서명을 통과한 생만 저장하므로
+   여기서 돌아온 것은 이미 진짜다 — 따로 verify하지 않는다(저장됐다는 게 곧 증거).
+   못 찾거나(만료·오타) 서버가 없으면 null → 호출부가 안내 문구를 띄운다.
+   shared=true로 디코드해 남의 생임을 표시한다(내 도감·통계에 안 들어간다). */
+export async function takeSharedByCode(code){
+ if(!code)return null;
+ try{
+  const r=await fetch("/api/shared?s="+encodeURIComponent(code),{cache:"no-store"});
+  if(!r.ok)return null;
+  const d=await r.json();
+  const l=decodeLife(d.l,true);
+  if(l){l.sig=d.sig;return l;}
+ }catch(e){}
+ return null;
+}
+
 /* 공유받은 링크가 진짜인지는 서버만 안다(키가 서버에만 있으므로).
    못 물어보면 false — "확인 못 함"을 "괜찮음"으로 취급하면 서명을 붙인 의미가 없다. */
 export async function verifyLife(l,sig){

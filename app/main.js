@@ -9,7 +9,7 @@ import {probPct} from "./core/util.js";
 import {closeDex} from "./ui/dex.js";
 import {closeShare,shareURL,shareText} from "./ui/share.js";
 import {decodeLife,encodeLife} from "./engine/permalink.js";
-import {takeLife,verifyLife} from "./engine/lifepool.js";
+import {takeLife,verifyLife,takeSharedByCode} from "./engine/lifepool.js";
 import {t} from "./i18n/i18n.js";
 import "./ui/odds.js";
 import "./ui/fortune.js";
@@ -35,7 +35,7 @@ function doRoll(){
  if(!$("sharedNote").hidden){
   $("sharedNote").hidden=true;
   const u=new URL(location.href);
-  u.searchParams.delete("l");u.searchParams.delete("sig");
+  u.searchParams.delete("s");u.searchParams.delete("l");u.searchParams.delete("sig");
   history.replaceState(null,"",u);
  }
 }
@@ -63,31 +63,36 @@ addEventListener("visibilitychange",()=>{
    먼저 그려 놓고 나중에 물리면 안 된다 — 위조된 모나코가 한순간이라도 진짜처럼 보이면
    그때 찍은 스크린샷이 곧 위조 성공이다. 링크를 막 연 참이라 GET 한 번은 로드에 묻힌다. */
 const _qs=new URLSearchParams(location.search);
-const SHARED_RAW=_qs.get("l");
-if(SHARED_RAW){
+const SHARED_CODE=_qs.get("s");   /* 새 방식: 짧은 코드 → 서버에서 생을 꺼낸다 */
+const SHARED_RAW=_qs.get("l");    /* 옛 방식: 이미 뿌려진 링크의 인라인 생(하위호환) */
+function showSharedBad(){
+ const n=$("sharedNote");
+ n.classList.add("bad");
+ n.textContent=t("⚠️ 확인할 수 없는 링크예요 — 위조되었거나 오래된 링크일 수 있습니다");
+ n.hidden=false;
+ track("shared_life_bad",{});
+}
+function showSharedLife(life){
+ renderLife(life);
+ $("lifeNo").textContent=t("친구가 받은 생입니다");
+ $("rollBtn").textContent=t("🌏 나도 환생해 보기");
+ $("sharedNote").hidden=false;
+ /* 진짜인 것만 센다 — 안 그러면 조작 링크를 여는 것만으로 이 지표를 부풀릴 수 있다 */
+ track("shared_life_view",{country:life.c.name,prob:probPct(life.prob)});
+}
+if(SHARED_CODE){
+ /* 코드로 꺼낸 생은 서버가 저장했다는 것 자체가 진짜라는 증거라 따로 검증하지 않는다.
+    먼저 그려 놓고 나중에 물리면 위조가 한순간 진짜처럼 보이므로, 받아 온 뒤에 그린다. */
+ takeSharedByCode(SHARED_CODE).then(life=>{life?showSharedLife(life):showSharedBad();});
+}else if(SHARED_RAW){
  const life=decodeLife(SHARED_RAW,true); /* true = 남의 생 */
  (life?verifyLife(SHARED_RAW,_qs.get("sig")):Promise.resolve(false)).then(ok=>{
-  if(!ok||!life){
-   /* 위조·구버전 링크, 또는 서버에 못 물어본 경우. "확인 못 함"을 "괜찮음"으로 넘기면
-      서명을 붙인 의미가 없으므로 셋 다 똑같이 안 그린다. */
-   const n=$("sharedNote");
-   n.classList.add("bad");
-   n.textContent=t("⚠️ 확인할 수 없는 링크예요 — 위조되었거나 오래된 링크일 수 있습니다");
-   n.hidden=false;
-   track("shared_life_bad",{});
-   return;
-  }
-  renderLife(life);
-  $("lifeNo").textContent=t("친구가 받은 생입니다");
-  $("rollBtn").textContent=t("🌏 나도 환생해 보기");
-  $("sharedNote").hidden=false;
-  /* 검증을 통과한 것만 센다 — 안 그러면 조작 링크를 여는 것만으로 이 지표를 부풀릴 수 있다 */
-  track("shared_life_view",{country:life.c.name,prob:probPct(life.prob)});
+  (ok&&life)?showSharedLife(life):showSharedBad();
  });
 }
 
 updateStats();
-if(!SHARED_RAW&&ST.total>0)$("lifeNo").textContent=t("지금까지 {n}번 환생했습니다",{n:ST.total.toLocaleString()});
+if(!SHARED_CODE&&!SHARED_RAW&&ST.total>0)$("lifeNo").textContent=t("지금까지 {n}번 환생했습니다",{n:ST.total.toLocaleString()});
 /* visit은 아래에 붙는 분석 스니펫이 로드된 뒤(window load) 발화해야 유실되지 않는다.
    days_since_first=0이면 신규, 1이면 어제 처음 온 기기의 D1 복귀다.
    used_fortune은 visit만으로 "운세를 써 본 기기가 더 돌아오는가"를 가르는 열쇠. */
