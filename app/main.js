@@ -4,7 +4,7 @@ import {$} from "./util.js";
 import {ST,session,persist} from "./state.js";
 import {rollLife,rollIQ,iqTopPct} from "./roll.js";
 import {renderLife,recordLife,updateStats} from "./render.js";
-import {track,markRoll,sendDwell,sendExit,flushEvents} from "./track.js";
+import {track,markRoll,sendDwell,sendExit,flushEvents,daysSinceFirst} from "./track.js";
 import {probPct} from "./util.js";
 import {closeDex} from "./dex.js";
 import {closeShare,shareURL,shareText} from "./share.js";
@@ -84,8 +84,13 @@ if(SHARED_RAW){
 
 updateStats();
 if(!SHARED_RAW&&ST.total>0)$("lifeNo").textContent="지금까지 "+ST.total.toLocaleString()+"번 환생했습니다";
-/* visit은 아래에 붙는 분석 스니펫이 로드된 뒤(window load) 발화해야 유실되지 않는다 */
-addEventListener("load",()=>{track("visit",{});persist();});
+/* visit은 아래에 붙는 분석 스니펫이 로드된 뒤(window load) 발화해야 유실되지 않는다.
+   days_since_first=0이면 신규, 1이면 어제 처음 온 기기의 D1 복귀다.
+   used_fortune은 visit만으로 "운세를 써 본 기기가 더 돌아오는가"를 가르는 열쇠. */
+addEventListener("load",()=>{
+ track("visit",{days_since_first:daysSinceFirst(),used_fortune:!!ST.fortuneDay});
+ persist();
+});
 
 /* 브라우저 콘솔·자동 검증에서 내부를 들여다볼 수 있게 열어 둔다(비밀 없음). */
 window.__app={DATA,ST,session,rollLife,rollIQ,iqTopPct,renderLife,recordLife,updateStats,track,

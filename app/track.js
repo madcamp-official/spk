@@ -6,6 +6,17 @@ import {probPct,isAutomated} from "./util.js";
    스니펫을 페이지에 붙이면 track()이 자동으로 이벤트를 흘려보낸다. */
 if(!ST.dev)ST.dev=Math.random().toString(36).slice(2,10);
 if(ST.ab!=="a"&&ST.ab!=="b")ST.ab=Math.random()<0.5?"a":"b";
+/* ===== 리텐션 각인 =====
+   ip_h는 솔트가 매일 갈려 어제와 이어붙일 수 없다(IP를 안 남기려는 의도적 설계).
+   그래서 "다시 온 사람"은 서버가 아니라 기기 스스로만 말할 수 있다. 첫 방문의 달력
+   날짜를 저장해 두고 visit마다 며칠째인지 싣는다 — D1 리텐션의 정의가 "다음 날
+   또 왔는가"라서 24시간 창이 아니라 달력 날짜로 센다.
+   이 계측 이전부터 쓰던 기기는 첫 방문일을 알 수 없어 오늘을 0일째로 잡는다
+   (그 기기의 재방문 여부는 activate의 returning이 대신 말해 준다). */
+const DAY_MS=86400000;
+const localDayNum=()=>Math.floor((Date.now()-new Date().getTimezoneOffset()*60000)/DAY_MS);
+if(typeof ST.firstDayNum!=="number"||!isFinite(ST.firstDayNum))ST.firstDayNum=localDayNum();
+export function daysSinceFirst(){return Math.max(0,localDayNum()-ST.firstDayNum);}
 const QS=new URLSearchParams(location.search);
 /* ref는 홍보처마다 자유롭게 붙이는 태그라 via처럼 목록으로 못 막는다. 대신 모양을 강제한다.
    이 값은 "모든" 이벤트에 복사돼 실리므로, 길이를 안 막으면 ?ref=<5000자> 링크 하나로
