@@ -60,7 +60,19 @@
 <meta property="og:url" content="https://life-reroll.com/">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌏</text></svg>">
-<link rel="stylesheet" href="css/style.css?v=5">
+<link rel="stylesheet" href="css/style.css?v=6">
+<script>
+/* 칩 설명줄(.chip .s) 표시 판정. CSS의 min-height 미디어쿼리로 하면 모바일에서
+   스크롤로 주소창이 접히고 펴질 때마다 뷰포트 높이가 변해 쿼리가 재평가되고,
+   700px 경계에 걸친 기종에서는 설명줄이 스크롤 내내 깜빡인다.
+   그래서 높이는 로드·회전 때만 한 번 잰다(css/style.css의 html.tall).
+   경계 640px = 주소창이 보이는 로드 시점 높이 기준 — 접힌 상태의 700px에 상응한다. */
+(function(){
+ function judge(){document.documentElement.classList.toggle("tall",innerHeight>=640);}
+ judge();
+ addEventListener("orientationchange",function(){setTimeout(judge,300);});
+})();
+</script>
 </head>
 <body>
 

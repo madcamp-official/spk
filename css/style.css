@@ -300,9 +300,11 @@ footer a{color:var(--gold)}
 }
 
 /* 세로가 넉넉한 휴대폰이면 설명줄("국가 내 약 99.7%")을 되살린다.
-   이걸 켜도 필요 높이가 화면 안에 들어오는 구간에서만 적용한다. */
-@media (max-width:480px) and (min-height:700px){
-  .chip .s{display:block;font-size:10px;margin-top:1px}
+   min-height 미디어쿼리는 쓰지 않는다 — 모바일에서 주소창이 접힐 때마다 재평가돼
+   설명줄이 스크롤 내내 깜빡인다. 높이 판정은 로드·회전 때 한 번만 하는
+   html.tall 클래스(index.html의 인라인 스크립트)가 담당한다. */
+@media (max-width:480px){
+  html.tall .chip .s{display:block;font-size:10px;margin-top:1px}
 }
 @media (prefers-reduced-motion:reduce){
   .chip,.chip.reveal{opacity:1;transform:none;transition:none}
