@@ -10,6 +10,7 @@ import {closeDex} from "./dex.js";
 import {closeShare,shareURL,shareText} from "./share.js";
 import {decodeLife,encodeLife} from "./permalink.js";
 import {takeLife,verifyLife} from "./lifepool.js";
+import {t} from "./i18n.js";
 import "./odds.js";
 import "./fortune.js";
 import "./suggest.js";
@@ -69,14 +70,14 @@ if(SHARED_RAW){
       서명을 붙인 의미가 없으므로 셋 다 똑같이 안 그린다. */
    const n=$("sharedNote");
    n.classList.add("bad");
-   n.textContent="⚠️ 확인할 수 없는 링크예요 — 위조되었거나 오래된 링크일 수 있습니다";
+   n.textContent=t("⚠️ 확인할 수 없는 링크예요 — 위조되었거나 오래된 링크일 수 있습니다");
    n.hidden=false;
    track("shared_life_bad",{});
    return;
   }
   renderLife(life);
-  $("lifeNo").textContent="친구가 받은 생입니다";
-  $("rollBtn").textContent="🌏 나도 환생해 보기";
+  $("lifeNo").textContent=t("친구가 받은 생입니다");
+  $("rollBtn").textContent=t("🌏 나도 환생해 보기");
   $("sharedNote").hidden=false;
   /* 검증을 통과한 것만 센다 — 안 그러면 조작 링크를 여는 것만으로 이 지표를 부풀릴 수 있다 */
   track("shared_life_view",{country:life.c.name,prob:probPct(life.prob)});
@@ -84,7 +85,7 @@ if(SHARED_RAW){
 }
 
 updateStats();
-if(!SHARED_RAW&&ST.total>0)$("lifeNo").textContent="지금까지 "+ST.total.toLocaleString()+"번 환생했습니다";
+if(!SHARED_RAW&&ST.total>0)$("lifeNo").textContent=t("지금까지 {n}번 환생했습니다",{n:ST.total.toLocaleString()});
 /* visit은 아래에 붙는 분석 스니펫이 로드된 뒤(window load) 발화해야 유실되지 않는다.
    days_since_first=0이면 신규, 1이면 어제 처음 온 기기의 D1 복귀다.
    used_fortune은 visit만으로 "운세를 써 본 기기가 더 돌아오는가"를 가르는 열쇠. */

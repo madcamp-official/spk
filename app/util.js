@@ -31,15 +31,18 @@ export function koNum(n){ /* 큰 수를 한국어 단위로 */
  if(n>=1e8)return (n/1e8).toFixed(n>=3e8?0:1).replace(/\.0$/,"")+"억";
  if(n>=1e4)return Math.round(n/1e4).toLocaleString()+"만";
  return Math.round(n).toLocaleString();}
+/* 포맷 함수 속 표시용 문구. 서버도 이 파일을 import하므로 i18n을 여기서 불러올 수 없다 —
+   대신 i18n.js(클라이언트 전용)가 로드 시점에 현재 언어의 문구로 덮어쓴다. */
+export const L={pctLess:"0.0001% 미만",topWithin:"0.1% 이내"};
 export function fmtPct(p){const pct=p*100;
  if(pct>=1)return pct.toFixed(1)+"%";
  if(pct>=0.01)return pct.toFixed(2)+"%";
  if(pct>=0.0001)return pct.toFixed(Math.min(6,1-Math.floor(Math.log10(pct))))+"%";
- return "0.0001% 미만";}
+ return L.pctLess;}
 /* 등급 대신 확률(%)을 이벤트에 싣는다. 희귀한 생일수록 공유가 터지는지 볼 수 있어야 한다. */
 export function probPct(p){return +(p*100).toFixed(4);}
 /* 소득 상위 % 표시: 반올림으로 "상위 100%"/"상위 0.0%"가 나오지 않게 캡 */
-export function fmtTop(t){if(t<0.1)return "0.1% 이내";if(t<1)return t.toFixed(1)+"%";return Math.min(99,Math.round(t))+"%";}
+export function fmtTop(t){if(t<0.1)return L.topWithin;if(t<1)return t.toFixed(1)+"%";return Math.min(99,Math.round(t))+"%";}
 export function fmtUSD(v){ /* 유효숫자 3자리 반올림: $2,430 / $47,800 처럼 읽히게 */
  const mag=Math.pow(10,Math.max(0,Math.floor(Math.log10(Math.max(v,1)))-2));
  return "$"+(Math.round(v/mag)*mag).toLocaleString();}
