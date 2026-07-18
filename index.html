@@ -2,7 +2,55 @@
 <html lang="ko">
 <head>
 <meta charset="utf-8">
+<script>
+/* 도메인 통합: life-reroll.com 을 정본으로. 옛 도메인은 진행상황(localStorage)을 한 번 넘기고 정본으로 보낸다.
+   백엔드(모두의 횟수·이벤트·공유 코드)는 이미 세 도메인이 공유하지만, localStorage는 출처(origin)별이라
+   도감·환생 횟수·언어가 안 넘어간다 — 그걸 이 스크립트가 잇는다.
+   ⚠ REDIRECT_ON: apex(life-reroll.com)가 살아난 걸 확인한 뒤에만 true로 켠다. 죽은 apex로 보내면
+   옛 도메인 사용자까지 죽는다. 모듈보다 먼저(동기) 실행돼야 state.js가 병합된 값을 읽는다. */
+(function(){
+ var CANON="life-reroll.com", REDIRECT_ON=true, OLD=["life-reroll.madcamp-kaist.org","www.life-reroll.com"];
+ var host=location.hostname;
+ if(host===CANON){ /* 정본: 넘어온 진행상황을 손실 없이 병합하고 주소를 정리 */
+  var m=location.hash.match(/[#&]mig=([^&]*)/);
+  if(m){
+   try{
+    var inc=JSON.parse(decodeURIComponent(escape(atob(m[1]))));
+    try{ if(inc.l&&!localStorage.getItem("rebirth_lang")) localStorage.setItem("rebirth_lang",inc.l); }catch(e){}
+    if(inc.s){
+     var A=JSON.parse(inc.s), cr=localStorage.getItem("rebirth_state"), B=cr?JSON.parse(cr):null;
+     if(!B){ localStorage.setItem("rebirth_state",inc.s); }
+     else{
+      B.total=Math.max(B.total||0,A.total||0);
+      var sn={}; (B.seen||[]).concat(A.seen||[]).forEach(function(x){sn[x]=1;}); B.seen=Object.keys(sn).map(Number);
+      if(A.best&&(!B.best||(A.best.prob!=null&&(B.best.prob==null||A.best.prob<B.best.prob)))) B.best=A.best;
+      if(!B.dev&&A.dev) B.dev=A.dev;
+      if(!B.fortuneDay&&A.fortuneDay) B.fortuneDay=A.fortuneDay;
+      if(A.suggests&&A.suggests.length) B.suggests=(B.suggests||[]).concat(A.suggests).slice(-20);
+      localStorage.setItem("rebirth_state",JSON.stringify(B));
+     }
+    }
+   }catch(e){}
+   try{ history.replaceState(null,"",location.pathname+location.search); }catch(e){}
+  }
+ } else if(REDIRECT_ON&&OLD.indexOf(host)>=0){ /* 옛 도메인 → 정본으로(진행상황 실어서, 공유 파라미터 유지) */
+  var p; try{ p={s:localStorage.getItem("rebirth_state")||"",l:localStorage.getItem("rebirth_lang")||""}; }catch(e){ p={s:"",l:""}; }
+  var enc=""; try{ enc=btoa(unescape(encodeURIComponent(JSON.stringify(p)))); }catch(e){}
+  var target="https://"+CANON+"/"+(location.search||"")+(enc?("#mig="+enc):"");
+  /* 폴백: 정본이 살아있을 때만 넘긴다. /api/up이 200이면(정본 오리진 정상) 리다이렉트,
+     터널이 죽어 502거나 닿지 않으면 CORS/네트워크 실패 → 리다이렉트 안 하고 이 도메인이 서빙한다.
+     그래서 정본이 죽어도 옛 도메인(다른 터널)이 이중화로 남는다. 최대 2.5초 뒤엔 무조건 판정. */
+  try{
+   var ctl=new AbortController(), to=setTimeout(function(){try{ctl.abort()}catch(e){}},2500);
+   fetch("https://"+CANON+"/api/up",{cache:"no-store",signal:ctl.signal})
+    .then(function(r){ clearTimeout(to); if(r&&r.ok) location.replace(target); })
+    .catch(function(){ clearTimeout(to); /* 정본 죽음 → 폴백: 이 도메인이 그대로 서빙 */ });
+  }catch(e){ location.replace(target); } /* fetch/AbortController 미지원 → 그냥 넘긴다 */
+ }
+})();
+</script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="google-site-verification" content="Rw-E42wUjyXI4pQ9imVDzthApoTYgLbksonkhXUVHQg" />
 <title>환생 시뮬레이터</title>
 <meta name="description" content="실제 지구 인구 분포 확률로 환생하는 시뮬레이터. 당신의 다음 생은 어디에서 시작될까요?">
 <meta property="og:type" content="website">

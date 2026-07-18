@@ -319,6 +319,16 @@ http.createServer((req, res) => {
   if (req.method === 'GET' && url === '/api/roll') return handleRoll(req, res, u.searchParams);
   if (req.method === 'GET' && url === '/api/fortune') return handleFortune(req, res, u.searchParams);
   if (req.method === 'GET' && url === '/api/verify') return handleVerify(req, res, u.searchParams);
+  /* 도메인 통합 폴백용 헬스 체크. 옛 도메인(madcamp)이 정본(life-reroll.com)이 살아있는지
+     교차출처로 확인하고, 200이면 리다이렉트 · 아니면 옛 도메인이 그대로 서빙한다.
+     CF 터널이 죽으면 Cloudflare가 502를 주는데 그 응답엔 이 ACAO 헤더가 없어서 브라우저 CORS가
+     막고 → 옛 도메인은 "정본 죽음"으로 보고 폴백한다. 정본 오리진이 살아야만 이 헤더가 붙는다. */
+  if (req.method === 'GET' && url === '/api/up') {
+    const body = Buffer.from('{"ok":true}');
+    res.writeHead(200, { 'content-type': 'application/json', 'content-length': body.length,
+      'cache-control': 'no-store', 'access-control-allow-origin': '*' });
+    return res.end(body);
+  }
   if (req.method === 'GET' && url === '/api/counter/health')
     return json(res, 200, { ok: true, total, roll: !!APP, signing: !!SECRET });
   json(res, 404, { error: 'not found' });

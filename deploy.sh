@@ -116,17 +116,29 @@ done
 # 로컬(nginx 직접) → 라이브(터널 경유) 순으로 확인해 문제 지점을 좁힌다.
 say "5. 검증"
 
+# 정본(HOST)이 안 닿으면 폴백 도메인으로 라이브 체크한다. origin이 배포 성공의 정답이고,
+# 라이브 체크는 "인터넷에서 최신이 나오나"만 본다. 정본 다운(사용자 CDN/터널/DNS) 때도 배포는 성공으로 본다.
+LIVE_HOST=""
+for H in "$HOST" life-reroll.madcamp-kaist.org; do
+  [ "$(curl -s -o /dev/null -w '%{http_code}' --max-time 12 "https://$H/" || echo 000)" = 200 ] && { LIVE_HOST="$H"; break; }
+done
+[ -n "$LIVE_HOST" ] && [ "$LIVE_HOST" != "$HOST" ] && printf '  \033[33m·\033[0m 정본 %s 안 닿음 → 라이브 체크는 %s 로 (origin은 정상)\n' "$HOST" "$LIVE_HOST"
+LIVE="https://${LIVE_HOST:-$HOST}"
+
 local_code=$(curl -s -o /dev/null -w '%{http_code}' -H "Host: $HOST" "$LOCAL/" || echo 000)
 [ "$local_code" = 200 ] && ok "로컬 nginx        HTTP $local_code" || bad "로컬 nginx        HTTP $local_code"
 
-live_size=$(curl -s -o /dev/null -w '%{size_download}' --max-time 25 "$LIVE/" || echo 0)
-live_code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 25 "$LIVE/" || echo 000)
 want=$(stat -c%s "$REPO/index.html")
-if [ "$live_code" = 200 ] && [ "$live_size" = "$want" ]; then
-  ok "라이브 index.html HTTP $live_code · ${live_size}B (레포와 일치)"
-else
-  bad "라이브 index.html HTTP $live_code · ${live_size}B (레포는 ${want}B)"
-fi
+# 정본(HOST)이 안 닿으면 폴백 도메인(madcamp)으로 판정한다. origin은 이미 위에서 검증했으므로
+# 배포 성공 여부의 정답은 origin이고, 여기서는 "인터넷에서 최소 한 도메인이 최신을 준다"만 본다.
+live_ok=""
+for H in "$HOST" life-reroll.madcamp-kaist.org; do
+  lc=$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 "https://$H/" || echo 000)
+  ls=$(curl -s -o /dev/null -w '%{size_download}' --max-time 20 "https://$H/" || echo 0)
+  if [ "$lc" = 200 ] && [ "$ls" = "$want" ]; then ok "라이브 $H  HTTP 200 · ${ls}B (레포와 일치)"; live_ok=1; break
+  else printf '  \033[33m·\033[0m %s  HTTP %s · %sB %s\n' "$H" "$lc" "$ls" "$([ "$lc" = 000 ] && echo '(안 닿음)')"; fi
+done
+[ -z "$live_ok" ] && bad "어느 도메인도 최신 index.html을 주지 않음 (origin은 정상이니 CDN/터널/DNS 확인)"
 
 font_code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 25 "$LIVE/TwemojiCountryFlags.woff2" || echo 000)
 [ "$font_code" = 200 ] && ok "라이브 국기 폰트   HTTP $font_code" || { bad "라이브 국기 폰트   HTTP $font_code"; }
