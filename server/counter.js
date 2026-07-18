@@ -9,6 +9,8 @@
  *   GET  /api/roll?n=20    -> {"lives":[{"l":"KR-1-...","sig":"a3f9..."}, ...]}
  *   GET  /api/fortune?...  -> {"l":"...","sig":"..."}  (날짜+기기 시드라 하루 동안 같은 값)
  *   POST /api/verify       -> {"ok":true|false}
+ *   POST /api/share        -> {"code":"Xa9k2p"}  (서명된 생을 저장하고 짧은 코드 발급)
+ *   GET  /api/shared?s=... -> {"l":"...","sig":"..."}  (코드로 생을 꺼낸다)
  *
  * ===== 왜 서버가 생을 뽑는가 =====
  * 공유 링크(?l=)는 생의 값을 그대로 싣는다. 값만 보고는 "정말 뽑힌 생인가"를 알 수 없어서
@@ -75,6 +77,34 @@ function save() {
   }
 }
 setInterval(save, 2000);
+
+/* ===== 공유 링크 저장 (짧은 코드 ↔ 생) =====
+   예전엔 생 값을 URL에 통째로 실었다(?l=KR-1-0-…&sig=…). 짧은 코드(?s=Xa9k2p)로 바꾸려면
+   코드→생을 어딘가 저장해야 한다. events처럼 append-only JSONL에 남기고 부팅 때 Map으로 읽는다.
+   한 줄 ~40바이트라 10만 건이라도 4MB 남짓 — 캠프 규모에선 만료를 안 넣어도 된다.
+   저장하는 값은 서명을 통과한 생뿐이라(handleShare 참조) 남이 아무 문자열이나 넣어 채울 수 없다. */
+const SHARES_FILE = process.env.SHARES_FILE || '/var/lib/life-reroll/shares.jsonl';
+const shares = new Map();   /* code -> encoded life string */
+try {
+  for (const line of fs.readFileSync(SHARES_FILE, 'utf8').split('\n')) {
+    if (!line) continue;
+    try { const r = JSON.parse(line); if (r && r.c && r.l) shares.set(r.c, r.l); } catch (_) {}
+  }
+  console.log(`[counter] 공유 링크 ${shares.size}건 로드`);
+} catch (e) {
+  if (e.code !== 'ENOENT') console.error('[counter] 공유 링크 읽기 실패:', e.message);
+}
+/* base62 7자 = 62^7 ≈ 3.5조. 충돌은 사실상 없지만, 있으면 다시 뽑는다. */
+const CODE_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+function newCode() {
+  let c;
+  do {
+    const b = crypto.randomBytes(7);
+    c = '';
+    for (let i = 0; i < 7; i++) c += CODE_ALPHABET[b[i] % 62];
+  } while (shares.has(c));
+  return c;
+}
 
 function shutdown() { save(); process.exit(0); }
 process.on('SIGTERM', shutdown);
@@ -194,6 +224,41 @@ function handleVerify(req, res, q) {
   json(res, 200, { ok: sigOK(String(q.get('l') || ''), String(q.get('sig') || '')) });
 }
 
+/* POST /api/share  body {l, sig} -> {code}
+   서명이 유효한 생만 저장한다 — 그래서 코드로 꺼낸 생은 다시 검증할 필요가 없다(저장됐다는 게
+   곧 서버가 뽑았다는 증거). 서명이 꺼져 있거나(로컬) 위조면 저장하지 않고, 클라이언트는
+   예전처럼 생 없는 링크로 떨어진다. */
+function handleShare(req, res) {
+  if (!SECRET) return json(res, 503, { error: 'unavailable' });
+  if (rollLimited(ipHash(clientIp(req)), 1)) return json(res, 429, { error: 'slow down' });
+  let body = '', killed = false;
+  req.on('data', c => {
+    body += c;
+    if (body.length > MAX_BODY) { killed = true; res.writeHead(413); res.end(); req.destroy(); }
+  });
+  req.on('end', () => {
+    if (killed) return;
+    let l, sig;
+    try { const j = JSON.parse(body); l = String(j.l || ''); sig = String(j.sig || ''); }
+    catch (_) { return json(res, 400, { error: 'bad json' }); }
+    if (l.length > 64 || !sigOK(l, sig)) return json(res, 400, { error: 'bad life' });
+    const code = newCode();
+    shares.set(code, l);
+    fs.appendFile(SHARES_FILE, JSON.stringify({ c: code, l }) + '\n', () => {});
+    json(res, 200, { code });
+  });
+  req.on('error', () => {});
+}
+
+/* GET /api/shared?s=code -> {l, sig}  (없으면 404)
+   sig를 다시 붙여 주는 건, 받는 쪽 코드가 기존 검증 경로를 그대로 타게 하기 위해서다. */
+function handleShared(req, res, q) {
+  const code = String(q.get('s') || '');
+  const l = shares.get(code);
+  if (!l) return json(res, 404, { error: 'not found' });
+  json(res, 200, { l, sig: SECRET ? sign(l) : '' });
+}
+
 /* ===== 이벤트 append =====
    한 줄 = 이벤트 하나(JSONL). 쓰기는 fire-and-forget이라 클라이언트를 절대 기다리게 하지
    않는다. 클라이언트는 응답을 보지 않으므로(sendBeacon) 실패해도 조용히 버린다. */
@@ -247,6 +312,8 @@ http.createServer((req, res) => {
     return json(res, 200, { total });
   }
   if (req.method === 'POST' && url === '/api/track') return handleTrack(req, res);
+  if (req.method === 'POST' && url === '/api/share') return handleShare(req, res);
+  if (req.method === 'GET' && url === '/api/shared') return handleShared(req, res, u.searchParams);
   if (req.method === 'GET' && url === '/api/roll') return handleRoll(req, res, u.searchParams);
   if (req.method === 'GET' && url === '/api/fortune') return handleFortune(req, res, u.searchParams);
   if (req.method === 'GET' && url === '/api/verify') return handleVerify(req, res, u.searchParams);

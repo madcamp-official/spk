@@ -12,15 +12,26 @@ import {encodeLife} from "./permalink.js";
    공유 URL의 ?v= 파라미터로 어느 문구가 사람을 데려왔는지 추적한다.
    ?via= 는 어느 채널로 나간 링크인지다. 이게 없으면 카톡·X·기타 공유가 받는 쪽에서
    전부 ref=share 한 덩어리가 되어, 채널별 바이럴 계수를 못 낸다. */
-export function shareURL(via,l){
+/* 생을 서버에 등록하고 짧은 코드를 받는다. 실패하면(서버 다운·미서명 생) null.
+   실제로 공유할 때 한 번만 부른다 — 리롤마다 부르면 안 쓸 코드까지 서버에 쌓인다. */
+export async function registerShare(l){
+ if(!l||!l.sig)return null;   /* 서버가 뽑아 서명한 생만 등록 가능 */
+ try{
+  const r=await fetch("/api/share",{method:"POST",cache:"no-store",
+   headers:{"content-type":"application/json"},
+   body:JSON.stringify({l:encodeLife(l),sig:l.sig})});
+  if(!r.ok)return null;
+  const d=await r.json();
+  return typeof d.code==="string"?d.code:null;
+ }catch(e){return null;}
+}
+/* code가 있으면 짧은 링크(?s=코드), 없으면 생 없는 링크(받는 쪽이 새로 뽑는다).
+   생 값을 URL에 통째로 싣던 예전 방식(?l=&sig=)은 걷어냈다 — 링크만 보고 생이 읽히던 게
+   지저분했다. 서버가 죽어 code를 못 받으면 문구로만 공유된다(예전의 미서명 폴백과 같다). */
+export function shareURL(via,code){
  let u=location.origin+location.pathname+"?ref=share&v="+ST.ab;
  if(via)u+="&via="+via;
- /* 받는 사람이 내가 뽑은 생을 그대로 보게 링크에 싣는다. 없으면 링크를 눌러도
-    자기 생이 새로 뽑혀서 "무슨 생을 받았는지"가 텍스트에만 남는다.
-    sig는 서버가 이 생을 실제로 뽑았다는 증거다. 없는 생(서버가 죽어 로컬에서 뽑은 것)은
-    l= 자체를 싣지 않는다 — 보증 못 하는 값을 실어 봐야 받는 쪽에서 위조로 걸릴 뿐이고,
-    그러느니 예전처럼 문구로만 전하는 게 낫다. */
- if(l&&l.sig)u+="&l="+encodeLife(l)+"&sig="+l.sig;
+ if(code)u+="&s="+code;
  return u;
 }
 /* 12개 항목을 "이모지 라벨 값" 형태로 한 줄씩. 공유 문구와 결과 카드가 같은 목록을 쓴다 —
@@ -41,7 +52,7 @@ export function lifeStatLines(l){
   t("💰 연 {v}",{v:fmtUSD(l.income)}),
  ];
 }
-export function shareText(l,via){
+export function shareText(l,via,code){
  const flag=flagOK?l.c.flag+" ":"";
  const head=ST.ab==="a"
   ?t("🌏 나는 {flag}{country} {urban}에서 {gender}로 태어났다",
@@ -54,7 +65,7 @@ export function shareText(l,via){
   "",
   ...lifeStatLines(l),   /* 12개 항목 전부 */
   "",
-  t("나도 환생해 보기 👉 {url}",{url:shareURL(via,l)}),
+  t("나도 환생해 보기 👉 {url}",{url:shareURL(via,code)}),
  ];
  return lines.join("\n");
 }
@@ -84,10 +95,10 @@ export function loadKakao(){
  });
  return kakaoReady;
 }
-export async function kakaoShare(l){
+export async function kakaoShare(l,code){
  if(!(await loadKakao()))return false;
  try{
-  const url=shareURL("kakao",l);
+  const url=shareURL("kakao",code);
   Kakao.Share.sendDefault({
    objectType:"feed",
    content:{
@@ -129,13 +140,16 @@ export async function shareVia(ch){
  closeShare();
  session.lifeShared=true;
  const props={country:l.c.name,prob:probPct(l.prob)};
- const txt=shareText(l,ch);   /* 링크에 이 채널을 각인해서 내보낸다 */
+ /* 생을 서버에 등록해 짧은 코드를 받는다(채널마다 한 번). 실패하면 code=null이라
+    생 없는 링크로 나간다. 공유 시트를 이미 닫은 뒤라 이 await가 UI를 막지 않는다. */
+ const code=await registerShare(l);
+ const txt=shareText(l,ch,code);   /* 링크에 이 채널을 각인해서 내보낸다 */
  if(ch==="clip"){
   track("share_text",props);
   toast(await copyText(txt)?t("공유 문구를 복사했어요 ✅"):t("복사에 실패했어요 😢"));
  }else if(ch==="kakao"){
   track("share_kakao",props);
-  if(!(await kakaoShare(l))){
+  if(!(await kakaoShare(l,code))){
    /* 키가 없으면 톡공유 창을 직접 못 연다. 모바일은 시스템 공유 시트에서
       카카오톡을 고르면 실제 채팅방 선택 화면으로 이어지므로 그쪽으로 보낸다.
       텍스트만 실어야 카톡이 링크 미리보기를 만들어 준다(파일을 실으면 링크가 죽는다). */

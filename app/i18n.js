@@ -15,9 +15,23 @@ import {TERMS} from "./i18n-terms.js";
 
 export const LANGS=["ko","en","ja"];
 const KEY="rebirth_lang";
-let saved=null;
-try{saved=localStorage.getItem(KEY);}catch(e){}
-export const cur=LANGS.includes(saved)?saved:"ko";
+
+/* 접속 국가 → 언어. 지원 언어는 ko/ja뿐이고 나머지는 전부 기본값(영어)이다.
+   nginx가 CF-IPCountry를 geo 쿠키로 내려주므로 첫 렌더 전에 동기적으로 읽는다. */
+const GEO_LANG={KR:"ko",JP:"ja"};
+function geoCountry(){
+ const m=(typeof document!=="undefined"?document.cookie:"").match(/(?:^|;\s*)geo=([A-Z]{2})/);
+ return m?m[1]:"";
+}
+/* 언어 결정 순서: ① 사용자가 직접 고른 저장값(항상 최우선) → ② 접속 국가 → ③ 기본 영어.
+   저장값이 있으면 국가를 보지 않는다 — 한 번 고른 언어를 IP가 덮으면 안 되기 때문. */
+function pickLang(){
+ let saved=null;
+ try{saved=localStorage.getItem(KEY);}catch(e){}
+ if(LANGS.includes(saved))return saved;
+ return GEO_LANG[geoCountry()]||"en";
+}
+export const cur=pickLang();
 const IX=cur==="en"?0:1; /* TERMS/STR 배열에서 뽑을 칸 (ko는 사전을 안 탄다) */
 
 /* ── UI 문구 사전: "한국어 원문":[영어, 일본어] ── */
