@@ -5,7 +5,7 @@ import {renderLife,recordLife} from "./render.js";
 import {track,sendDwell} from "./track.js";
 import {toast} from "./effects.js";
 import {takeFortune} from "./lifepool.js";
-import {t} from "./i18n.js";
+import {t} from "./i18n/i18n.js";
 
 /* ===== 오늘의 환생 운세 (날짜+기기 시드라 하루 동안 같은 결과) ===== */
 const FORTUNES=[

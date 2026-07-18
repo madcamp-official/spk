@@ -10,7 +10,7 @@ import {closeDex} from "./dex.js";
 import {closeShare,shareURL,shareText} from "./share.js";
 import {decodeLife,encodeLife} from "./permalink.js";
 import {takeLife,verifyLife} from "./lifepool.js";
-import {t} from "./i18n.js";
+import {t} from "./i18n/i18n.js";
 import "./odds.js";
 import "./fortune.js";
 import "./suggest.js";

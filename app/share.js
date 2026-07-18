@@ -1,5 +1,5 @@
 import {$,fmtPct,fmtUSD,isoCode,probPct} from "./core/util.js";
-import {t,term,countryName,contName,bigNum} from "./i18n.js";
+import {t,term,countryName,contName,bigNum} from "./i18n/i18n.js";
 import {ST,session} from "./core/state.js";
 import {flagOK,FLAG_FONT} from "./flags.js";
 import {rarityColor} from "./roll.js";

@@ -1,6 +1,6 @@
 import {DATA,TOTAL} from "./core/data.js";
 import {$,reduceMotion,fmtPct,fmtTop,fmtUSD} from "./core/util.js";
-import {t,term,countryName,contName,bigNum} from "./i18n.js";
+import {t,term,countryName,contName,bigNum} from "./i18n/i18n.js";
 import {ST,seenSet,persist,session} from "./core/state.js";
 import {startDwellClock} from "./track.js";
 import {flagHTML} from "./flags.js";

@@ -2,7 +2,7 @@ import {$} from "./core/util.js";
 import {ST,persist,session} from "./core/state.js";
 import {track} from "./track.js";
 import {toast} from "./effects.js";
-import {t} from "./i18n.js";
+import {t} from "./i18n/i18n.js";
 
 /* ===== 한 줄 제안 (직접 의견 수집 통로) =====
    정적 페이지라 서버가 없다. track()으로 분석 도구에 실어 보내고, 스니펫이 아직
