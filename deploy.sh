@@ -23,7 +23,9 @@ LIVE=https://$HOST
 # 목록을 손으로 관리하지 않고 레포에 있는 것을 그대로 훑는다.
 mapfile -t ASSETS < <(
   cd "$REPO" || exit 1
-  printf '%s\n' index.html og-image.png TwemojiCountryFlags.woff2 ads.txt
+  # 루트 파일 + 언어별 공유 랜딩(en/ja/zh/es/pt.html) + 언어별 og 배너 + css/app 전부.
+  printf '%s\n' index.html TwemojiCountryFlags.woff2 ads.txt en.html ja.html zh.html es.html pt.html
+  find . -maxdepth 1 -name 'og-image*.png' -printf '%f\n' | sort
   find css app -type f \( -name '*.css' -o -name '*.js' \) | sort
 )
 

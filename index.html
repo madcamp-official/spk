@@ -2,6 +2,10 @@
 <html lang="ko">
 <head>
 <meta charset="utf-8">
+<!-- 자산을 상대경로(app/…, css/…)로 부르므로, index.html이 /en/ 같은 하위 경로로 물리면
+     브라우저가 /en/app/… 로 찾아 앱이 통째로 깨진다. 항상 루트 기준으로 풀리게 못박는다.
+     (ES 모듈 import는 각 모듈 URL 기준이라 영향 없음 — 이 base는 HTML 안의 상대 URL만 잡는다) -->
+<base href="/">
 <script>
 /* 도메인 통합: life-reroll.com 을 정본으로. 옛 도메인은 진행상황(localStorage)을 한 번 넘기고 정본으로 보낸다.
    백엔드(모두의 횟수·이벤트·공유 코드)는 이미 세 도메인이 공유하지만, localStorage는 출처(origin)별이라
