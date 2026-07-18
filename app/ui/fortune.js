@@ -1,11 +1,11 @@
-import {$,reduceMotion,mulberry32,strHash,setRNG} from "./util.js";
-import {ST} from "./state.js";
-import {rollLife} from "./roll.js";
+import {$,reduceMotion,mulberry32,strHash,setRNG} from "../core/util.js";
+import {ST} from "../core/state.js";
+import {rollLife} from "../engine/roll.js";
 import {renderLife,recordLife} from "./render.js";
-import {track,sendDwell} from "./track.js";
+import {track,sendDwell} from "../analytics/track.js";
 import {toast} from "./effects.js";
-import {takeFortune} from "./lifepool.js";
-import {t} from "./i18n.js";
+import {takeFortune} from "../engine/lifepool.js";
+import {t} from "../i18n/i18n.js";
 
 /* ===== 오늘의 환생 운세 (날짜+기기 시드라 하루 동안 같은 결과) ===== */
 const FORTUNES=[

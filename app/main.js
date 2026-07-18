@@ -1,22 +1,22 @@
 /* 앱 조립. 각 기능 모듈은 import 되는 것만으로 자기 버튼에 붙는다. */
-import {DATA} from "./data.js";
-import {$} from "./util.js";
-import {ST,session,persist} from "./state.js";
-import {rollLife,rollIQ,iqTopPct} from "./roll.js";
-import {renderLife,recordLife,updateStats} from "./render.js";
-import {track,markRoll,sendDwell,sendExit,flushEvents,daysSinceFirst} from "./track.js";
-import {probPct} from "./util.js";
-import {closeDex} from "./dex.js";
-import {closeShare,shareURL,shareText} from "./share.js";
-import {decodeLife,encodeLife} from "./permalink.js";
-import {takeLife,verifyLife,takeSharedByCode} from "./lifepool.js";
-import {t} from "./i18n.js";
-import "./odds.js";
-import "./fortune.js";
-import "./suggest.js";
-import "./effects.js";
-import "./ads.js";
-import "./reach.js";
+import {DATA} from "./core/data.js";
+import {$} from "./core/util.js";
+import {ST,session,persist} from "./core/state.js";
+import {rollLife,rollIQ,iqTopPct} from "./engine/roll.js";
+import {renderLife,recordLife,updateStats} from "./ui/render.js";
+import {track,markRoll,sendDwell,sendExit,flushEvents,daysSinceFirst} from "./analytics/track.js";
+import {probPct} from "./core/util.js";
+import {closeDex} from "./ui/dex.js";
+import {closeShare,shareURL,shareText} from "./ui/share.js";
+import {decodeLife,encodeLife} from "./engine/permalink.js";
+import {takeLife,verifyLife,takeSharedByCode} from "./engine/lifepool.js";
+import {t} from "./i18n/i18n.js";
+import "./ui/odds.js";
+import "./ui/fortune.js";
+import "./ui/suggest.js";
+import "./ui/effects.js";
+import "./ui/ads.js";
+import "./analytics/reach.js";
 
 /* ===== 리롤 ===== */
 /* 결과를 바로 보여준다. 뽑기 연출이 없어 동기 실행이고, 그래서 재진입 가드도 필요 없다. */

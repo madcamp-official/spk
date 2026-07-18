@@ -1,5 +1,5 @@
-import {DATA,TOTAL,CUM,REL,RARITY,P_MALE,SIGMA} from "./data.js";
-import {rand,gauss,phi,clamp,pickWeighted} from "./util.js";
+import {DATA,TOTAL,CUM,REL,RARITY,P_MALE,SIGMA} from "../core/data.js";
+import {rand,gauss,phi,clamp,pickWeighted} from "../core/util.js";
 
 /* ===== 환생 로직 ===== */
 export function pickCountryIdx(){const r=rand()*TOTAL;let lo=0,hi=CUM.length-1;

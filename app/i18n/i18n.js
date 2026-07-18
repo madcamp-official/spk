@@ -9,8 +9,8 @@
    언어 전환은 저장 후 새로고침이다 — 렌더링이 여러 모듈에 흩어진 명령형이라
    제자리 갱신은 누락(운세 문구·공유 배너·캔버스 카드)이 생기기 쉽다. 상태는 ST에
    남아 있으므로 잃는 것은 화면에 떠 있던 생 하나뿐이고, 리롤은 클릭 한 번이다. */
-import {CONT_NAME} from "./data.js";
-import {isoCode,koNum,L} from "./util.js";
+import {CONT_NAME} from "../core/data.js";
+import {isoCode,koNum,L} from "../core/util.js";
 import {TERMS} from "./i18n-terms.js";
 
 export const LANGS=["ko","en","ja","zh","es","pt"];

@@ -1,11 +1,11 @@
-import {$,fmtPct,fmtUSD,isoCode,probPct} from "./util.js";
-import {t,term,countryName,contName,bigNum} from "./i18n.js";
-import {ST,session} from "./state.js";
+import {$,fmtPct,fmtUSD,isoCode,probPct} from "../core/util.js";
+import {t,term,countryName,contName,bigNum} from "../i18n/i18n.js";
+import {ST,session} from "../core/state.js";
 import {flagOK,FLAG_FONT} from "./flags.js";
-import {rarityColor} from "./roll.js";
-import {track} from "./track.js";
+import {rarityColor} from "../engine/roll.js";
+import {track} from "../analytics/track.js";
 import {toast} from "./effects.js";
-import {encodeLife} from "./permalink.js";
+import {encodeLife} from "../engine/permalink.js";
 
 /* ===== 공유 =====
    문구 A/B 테스트: 기기별로 스토리형(a)/성과형(b)이 고정 배정되고,

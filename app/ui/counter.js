@@ -1,4 +1,4 @@
-import {$,isAutomated} from "./util.js";
+import {$,isAutomated} from "../core/util.js";
 
 /* ===== 모두의 환생 횟수 (같은 도메인의 /api/counter) =====
    카운터 서버가 없으면 globalTotal이 null로 남고 타일은 숨겨진 채 앱은 그대로 동작한다. */
