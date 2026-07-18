@@ -2,6 +2,7 @@ import {DATA,TOTAL} from "./data.js";
 import {$,reduceMotion,fmtPct,fmtTop,fmtUSD} from "./util.js";
 import {t,term,countryName,contName,bigNum} from "./i18n.js";
 import {ST,seenSet,persist,session} from "./state.js";
+import {startDwellClock} from "./track.js";
 import {flagHTML} from "./flags.js";
 import {rarityColor,iqTopPct} from "./roll.js";
 import {bumpGlobal} from "./counter.js";
@@ -68,8 +69,9 @@ export function renderLife(l){
  const fl=$("fortuneLine");
  if(l.fortune){fl.hidden=false;fl.textContent="🔮 "+l.fortune;}
  else fl.hidden=true;
- /* 이 생을 보기 시작한 시각. 여기서부터 다음 리롤까지가 "이번 생 어때요?"의 답이다. */
- session.lifeShownAt=performance.now();session.dwellSent=false;session.lifeShared=false;
+ /* 이 생을 보기 시작한 시각부터 dwell 시계가 돈다. lifeShownAt·마지막 상호작용 시각을
+    함께 찍고, 자리를 비우면 dwell을 닫을 idle 타이머를 건다(track.js). */
+ startDwellClock();
  if(l.c.pop<5)burstConfetti(rarityColor(l.c.pop));
 }
 export function recordLife(l){
