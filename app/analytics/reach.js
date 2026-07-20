@@ -6,9 +6,9 @@ import {track,rollsThisSession} from "./track.js";
    "굴리다가 내려가 본 건지, 안 굴리고 훑기만 한 건지"까지 읽는다.
    IntersectionObserver가 없는(아주 오래된) 브라우저에서는 조용히 계측을 건너뛴다. */
 if("IntersectionObserver" in window){
- /* details.card = 확률표(유일한 details), #suggest = 제안 폼, footer = 출처. 모듈은 defer라
-    이 시점에 DOM이 이미 파싱돼 있어 바로 질의할 수 있다. */
- const TARGETS=[["odds","details.card"],["suggest","#suggest"],["footer","footer"]];
+ /* #suggest = 제안 폼, footer = 출처. 모듈은 defer라 이 시점에 DOM이 이미 파싱돼 있어
+    바로 질의할 수 있다. (확률표 섹션은 제거됨) */
+ const TARGETS=[["suggest","#suggest"],["footer","footer"]];
  const seen=new Set();
  const io=new IntersectionObserver(entries=>{
   for(const e of entries){
