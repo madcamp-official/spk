@@ -69,6 +69,74 @@ const STR={
 "인스타 스토리":["Instagram Story","インスタストーリー","Instagram 快拍","Historia de Instagram","Story do Instagram"],
 "X (트위터)":["X (Twitter)","X (Twitter)","X (推特)","X (Twitter)","X (Twitter)"],
 "다른 앱으로…":["More apps…","他のアプリで…","更多应用…","Más apps…","Mais apps…"],
+/* ── 칭호·업적 (engine/titles.js 가 한국어 키만 돌려주고 여기서 6개 언어로 푼다) ── */
+"첫 생":["First Life","最初の生","第一世","Primera vida","Primeira vida"],
+"윤회 입문자":["Samsara Novice","輪廻の入門者","轮回入门者","Novato del samsara","Novato do samsara"],
+"환생 단골":["Frequent Reincarnator","転生の常連","转世常客","Reencarnado habitual","Reencarnado frequente"],
+"삼사라 중독자":["Samsara Addict","サンサーラ中毒","轮回上瘾者","Adicto al samsara","Viciado em samsara"],
+"윤회의 달인":["Wheel Master","輪廻の達人","轮回大师","Maestro del ciclo","Mestre do ciclo"],
+"천 번의 생":["Thousand Lives","千度の生","千世人生","Mil vidas","Mil vidas"],
+"초월자":["The Transcendent","超越者","超越者","El trascendente","O transcendente"],
+"첫 수집가":["First Collector","最初のコレクター","初级收集家","Primer coleccionista","Primeiro colecionador"],
+"지구 여행자":["World Traveler","地球の旅人","地球旅人","Viajero del mundo","Viajante do mundo"],
+"대륙 순례자":["Continental Pilgrim","大陸の巡礼者","大陆朝圣者","Peregrino continental","Peregrino continental"],
+"백 개국의 영혼":["Soul of a Hundred Nations","百カ国の魂","百国之魂","Alma de cien naciones","Alma de cem nações"],
+"지도 정복자":["Map Conqueror","地図の征服者","地图征服者","Conquistador del mapa","Conquistador do mapa"],
+"완전한 도감":["The Complete Dex","完全図鑑","完全图鉴","Dex completo","Dex completo"],
+"로또 영혼":["Lottery Soul","宝くじの魂","彩票之魂","Alma de lotería","Alma de loteria"],
+"기적의 확률":["Miracle Odds","奇跡の確率","奇迹概率","Probabilidad milagrosa","Probabilidade milagrosa"],
+"우주가 봐준 생":["Cosmic Fluke","宇宙のえこひいき","宇宙的偏爱","Golpe de suerte cósmico","Golpe de sorte cósmico"],
+"수재의 생":["Gifted Mind","秀才の生","秀才之生","Mente talentosa","Mente talentosa"],
+"천재의 생":["Genius Mind","天才の生","天才之生","Mente genial","Mente genial"],
+"IQ 상한의 생":["Peak Intellect","IQ上限の生","智商上限之生","Intelecto máximo","Intelecto máximo"],
+"장신의 생":["Towering","長身の生","高个之生","Vida imponente","Vida altíssima"],
+"거인의 생":["Giant","巨人の生","巨人之生","Vida de gigante","Vida de gigante"],
+"작은 영혼":["Pocket-sized","小さな魂","小小的灵魂","Alma diminuta","Alma diminuta"],
+"더 작은 영혼":["Tiny Soul","もっと小さな魂","更小的灵魂","Alma minúscula","Alma minúscula"],
+"거구의 생":["Heavyweight","巨体の生","重量级之生","Peso pesado","Peso pesado"],
+"깃털의 생":["Featherweight","羽根の生","羽量级之生","Peso pluma","Peso pena"],
+"장수의 생":["Long-lived","長寿の生","长寿之生","Vida longeva","Vida longeva"],
+"백세인":["Centenarian","百寿者","百岁老人","Centenario","Centenário"],
+"상위 1%의 생":["Top 1%","上位1%の生","前1%之生","Vida del 1% superior","Vida do 1% mais rico"],
+"상위 0.1%의 생":["Top 0.1%","上位0.1%の生","前0.1%之生","Vida del 0,1% superior","Vida do 0,1% mais rico"],
+"여러 믿음":["Many Faiths","いくつもの信仰","多种信仰","Muchas fes","Muitas fés"],
+"종교 순례자":["Faith Pilgrim","信仰の巡礼者","信仰朝圣者","Peregrino de la fe","Peregrino da fé"],
+"모든 믿음":["All Faiths","すべての信仰","所有信仰","Todas las fes","Todas as fés"],
+"여러 핏줄":["Many Bloodlines","いくつもの血筋","多个血脉","Muchos linajes","Muitas linhagens"],
+"민족 수집가":["Ethnic Collector","民族コレクター","民族收集家","Coleccionista de etnias","Colecionador de etnias"],
+"인류의 표본":["Sample of Humankind","人類の標本","人类的样本","Muestra de la humanidad","Amostra da humanidade"],
+"백 갈래의 뿌리":["Hundred Roots","百の系譜","百脉之根","Cien raíces","Cem raízes"],
+/* 대륙 칭호는 템플릿 — {cont}는 contName()이 언어에 맞게 채운다 */
+"{cont} 정복자":["Conqueror of {cont}","{cont}の征服者","{cont}征服者","Conquistador de {cont}","Conquistador da {cont}"],
+"{cont} 탐험가":["{cont} Explorer","{cont}の探検家","{cont}探险家","Explorador de {cont}","Explorador da {cont}"],
+/* 업적 화면 — 그룹·탭 */
+"환생 횟수":["Rebirths","転生回数","转世次数","Reencarnaciones","Reencarnações"],
+"나라 도감":["Country Dex","国の図鑑","国家图鉴","Dex de países","Dex de países"],
+"대륙 정복":["Continents","大陸制覇","大陆征服","Continentes","Continentes"],
+"기록":["Records","記録","记录","Récords","Recordes"],
+"희귀도":["Rarity","レア度","稀有度","Rareza","Raridade"],
+"칭호":["Titles","称号","称号","Títulos","Títulos"],
+/* 기록실 항목 */
+"최고 IQ":["Highest IQ","最高IQ","最高智商","IQ más alto","QI mais alto"],
+"가장 컸던 키":["Tallest","最も高い身長","最高身高","Estatura máxima","Maior altura"],
+"가장 작았던 키":["Shortest","最も低い身長","最矮身高","Estatura mínima","Menor altura"],
+"최고 몸무게":["Heaviest","最高体重","最重体重","Peso máximo","Peso máximo"],
+"최저 몸무게":["Lightest","最低体重","最轻体重","Peso mínimo","Peso mínimo"],
+"최고 기대수명":["Longest life","最長の平均寿命","最长预期寿命","Mayor esperanza de vida","Maior expectativa de vida"],
+"최고 소득 분위":["Best income rank","最高の所得順位","最高收入分位","Mejor percentil de ingresos","Melhor percentil de renda"],
+"가장 희귀했던 나라":["Rarest country","最もレアな国","最稀有的国家","País más raro","País mais raro"],
+/* 업적 화면 문구 */
+"업적·칭호 열기":["Open achievements","実績・称号を開く","打开成就与称号","Abrir logros","Abrir conquistas"],
+"업적 · 칭호 🏅":["Achievements 🏅","実績 · 称号 🏅","成就 · 称号 🏅","Logros 🏅","Conquistas 🏅"],
+"🏅 업적 · 칭호":["🏅 Achievements","🏅 実績 · 称号","🏅 成就 · 称号","🏅 Logros","🏅 Conquistas"],
+"{n}개국 수집":["{n} countries collected","{n}カ国収集","收集 {n} 国","{n} países coleccionados","{n} países coletados"],
+"업적 {done} / {all} 달성 · 보유 칭호 {n}개":["{done} of {all} unlocked · {n} titles held","実績 {done} / {all} 達成 · 称号 {n}個","成就 {done} / {all} · 持有称号 {n} 个","{done} de {all} desbloqueados · {n} títulos","{done} de {all} desbloqueados · {n} títulos"],
+"지금까지의 최고 기록":["Your all-time bests","これまでの最高記録","至今的最高记录","Tus mejores marcas","Seus melhores recordes"],
+"겪어 본 종교 {a} / {b}":["{a} of {b} religions lived","経験した宗教 {a} / {b}","经历过的宗教 {a} / {b}","{a} de {b} religiones vividas","{a} de {b} religiões vividas"],
+"겪어 본 민족 {a} / {b}":["{a} of {b} ethnicities lived","経験した民族 {a} / {b}","经历过的民族 {a} / {b}","{a} de {b} etnias vividas","{a} de {b} etnias vividas"],
+"아직 없음":["none yet","まだなし","尚无","aún no","ainda não"],
+"상위 {v}%":["top {v}%","上位{v}%","前{v}%","{v}% superior","{v}% superior"],
+"{title}까지 {n}":["{n} to {title}","{title}まであと{n}","距{title}还差{n}","{n} para {title}","{n} para {title}"],
 /* ── 결과 렌더링(render.js) ── */
 "성별":["Gender","性別","性别","Sexo","Sexo"],
 "태어난 곳":["Birthplace","生まれた場所","出生地","Lugar de nacimiento","Local de nascimento"],
@@ -150,10 +218,6 @@ const STR={
 "🎰 확률 {p}의 환생 뽑기 성공! {flag}{country}":["🎰 Hit a {p} rebirth roll! {flag}{country}","🎰 確率{p}の転生ガチャ成功! {flag}{country}","🎰 抽中了概率{p}的转世!{flag}{country}","🎰 ¡Reencarnación conseguida con probabilidad {p}! {flag}{country}","🎰 Reencarnação de probabilidade {p} conquistada! {flag}{country}"],
 "이 생을 받을 확률 {p} · ":["Odds of this life: {p} · ","この人生を引く確率 {p} · ","抽中这一世的概率 {p} · ","Probabilidad de esta vida {p} · ","Probabilidade desta vida {p} · "],
 "나의 {n}번째 생":["My life #{n}","私の{n}回目の人生","我的第{n}世","Mi vida n.º {n}","Minha vida nº {n}"],
-/* 칭호(실험): ko/en 두 벌만 채웠다. 나머지 4개 언어는 t()가 한국어 키로 폴백한다.
-   채택하면 ja/zh/es/pt 칸을 반드시 채울 것 — 지금 유입이 영어권이라 en이 우선이었다. */
-"{n}개국 수집":["{n} countries collected"],
-"업적 · 칭호 🏅":["Achievements 🏅"],
 "나도 환생해 보기 👉 {url}":["Try your own rebirth 👉 {url}","あなたも転生してみて 👉 {url}","你也来转世看看 👉 {url}","Prueba tu reencarnación 👉 {url}","Faça sua reencarnação 👉 {url}"],
 "{flag}{country}에서 태어났습니다":["Born in {flag}{country}","{flag}{country}で生まれました","出生在{flag}{country}","Nací en {flag}{country}","Nasci em {flag}{country}"],
 "확률 {p} · 나의 {n}번째 생":["Odds {p} · my life #{n}","確率 {p} · 私の{n}回目の人生","概率 {p} · 我的第{n}世","Probabilidad {p} · mi vida n.º {n}","Probabilidade {p} · minha vida nº {n}"],
@@ -274,6 +338,9 @@ function applyStatic(){
  if(cur!=="ko")q(".wrap footer").innerHTML=FOOTER[cur];
  q("#dexModal h3").textContent=t("📖 환생 도감");
  q("#dexModal .modal").setAttribute("aria-label",t("환생 도감"));
+ q("#achModal h3").textContent=t("🏅 업적 · 칭호");
+ q("#achModal .modal").setAttribute("aria-label",t("칭호"));
+ id("achBtn").title=t("업적·칭호 열기");
  id("dexClose").setAttribute("aria-label",t("닫기"));
  q("#shareModal h3").textContent=t("📤 공유하기");
  q("#shareModal .modal").setAttribute("aria-label",t("공유하기"));
