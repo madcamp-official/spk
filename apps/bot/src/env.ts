@@ -36,6 +36,10 @@ export const env = {
   pgSslRootCert: optional("PGSSLROOTCERT"),
   /** "1일 3회"의 하루 경계 (Postgres 시간대 이름) */
   rollDayTz: optional("ROLL_DAY_TZ", "Asia/Seoul"),
+  /** ⚠ 테스트 전용: 일일 뽑기 제한을 끈다. 운영에서는 절대 켜지 않는다.
+   *  §C의 "1일 3회"는 코드에 그대로 남아 있고 이 스위치가 우회만 한다 —
+   *  제한 로직을 지우면 되돌릴 때 다시 만들어야 하고, 그 사이 규칙이 조용히 사라진다. */
+  unlimitedRolls: optional("UNLIMITED_ROLLS") === "1",
 
   /** §F LLM — 전부 선택. baseUrl이 비면 템플릿만 쓴다. */
   llm: {

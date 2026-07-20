@@ -9,6 +9,8 @@ import { Client, Events, GatewayIntentBits, MessageFlags } from "discord.js";
 import { env } from "./env.js";
 import { byName } from "./commands/index.js";
 import { handleKarmaButton } from "./commands/reroll.js";
+import { DECK_PREFIX, handleDeckButton } from "./commands/deck.js";
+import { DEX_PREFIX, handleDexButton } from "./commands/dex.js";
 import { KARMA_PREFIX } from "./lib/render.js";
 import { closePool, pool } from "./db/pool.js";
 
@@ -26,8 +28,11 @@ client.on(Events.InteractionCreate, async (interaction) => {
       await cmd.execute(interaction);
       return;
     }
-    if (interaction.isButton() && interaction.customId.startsWith(KARMA_PREFIX + ":")) {
-      await handleKarmaButton(interaction);
+    if (interaction.isButton()) {
+      const id = interaction.customId;
+      if (id.startsWith(KARMA_PREFIX + ":")) { await handleKarmaButton(interaction); return; }
+      if (id.startsWith(DECK_PREFIX + ":")) { await handleDeckButton(interaction); return; }
+      if (id.startsWith(DEX_PREFIX + ":")) { await handleDexButton(interaction); return; }
       return;
     }
   } catch (e) {

@@ -110,4 +110,16 @@ export const MERIT = {
 };
 /** §D 출생 번호 라운드 넘버 칭호 — 어느 번호에 줄지만 정하고 문구는 2단계에서. */
 export const MILESTONE_BIRTH_NUMBERS = [100, 1000, 10000];
+/** §C /명명 — 유저가 생에 붙이는 이름.
+ *  밸런스 수치는 아니지만 게임 규칙이라 여기 함께 둔다(흩어지면 못 찾는다). */
+export const NAMING = {
+    maxLength: 24,
+};
+/** §C /덱 · /도감 페이지네이션 */
+export const PAGING = {
+    /** /덱 로스터 한 페이지에 보여줄 생 수 */
+    deckPageSize: 10,
+    /** /도감 한 페이지에 보여줄 국가 수 */
+    dexPageSize: 24,
+};
 //# sourceMappingURL=config.js.map

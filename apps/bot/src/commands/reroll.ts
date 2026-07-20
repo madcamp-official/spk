@@ -13,6 +13,7 @@ import {
   type ButtonInteraction, type ChatInputCommandInteraction,
 } from "discord.js";
 import { MERIT, rollLife, rollLifeWithTrait } from "@life-reroll/core";
+import { env } from "../env.js";
 import { countRollsToday, ensureUser, getMerit, saveLife, spendMerit } from "../db/queries.js";
 import { buildSummary } from "../lib/summary.js";
 import { karmaRow, lifeEmbed, parseKarmaCustomId } from "../lib/render.js";
@@ -28,6 +29,10 @@ async function takeRollSlot(userId: string): Promise<
   | { ok: false; reason: string }
 > {
   await ensureUser(userId);
+  /* ⚠ 테스트 스위치. 운영에서는 UNLIMITED_ROLLS를 켜지 않는다(§C 1일 3회). */
+  if (env.unlimitedRolls) {
+    return { ok: true, rollsLeft: Infinity, usedMerit: false, meritLeft: null };
+  }
   const used = await countRollsToday(userId);
   const free = MERIT.dailyRolls - used;
   if (free > 0) {

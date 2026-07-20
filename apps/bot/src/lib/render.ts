@@ -76,7 +76,7 @@ export function lifeEmbed(opts: {
       {
         name: "남은 뽑기",
         value: opts.meritLeft === null
-          ? `오늘 ${opts.rollsLeft}회`
+          ? (Number.isFinite(opts.rollsLeft) ? `오늘 ${opts.rollsLeft}회` : "무제한 (테스트 모드)")
           : `오늘 ${opts.rollsLeft}회 · 공덕 ${opts.meritLeft}`,
         inline: true,
       },

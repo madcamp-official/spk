@@ -159,6 +159,74 @@ async function main(): Promise<void> {
   ok("희귀할수록 작다(단조)", sorted[0]! < sorted[sorted.length - 1]!,
     `최소 ${(sorted[0]! * 100).toExponential(1)}% ~ 최대 ${(sorted[sorted.length - 1]! * 100).toFixed(1)}%`);
 
+  /* ── 3단계 ─────────────────────────────────────────────── */
+  const { getDeck, getLife, getLatestLife, renameLife, getGuildDex } = await import("./db/queries.js");
+  const { sanitizeName } = await import("./commands/name.js");
+  const { parseDeckCustomId, deckCustomId } = await import("./commands/deck.js");
+  const { parseDexCustomId, dexCustomId } = await import("./commands/dex.js");
+  const { passportEmbed, rowLine } = await import("./lib/rows.js");
+  const { DATA, PAGING, countryByCode } = await import("@life-reroll/core");
+
+  console.log("\n[10] /여권");
+  const got = await getLife(s1.id);
+  ok("생번호로 조회", got?.id === s1.id && got.country_name === life1.c.name);
+  const latest = await getLatestLife(U);
+  ok("인자 생략 시 최신 생", latest !== null && latest.id >= s1.id);
+  ok("없는 생번호는 null", (await getLife(999999)) === null);
+  const pe = passportEmbed(got!, "내 생").toJSON();
+  ok("여권 임베드에 전적 포함", JSON.stringify(pe).includes("전적"));
+  ok("저장된 코드로 국가 복원", countryByCode(got!.country_code)?.name === got!.country_name);
+
+  console.log("\n[11] /덱 (페이지네이션 · 하이라이트)");
+  /* 페이지가 넘어가도록 생을 더 넣는다 */
+  for (let i = 0; i < PAGING.deckPageSize + 3; i++) {
+    await saveLife({ discordId: U, guildId: G, life: rollLife(), inheritedTrait: null });
+  }
+  const p0 = await getDeck(U, 0, PAGING.deckPageSize);
+  const p1 = await getDeck(U, 1, PAGING.deckPageSize);
+  ok("1쪽 크기가 pageSize", p0.rows.length === PAGING.deckPageSize, `${p0.rows.length}개`);
+  ok("2쪽은 다른 생", p0.rows[0]!.id !== p1.rows[0]!.id);
+  ok("총 개수 집계", p0.total > PAGING.deckPageSize, `${p0.total}개`);
+  ok("최고 기록 3종 존재", !!(p0.best.longest && p0.best.richest && p0.best.rarest));
+  ok("하이라이트는 페이지 무관하게 동일",
+    p0.best.rarest!.id === p1.best.rarest!.id);
+  const all = await getDeck(U, 0, 1000);
+  /* numeric 컬럼은 드라이버에 따라 문자열로 올 수 있다(프로덕션 pg는 숫자 파서를 걸어 두었고,
+     검증용 pglite는 아니다). 비교는 양쪽 다 Number로 맞춘다 — 표시 코드도 같은 규약이다. */
+  ok("최장수는 실제 최댓값",
+    Number(p0.best.longest!.lifespan) === Math.max(...all.rows.map(r => Number(r.lifespan))));
+  ok("최희귀는 실제 최솟값(작을수록 희귀)",
+    Number(p0.best.rarest!.rarity_score) === Math.min(...all.rows.map(r => Number(r.rarity_score))));
+  ok("덱 목록 한 줄 렌더", rowLine(p0.rows[0]!).includes("#"));
+
+  console.log("\n[12] /명명 (소유권 · 입력 정제)");
+  const rn = await renameLife(s1.id, U, "첫 생");
+  ok("내 생에 이름 붙이기", rn.ok && rn.row.name === "첫 생");
+  const other = await renameLife(s1.id, "user-B", "탈취");
+  ok("남의 생은 거부 (not_owner)", !other.ok && other.reason === "not_owner");
+  const missing = await renameLife(999999, U, "x");
+  ok("없는 생은 not_found", !missing.ok && missing.reason === "not_found");
+  ok("멘션 제거", sanitizeName("@everyone 위험") === "everyone 위험");
+  ok("마크다운 제거", sanitizeName("**굵게**") === "굵게");
+  ok("제어문자·줄바꿈 제거", sanitizeName("가\n나\t다") === "가 나 다");
+  ok("공백뿐이면 거부", sanitizeName("   ") === null);
+  ok("길이 초과 거부", sanitizeName("가".repeat(100)) === null);
+  ok("한글·이모지 이름 허용", sanitizeName("행복한 삶 🌏") === "행복한 삶 🌏");
+
+  console.log("\n[13] /도감");
+  const dexMap = await getGuildDex(G);
+  ok("서버 도감 조회", dexMap.size > 0, `${dexMap.size}개국`);
+  ok("도감 총 국가 수는 데이터셋 기준", DATA.length === 198, `${DATA.length}개국`);
+  const dexPages = Math.ceil(DATA.length / PAGING.dexPageSize);
+  ok("도감 페이지 수 계산", dexPages === Math.ceil(198 / PAGING.dexPageSize), `${dexPages}쪽`);
+
+  console.log("\n[14] 페이지 버튼 custom_id (§A.6)");
+  ok("덱 버튼 왕복", parseDeckCustomId(deckCustomId("77", 3))?.page === 3);
+  ok("도감 버튼 왕복", parseDexCustomId(dexCustomId("g9", 2))?.guildId === "g9");
+  ok("음수 페이지 거부", parseDeckCustomId("deck:77:-1") === null);
+  ok("숫자 아닌 페이지 거부", parseDexCustomId("dex:g:abc") === null);
+  ok("접두사 다르면 거부", parseDeckCustomId(dexCustomId("g", 1)) === null);
+
   await pg.close();
   console.log(`\n=== ${pass} PASS / ${fail} FAIL ===`);
   if (fail) process.exit(1);

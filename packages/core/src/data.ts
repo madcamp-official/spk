@@ -500,3 +500,12 @@ export const TOTAL=DATA.reduce((a,c)=>a+c.pop,0);
 /* 누적 가중치 */
 let acc=0;
 export const CUM:number[]=DATA.map(c=>(acc+=c.pop));
+
+/* ISO 코드 → 국가. 저장된 기록(DB의 country_code)에서 나라를 되찾을 때 쓴다.
+   코드는 국기 이모지에서 파생하므로 별도 컬럼과 어긋날 일이 없다(util.isoCode 참고). */
+const BY_CODE=new Map<string,Country>();
+for(const c of DATA)BY_CODE.set(
+ [...c.flag].map(ch=>String.fromCodePoint((ch.codePointAt(0) as number)-0x1F1E6+65)).join(""),c);
+export function countryByCode(code:string):Country|undefined{return BY_CODE.get(code.toUpperCase());}
+/** DATA에서의 위치. 도감 정렬·저장에 쓴다. */
+export function countryIndex(c:Country):number{return DATA.indexOf(c);}

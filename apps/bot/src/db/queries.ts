@@ -96,3 +96,102 @@ export async function saveLife(opts: {
     return { id, traits, rarityScore: score, firstInGuild };
   });
 }
+
+/* ===== 3단계 — /여권 · /덱 · /명명 · /도감 ===================== */
+
+/** DB에 저장된 생 한 줄. core의 Life와 필드명이 다르다(§G 컬럼명) — 표시 계층이 변환한다. */
+export interface LifeRow {
+  id: number;
+  user_id: string;
+  guild_id: string | null;
+  country_code: string;
+  country_name: string;
+  gender: "male" | "female";
+  lifespan: number;
+  income_usd: number;
+  income_mult: number;
+  income_top_pct: number;
+  urban: boolean;
+  iq: number;
+  height_cm: number;
+  weight_kg: number;
+  religion: string;
+  ethnicity: string;
+  lefty: boolean;
+  balding: boolean;
+  traits: string[];
+  rarity_score: number;
+  inherited_trait: string | null;
+  name: string | null;
+  wins: number;
+  losses: number;
+  created_at: Date;
+}
+
+/** 생 하나. 없으면 null. */
+export async function getLife(id: number): Promise<LifeRow | null> {
+  const r = await db.query<LifeRow>("SELECT * FROM lives WHERE id = $1", [id]);
+  return r.rows[0] ?? null;
+}
+
+/** 이 유저의 가장 최근 생 (/여권 인자 생략 시) */
+export async function getLatestLife(discordId: string): Promise<LifeRow | null> {
+  const r = await db.query<LifeRow>(
+    "SELECT * FROM lives WHERE user_id = $1 ORDER BY id DESC LIMIT 1", [discordId]);
+  return r.rows[0] ?? null;
+}
+
+export interface DeckPage {
+  total: number;
+  rows: LifeRow[];
+  /** §C "최고 기록 3종 하이라이트" */
+  best: { longest: LifeRow | null; richest: LifeRow | null; rarest: LifeRow | null };
+}
+
+/** /덱 — 로스터 한 페이지 + 최고 기록 3종.
+ *  하이라이트는 페이지와 무관하게 덱 전체에서 뽑는다(페이지를 넘겨도 같은 기록이 보여야 한다). */
+export async function getDeck(discordId: string, page: number, pageSize: number): Promise<DeckPage> {
+  const [cnt, rows, longest, richest, rarest] = await Promise.all([
+    db.query<{ n: number }>("SELECT count(*)::int AS n FROM lives WHERE user_id=$1", [discordId]),
+    db.query<LifeRow>(
+      "SELECT * FROM lives WHERE user_id=$1 ORDER BY id DESC LIMIT $2 OFFSET $3",
+      [discordId, pageSize, page * pageSize]),
+    db.query<LifeRow>(
+      "SELECT * FROM lives WHERE user_id=$1 ORDER BY lifespan DESC, id ASC LIMIT 1", [discordId]),
+    db.query<LifeRow>(
+      "SELECT * FROM lives WHERE user_id=$1 ORDER BY income_usd DESC, id ASC LIMIT 1", [discordId]),
+    /* 희귀도는 작을수록 희귀하다 */
+    db.query<LifeRow>(
+      "SELECT * FROM lives WHERE user_id=$1 ORDER BY rarity_score ASC, id ASC LIMIT 1", [discordId]),
+  ]);
+  return {
+    total: Number(cnt.rows[0]?.n ?? 0),
+    rows: rows.rows,
+    best: {
+      longest: longest.rows[0] ?? null,
+      richest: richest.rows[0] ?? null,
+      rarest: rarest.rows[0] ?? null,
+    },
+  };
+}
+
+/** /명명 — 자기 생에만 이름을 붙인다.
+ *  소유 검사를 WHERE에 넣어 한 번에 처리한다 — 읽고 확인한 뒤 쓰면 그 사이가 비어 있다. */
+export async function renameLife(
+  id: number, discordId: string, name: string,
+): Promise<{ ok: true; row: LifeRow } | { ok: false; reason: "not_found" | "not_owner" }> {
+  const r = await db.query<LifeRow>(
+    "UPDATE lives SET name=$3 WHERE id=$1 AND user_id=$2 RETURNING *", [id, discordId, name]);
+  if (r.rowCount === 1) return { ok: true, row: r.rows[0]! };
+  /* 실패 원인을 갈라 준다 — "없는 생"과 "남의 생"은 사용자에게 다른 말이다 */
+  const exists = await db.query<{ n: number }>(
+    "SELECT count(*)::int AS n FROM lives WHERE id=$1", [id]);
+  return { ok: false, reason: Number(exists.rows[0]?.n ?? 0) ? "not_owner" : "not_found" };
+}
+
+/** /도감 — 이 서버가 모은 국가 코드와 첫 발견 생. */
+export async function getGuildDex(guildId: string): Promise<Map<string, number | null>> {
+  const r = await db.query<{ country_code: string; first_life_id: number | null }>(
+    "SELECT country_code, first_life_id FROM guild_dex WHERE guild_id=$1", [guildId]);
+  return new Map(r.rows.map(x => [x.country_code, x.first_life_id]));
+}
