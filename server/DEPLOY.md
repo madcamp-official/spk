@@ -180,6 +180,9 @@ sudo systemctl daemon-reload && sudo systemctl enable --now life-reroll-counter-
 location ^~ /lab/ {
     add_header X-Robots-Tag "noindex, nofollow" always;
     add_header Cache-Control "no-store" always;   # 실험은 늘 최신이어야 한다
+    # ⚠ 이 줄을 빠뜨리면 실험판만 geo를 못 읽어 항상 영어로 뜬다(location / 과 달라진다).
+    #    언어 관련 실험이 통째로 왜곡되므로 프로덕션과 반드시 같이 둔다.
+    add_header Set-Cookie "geo=$http_cf_ipcountry; Path=/; Max-Age=86400; SameSite=Lax" always;
     try_files $uri $uri.html $uri/ =404;
 }
 

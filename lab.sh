@@ -66,26 +66,62 @@ build() {
   # 4) 실험판 표식 + 검색엔진 차단 + 테스트 데이터 시드
   #    시드: /lab/?seed=47&total=200 처럼 열면 도감 47개국·환생 200회 상태로 시작한다.
   #    칭호·진행률 같은 기능은 빈 상태로는 평가가 안 되기 때문에 필요하다.
-  python3 - "$tmp/index.html" <<'PY'
+  # 시드용 국가 순서를 빌드 때 미리 계산한다 — 인구 많은 순.
+  # 실제 도감은 인구 비례로 차므로 큰 나라부터 모인다. 균등 랜덤으로 뽑으면
+  # 투발루 같은 초소국이 섞여 희귀도 칭호가 헛되이 터지고, 평가가 왜곡된다.
+  # 종교·민족 이름도 뽑아 둔다 — 시드가 "그만큼 환생한 사람"의 수집 기록까지 만들어야
+  # 업적 화면을 평가할 수 있다(나라만 채우면 새 업적이 전부 잠긴 채로 보인다).
+  local pop_order seed_names
+  pop_order=$(cd "$LAB_SRC" && node -e '
+    const fs=require("fs");
+    const m=fs.readFileSync("app/core/data.js","utf8").match(/const RAW=(\[[\s\S]*?\]);/);
+    const RAW=eval(m[1]);
+    console.log(RAW.map((r,i)=>[i,r[2]]).sort((a,b)=>b[1]-a[1]).map(x=>x[0]).join(","));
+  ')
+  seed_names=$(cd "$LAB_SRC" && node --input-type=module -e '
+    const {DATA,REL}=await import("./app/core/data.js");
+    const rel=new Set(); for(const k in REL)REL[k].forEach(p=>rel.add(p[0]));
+    const eth=new Set(); DATA.forEach(c=>(c.eth||[]).forEach(p=>eth.add(p[0])));
+    console.log(JSON.stringify({rel:[...rel],eth:[...eth].slice(0,120)}));
+  ')
+
+  python3 - "$tmp/index.html" "$pop_order" "$seed_names" <<'PY'
 import io, sys
 p = sys.argv[1]
+pop_order = sys.argv[2]
+seed_names = sys.argv[3]
 s = io.open(p, encoding="utf-8").read()
 s = s.replace('<base href="/lab/">', '<base href="/lab/">\n<meta name="robots" content="noindex, nofollow">', 1)
 seed = '''
 <script>
 /* 실험판 전용: ?seed=<도감 국가수>&total=<환생 횟수> 로 평가용 상태를 즉석에서 만든다.
-   앱 모듈이 localStorage를 읽기 전에 돌아야 하므로 head에서 동기 실행. */
+   앱 모듈이 localStorage를 읽기 전에 돌아야 하므로 head에서 동기 실행.
+   ORDER는 인구 많은 순 — 실제 플레이어의 도감이 차는 순서를 흉내 낸다. */
 (function(){try{
   var q=new URLSearchParams(location.search); if(!q.has("seed")&&!q.has("total"))return;
-  var n=Math.max(0,Math.min(198,parseInt(q.get("seed")||"0",10)||0));
+  var ORDER=[__POP_ORDER__], NAMES=__SEED_NAMES__;
+  var n=Math.max(0,Math.min(ORDER.length,parseInt(q.get("seed")||"0",10)||0));
   var total=parseInt(q.get("total")||String(n),10)||n;
-  var idx=[],i; for(i=0;i<198;i++)idx.push(i);
-  for(i=idx.length-1;i>0;i--){var j=(i*2654435761)%(i+1),t=idx[i];idx[i]=idx[j];idx[j]=t;}
+  /* 기록형·수집형 업적도 "그만큼 환생한 사람"에 걸맞게 채운다. 로그 스케일로 커지므로
+     total 을 바꾸면 업적이 어떻게 늘어나는지 그대로 비교해 볼 수 있다. */
+  var g=Math.log10(Math.max(total,1)), rec={}, K=function(x){return Math.round(x)};
+  if(total>0){
+    rec.iq   =Math.min(150,K(112+g*11));
+    rec.hMax =Math.min(215,K(178+g*6));
+    rec.hMin =Math.max(130,K(160-g*7));
+    rec.wMax =Math.min(220,K(88+g*14));
+    rec.wMin =Math.max(23, K(52-g*7));
+    rec.life =Math.min(106,K(86+g*5));
+    rec.top  =Math.max(0.01,Math.round(2000/Math.pow(Math.max(total,1),1.1))/100);
+  }
   localStorage.setItem("lab_rebirth_state",JSON.stringify({
-    total:total, seen:idx.slice(0,n), best:{name:"모나코",prob:0.0000048},
-    dev:null, fortuneDay:null, metrics:{}, suggests:[]}));
+    total:total, seen:ORDER.slice(0,n), best:null,
+    dev:null, fortuneDay:null, metrics:{}, suggests:[],
+    rec:rec,
+    relSeen:NAMES.rel.slice(0,Math.min(NAMES.rel.length,K(g*4))),
+    ethSeen:NAMES.eth.slice(0,Math.min(NAMES.eth.length,K(g*18)))}));
 }catch(e){}})();
-</script>'''
+</script>'''.replace("__POP_ORDER__", pop_order).replace("__SEED_NAMES__", seed_names)
 s = s.replace('</head>', seed + '\n</head>', 1)
 badge = '''
 <div id="labBadge">실험판 LAB</div>
