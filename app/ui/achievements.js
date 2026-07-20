@@ -1,19 +1,20 @@
 import {$} from "../core/util.js";
-import {cur,term,countryName} from "../i18n/i18n.js";
+import {t,term,countryName} from "../i18n/i18n.js";
 import {catalog,earned,records,REL_ALL,ETH_ALL} from "../engine/titles.js";
+import {tname} from "./titlechip.js";
 import {relSet,ethSet} from "../core/state.js";
 import {track} from "../analytics/track.js";
 
 /* ===== 업적 · 수집 =====
    탭으로 축을 나눈다. 개수만 보여주면("종교 10종 수집") 정작 뭘 모았는지를 모른다 —
    나라 도감처럼 목록을 보여줘야 "뭐가 남았나"가 읽히고 그게 다음 목표가 된다.
-   수집 목록은 나라 도감과 같은 .dex-item 스타일을 그대로 쓴다(같은 것은 같아 보여야 한다). */
-const nm=x=>cur==="ko"?x.ko:x.en;
+   수집 목록은 나라 도감과 같은 .dex-item 스타일을 그대로 쓴다(같은 것은 같아 보여야 한다).
+   문구는 전부 i18n의 STR을 탄다 — 여기에 한국어를 직접 박지 않는다. */
 const TABS=[
- {id:"title",icon:"🏅",ko:"칭호",en:"Titles"},
- {id:"rec",  icon:"🏆",ko:"기록",en:"Records"},
- {id:"rel",  icon:"🙏",ko:"종교",en:"Religions"},
- {id:"eth",  icon:"🧬",ko:"민족",en:"Ethnicities"},
+ {id:"title",icon:"🏅",k:"칭호"},
+ {id:"rec",  icon:"🏆",k:"기록"},
+ {id:"rel",  icon:"🙏",k:"종교"},
+ {id:"eth",  icon:"🧬",k:"민족"},
 ];
 let active="title";
 
@@ -27,7 +28,7 @@ function collectionHTML(all,got){
 function body(){
  if(active==="title"){
   return catalog().map(g=>
-   '<div class="ach-group"><h4>'+g.icon+" "+nm(g)+
+   '<div class="ach-group"><h4>'+g.icon+" "+t(g.k)+
     ' <span class="ach-count">'+g.items.filter(i=>i.ok).length+"/"+g.items.length+"</span></h4>"+
    g.items.map(i=>{
     const bar=(i.goal!=null&&!i.ok)
@@ -35,17 +36,17 @@ function body(){
        +'<span class="ach-sub">'+i.now+" / "+i.goal+"</span>"
      : (i.note?'<span class="ach-sub">'+i.note+"</span>":"");
     return '<div class="ach-item'+(i.ok?" ok":"")+'"><span class="ach-name">'+
-     (i.ok?"":"🔒 ")+nm(i)+"</span>"+bar+"</div>";
+     (i.ok?"":"🔒 ")+tname(i)+"</span>"+bar+"</div>";
    }).join("")+"</div>").join("");
  }
  if(active==="rec"){
   return '<div class="rec-list">'+records().map(r=>{
    let val;
    if(r.country)val=countryName(r.country)+(r.note?' <span class="ach-sub">'+r.note+"</span>":"");
-   else if(r.v==null)val='<span class="rec-none">'+(cur==="ko"?"아직 없음":"none yet")+"</span>";
-   else if(r.rank)val=cur==="ko"?"상위 "+r.v+"%":"top "+r.v+"%";
-   else val=r.v+(r.unit==="yr"?(cur==="ko"?"세":" yrs"):r.unit);
-   return '<div class="rec-row"><span class="rec-k">'+r.icon+" "+nm(r)+
+   else if(r.v==null)val='<span class="rec-none">'+t("아직 없음")+"</span>";
+   else if(r.rank)val=t("상위 {v}%",{v:r.v});
+   else val=r.unit==="yr"?t("{n}세",{n:r.v}):r.v+r.unit;
+   return '<div class="rec-row"><span class="rec-k">'+r.icon+" "+t(r.k)+
     '</span><span class="rec-v">'+val+"</span></div>";
   }).join("")+"</div>";
  }
@@ -54,24 +55,18 @@ function body(){
 }
 
 function head(){
- if(active==="rel")return cur==="ko"
-  ? `겪어 본 종교 ${relSet.size} / ${REL_ALL.length}`
-  : `${relSet.size} of ${REL_ALL.length} religions lived`;
- if(active==="eth")return cur==="ko"
-  ? `겪어 본 민족 ${ethSet.size} / ${ETH_ALL.length}`
-  : `${ethSet.size} of ${ETH_ALL.length} ethnicities lived`;
- if(active==="rec")return cur==="ko"?"지금까지의 최고 기록":"Your all-time bests";
+ if(active==="rel")return t("겪어 본 종교 {a} / {b}",{a:relSet.size,b:REL_ALL.length});
+ if(active==="eth")return t("겪어 본 민족 {a} / {b}",{a:ethSet.size,b:ETH_ALL.length});
+ if(active==="rec")return t("지금까지의 최고 기록");
  const gs=catalog(), all=gs.reduce((n,g)=>n+g.items.length,0),
        done=gs.reduce((n,g)=>n+g.items.filter(i=>i.ok).length,0);
- return cur==="ko"
-  ? `업적 ${done} / ${all} 달성 · 보유 칭호 ${earned().length}개`
-  : `${done} of ${all} unlocked · ${earned().length} titles held`;
+ return t("업적 {done} / {all} 달성 · 보유 칭호 {n}개",{done,all,n:earned().length});
 }
 
 function paint(){
- $("achTabs").innerHTML=TABS.map(t=>
-  '<button class="ach-tab'+(t.id===active?" on":"")+'" data-tab="'+t.id+'">'+
-  t.icon+" "+nm(t)+"</button>").join("");
+ $("achTabs").innerHTML=TABS.map(x=>
+  '<button class="ach-tab'+(x.id===active?" on":"")+'" data-tab="'+x.id+'">'+
+  x.icon+" "+t(x.k)+"</button>").join("");
  $("achProgress").textContent=head();
  /* 칭호 탭만 2열 — 기록·수집은 한 덩어리라 2열이면 오른쪽이 빈다 */
  $("achGrid").className="ach-grid"+(active==="title"?" cols":"");
