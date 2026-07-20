@@ -111,6 +111,10 @@ h1{
 /* 배지는 뜰 때도 있고 안 뜰 때도 있다. 자리를 미리 잡아두지 않으면 리롤할 때마다
    아래 "다시 환생하기" 버튼이 배지 한 줄만큼 오르내린다. */
 .badges{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:14px;min-height:29px}
+/* 리롤 전 첫 화면의 실시간 환생 티커(ticker.js). 초 단위로 바뀌므로 tabular-nums로 폭을 고정하고,
+   min-height로 자리를 잡아 새 줄이 뜰 때 레이아웃이 튀지 않게 한다. .show 토글로 페이드. */
+.birth-ticker{margin:14px 0 0;font-size:13px;color:var(--muted);text-align:center;min-height:18px;opacity:0;transition:opacity .35s ease;font-variant-numeric:tabular-nums}
+.birth-ticker.show{opacity:1}
 .badge{
   font-size:12px;padding:4px 12px;border-radius:99px;
   background:var(--gold-dim);border:1px solid rgba(243,201,92,.4);color:var(--gold);

@@ -6,6 +6,7 @@ import {startDwellClock} from "../analytics/track.js";
 import {flagHTML} from "./flags.js";
 import {rarityColor,iqTopPct} from "../engine/roll.js";
 import {bumpGlobal,revealGlobalStat} from "./counter.js";
+import {stopTicker} from "./ticker.js";
 import {burstConfetti} from "./effects.js";
 
 export function updateStats(){
@@ -38,8 +39,8 @@ export const CHIP_DEFS=[
 ];
 export function renderLife(l){
  session.currentLife=l;
- /* 헤더가 넘겨받은 '모두의 환생 횟수' 타일을 통계에 드러낸다. */
- revealGlobalStat();
+ /* 첫 화면의 실시간 티커를 걷고, 헤더가 넘겨받은 '모두의 환생 횟수' 타일을 통계에 드러낸다. */
+ stopTicker();revealGlobalStat();
  const hero=$("hero");
  hero.style.setProperty("--rarity-color",rarityColor(l.c.pop));
  $("popline").hidden=false;

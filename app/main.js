@@ -11,6 +11,7 @@ import {closeShare,shareURL,shareText} from "./ui/share.js";
 import {decodeLife,encodeLife} from "./engine/permalink.js";
 import {takeLife,verifyLife,takeSharedByCode} from "./engine/lifepool.js";
 import {t} from "./i18n/i18n.js";
+import {startTicker} from "./ui/ticker.js";
 import "./ui/odds.js";
 import "./ui/suggest.js";
 import "./ui/effects.js";
@@ -92,7 +93,9 @@ if(SHARED_CODE){
 
 updateStats();
 /* 리롤 전 첫 화면: 헤더 카운터는 "내 횟수"(첫 방문자에겐 0이라 역효과)가 아니라
-   모두의 환생 횟수를 카운트업으로 보여준다(counter.js가 /api/counter 값이 오면 채운다). */
+   모두의 환생 횟수를 카운트업으로 보여준다(counter.js가 /api/counter 값이 오면 채운다).
+   같은 화면에서 실시간 환생 티커도 돌린다 — 결과 미리보기·사회적 증거·시선 붙잡기. */
+if(!SHARED_CODE&&!SHARED_RAW)startTicker();
 /* visit은 아래에 붙는 분석 스니펫이 로드된 뒤(window load) 발화해야 유실되지 않는다.
    days_since_first=0이면 신규, 1이면 어제 처음 온 기기의 D1 복귀다.
    used_fortune은 visit만으로 "운세를 써 본 기기가 더 돌아오는가"를 가르는 열쇠. */

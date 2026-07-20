@@ -108,6 +108,9 @@
     <h2 class="country" id="country">아직 태어나기 전입니다</h2>
     <p class="subline" id="subline">아래 버튼을 누르면 새로운 생을 받습니다</p>
     <div class="badges" id="badges"></div>
+    <!-- 실시간 환생 티커. 리롤 전 첫 화면에서만 실제 인구 분포로 "방금 누군가 태어났어요"를
+         흘려보낸다(ticker.js). 첫 생을 그리면 renderLife가 stopTicker로 이 줄을 걷는다. -->
+    <p class="birth-ticker" id="birthTicker" hidden></p>
   </section>
 
   <!-- 리롤이 핵심 루프라 버튼은 결과 바로 아래에 둔다. 칩(11개)이 사이에 있으면
