@@ -78,7 +78,7 @@ function showSharedBad(){
 function showSharedLife(life){
  renderLife(life);
  $("lifeNo").textContent=t("친구가 받은 생입니다");
- $("rollBtn").textContent=t("🌏 나도 환생해 보기");
+ $("rollBtn").textContent=t("나도 환생해 보기");
  $("sharedNote").hidden=false;
  /* 진짜인 것만 센다 — 안 그러면 조작 링크를 여는 것만으로 이 지표를 부풀릴 수 있다 */
  track("shared_life_view",{country:life.c.name,prob:probPct(life.prob)});

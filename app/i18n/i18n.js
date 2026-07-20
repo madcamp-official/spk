@@ -51,7 +51,7 @@ const STR={
 "{n}초 전":["{n}s ago","{n}秒前","{n}秒前","hace {n}s","há {n}s"],
 "{n}분 전":["{n}m ago","{n}分前","{n}分钟前","hace {n}min","há {n}min"],
 "아래 버튼을 누르면 새로운 생을 받습니다":["Press the button below to receive a new life","下のボタンを押すと新しい人生を授かります","按下方按钮,获得新的人生","Pulsa el botón de abajo para recibir una nueva vida","Aperte o botão abaixo para receber uma nova vida"],
-"🌏 환생 시작하기":["🌏 Start Reincarnation","🌏 転生を始める","🌏 开始转世","🌏 Empezar la Reencarnación","🌏 Começar a Reencarnação"],
+"환생 시작하기":["Start Reincarnation","転生を始める","开始转世","Empezar la Reencarnación","Começar a Reencarnação"],
 "🔮 오늘의 환생 운세":["🔮 Today's Rebirth Fortune","🔮 今日の転生占い","🔮 今日转世运势","🔮 Fortuna de Reencarnación de Hoy","🔮 Sorte de Reencarnação de Hoje"],
 "🖼️ 결과 카드 저장":["🖼️ Save Result Card","🖼️ 結果カードを保存","🖼️ 保存结果卡片","🖼️ Guardar Tarjeta de Resultado","🖼️ Salvar Cartão de Resultado"],
 "📤 공유하기":["📤 Share","📤 シェア","📤 分享","📤 Compartir","📤 Compartilhar"],
@@ -201,11 +201,11 @@ const STR={
 "💯 100세 장수 예정":["💯 Will live to 100","💯 100歳長寿予定","💯 将活到100岁","💯 Vivirá hasta los 100","💯 Vai viver até os 100"],
 "💎 소득 상위 1%":["💎 Top 1% income","💎 所得上位1%","💎 收入前1%","💎 Top 1% de ingresos","💎 Top 1% de renda"],
 "당신의 {n}번째 생":["Your life #{n}","あなたの{n}回目の人生","你的第{n}世","Tu vida n.º {n}","Sua vida nº {n}"],
-"🔄 다시 환생하기":["🔄 Reincarnate Again","🔄 もう一度転生する","🔄 再次转世","🔄 Reencarnar de nuevo","🔄 Reencarnar de novo"],
+"다시 환생하기":["Reincarnate Again","もう一度転生する","再次转世","Reencarnar de nuevo","Reencarnar de novo"],
 /* ── main.js ── */
 "⚠️ 확인할 수 없는 링크예요 — 위조되었거나 오래된 링크일 수 있습니다":["⚠️ This link can't be verified — it may be forged or outdated","⚠️ 確認できないリンクです — 偽造または古いリンクの可能性があります","⚠️ 无法验证的链接 — 可能是伪造或过期的链接","⚠️ Este enlace no se puede verificar — puede estar falsificado o caducado","⚠️ Este link não pode ser verificado — pode ser falso ou antigo"],
 "친구가 받은 생입니다":["A life your friend received","友達が授かった人生です","朋友抽到的人生","Una vida que recibió tu amigo","Uma vida que seu amigo recebeu"],
-"🌏 나도 환생해 보기":["🌏 Try My Own Rebirth","🌏 私も転生してみる","🌏 我也要转世","🌏 Probar mi propia reencarnación","🌏 Fazer minha própria reencarnação"],
+"나도 환생해 보기":["Try My Own Rebirth","私も転生してみる","我也要转世","Probar mi propia reencarnación","Fazer minha própria reencarnação"],
 "지금까지 {n}번 환생했습니다":["You've reincarnated {n} times so far","これまでに{n}回転生しました","至今已转世{n}次","Te has reencarnado {n} veces hasta ahora","Você já se reencarnou {n} vezes"],
 /* ── 오늘의 운세(fortune.js) ── */
 "낯선 나라의 음식을 먹으면 행운이 따라옵니다":["Eating food from an unfamiliar country brings luck","見知らぬ国の料理を食べると幸運が訪れます","吃一次陌生国家的美食,好运随之而来","Comer comida de un país desconocido te trae suerte","Comer comida de um país desconhecido traz sorte"],
@@ -336,7 +336,7 @@ function applyStatic(){
  id("sharedNote").textContent=t("🔗 친구가 공유한 생 — 아래 버튼으로 내 생을 뽑아 보세요");
  id("country").textContent=t("아직 태어나기 전입니다");
  id("subline").textContent=t("아래 버튼을 누르면 새로운 생을 받습니다");
- id("rollBtn").textContent=t("🌏 환생 시작하기");
+ id("rollBtn").textContent=t("환생 시작하기");
  id("fortuneBtn").textContent=t("🔮 오늘의 환생 운세");
  id("shareImg").textContent=t("🖼️ 결과 카드 저장");
  id("shareBtn").textContent=t("📤 공유하기");

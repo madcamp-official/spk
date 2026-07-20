@@ -68,7 +68,7 @@ export function renderLife(l){
  requestAnimationFrame(()=>requestAnimationFrame(()=>{
   chips.querySelectorAll(".chip").forEach(el=>el.classList.add("reveal"));}));
  $("lifeNo").textContent=t("당신의 {n}번째 생",{n:ST.total.toLocaleString()});
- $("rollBtn").textContent=t("🔄 다시 환생하기");
+ $("rollBtn").textContent=t("다시 환생하기");
  $("shareRow").hidden=false;
  const fl=$("fortuneLine");
  if(l.fortune){fl.hidden=false;fl.textContent="🔮 "+l.fortune;}
