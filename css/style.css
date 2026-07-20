@@ -369,4 +369,23 @@ footer a{color:var(--gold)}
 .ach-sub{font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums}
 .ach-bar{height:4px;border-radius:99px;background:rgba(236,233,245,.12);overflow:hidden}
 .ach-bar i{display:block;height:100%;background:linear-gradient(90deg,#6fb1e8,#f3c95c)}
-@media (min-width:560px){.ach-grid{grid-template-columns:1fr 1fr}}
+/* 2열은 그룹이 여러 개인 칭호 탭에서만 쓴다. 기록·수집 목록은 한 덩어리라
+   2열을 걸면 왼쪽 절반만 쓰고 오른쪽이 통째로 빈다. */
+@media (min-width:560px){.ach-grid.cols{grid-template-columns:1fr 1fr}}
+
+/* 업적 탭 — 축이 늘어나면 한 화면에 다 못 담는다. 축별로 갈라 보여준다. */
+.ach-tabs{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 2px}
+.ach-tab{background:rgba(236,233,245,.06);border:1px solid rgba(236,233,245,.12);
+  color:var(--muted);border-radius:99px;padding:6px 12px;font-size:12px;cursor:pointer}
+.ach-tab.on{background:rgba(243,201,92,.16);border-color:rgba(243,201,92,.5);
+  color:var(--gold);font-weight:700}
+/* 기록실 — 값이 주인공이라 좌우 정렬로 읽히게 */
+.rec-list{display:flex;flex-direction:column;gap:6px}
+.rec-row{display:flex;justify-content:space-between;align-items:center;gap:10px;
+  padding:9px 11px;border-radius:10px;background:rgba(236,233,245,.04);
+  border:1px solid rgba(236,233,245,.08)}
+.rec-k{font-size:13px;color:var(--muted)}
+.rec-v{font-size:14px;font-weight:700;color:var(--gold);font-variant-numeric:tabular-nums;text-align:right}
+.rec-none{color:var(--muted);font-weight:400;opacity:.7}
+/* 업적 모달 안의 수집 그리드는 자체 스크롤을 갖지 않는다 — 바깥 .ach-grid 가 스크롤한다 */
+#achGrid .dex-grid{overflow:visible}

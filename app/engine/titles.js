@@ -68,9 +68,33 @@ const ETH_TIERS=[
  {n:60,  ko:"인류의 표본",   en:"Sample of Humankind"},
  {n:100, ko:"백 갈래의 뿌리",en:"Hundred Roots"},
 ];
-/* 전체 가짓수는 데이터에서 센다 — 종교 16, 민족 312 (데이터가 바뀌면 따라간다) */
-export const REL_TOTAL=(()=>{const s=new Set();for(const k in REL)REL[k].forEach(p=>s.add(p[0]));return s.size;})();
-export const ETH_TOTAL=(()=>{const s=new Set();DATA.forEach(c=>(c.eth||[]).forEach(p=>s.add(p[0])));return s.size;})();
+/* 전체 목록은 데이터에서 만든다 — 종교 16, 민족 312 (데이터가 바뀌면 따라간다).
+   개수뿐 아니라 목록 자체가 필요하다: 나라 도감처럼 "뭘 모았고 뭐가 남았나"를 보여줘야 한다. */
+export const REL_ALL=(()=>{const s=new Set();for(const k in REL)REL[k].forEach(p=>s.add(p[0]));return [...s];})();
+export const ETH_ALL=(()=>{const s=new Set();DATA.forEach(c=>(c.eth||[]).forEach(p=>s.add(p[0])));return [...s];})();
+export const REL_TOTAL=REL_ALL.length;
+export const ETH_TOTAL=ETH_ALL.length;
+
+/* 기록실 — "가장 ~했던 생"의 실제 값. 아직 없으면 value:null (한 번도 안 뽑은 것). */
+export function records(){
+ const r=ST.rec||{}, best=rarestProb();
+ const rarestName=(()=>{let c=null;for(const i of seenSet){const d=DATA[i];if(d&&(!c||d.pop<c.pop))c=d;}return c;})();
+ return [
+  {icon:"🧠",ko:"최고 IQ",      en:"Highest IQ",       v:r.iq,   unit:""},
+  {icon:"📏",ko:"가장 컸던 키",  en:"Tallest",          v:r.hMax, unit:"cm"},
+  {icon:"📐",ko:"가장 작았던 키",en:"Shortest",         v:r.hMin, unit:"cm"},
+  {icon:"🏋",ko:"최고 몸무게",   en:"Heaviest",         v:r.wMax, unit:"kg"},
+  {icon:"🪶",ko:"최저 몸무게",   en:"Lightest",         v:r.wMin, unit:"kg"},
+  /* unit:"yr" 과 rank:true 는 UI가 언어에 맞게 푼다(세 / yrs, 상위 N% / top N%).
+     엔진에 한국어를 박으면 안 된다 — 문구 결정은 ui 층 몫이다. */
+  {icon:"⏳",ko:"최고 기대수명", en:"Longest life",     v:r.life, unit:"yr"},
+  {icon:"💰",ko:"최고 소득 분위",en:"Best income rank",
+   v:r.top==null?null:Math.round(r.top*100)/100, unit:"%", rank:true},
+  /* 나라 이름은 표시할 때 현재 언어로 바꿔야 하므로 나라 객체를 그대로 넘긴다 */
+  {icon:"🎰",ko:"가장 희귀했던 나라",en:"Rarest country", country:rarestName||null,
+   note:best==null?"":"1/"+Math.round(1/best).toLocaleString()},
+ ];
+}
 
 const CONT_KO={AS:"아시아",EU:"유럽",AF:"아프리카",NA:"북아메리카",SA:"남아메리카",OC:"오세아니아"};
 const CONT_EN={AS:"Asia",EU:"Europe",AF:"Africa",NA:"North America",SA:"South America",OC:"Oceania"};
