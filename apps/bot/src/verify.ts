@@ -227,6 +227,112 @@ async function main(): Promise<void> {
   ok("숫자 아닌 페이지 거부", parseDexCustomId("dex:g:abc") === null);
   ok("접두사 다르면 거부", parseDeckCustomId(dexCustomId("g", 1)) === null);
 
+  /* ── 4단계 /배틀 ───────────────────────────────────────── */
+  const {
+    BATTLE, AXES, drawAxes, resolveBattle, axisWinProb, matchWinProb, pickBestLife,
+  } = await import("@life-reroll/core");
+  const { countBattlesToday, getBattleDeck, recordBattle, getStamps } =
+    await import("./db/queries.js");
+
+  console.log("\n[15] 배틀 판정 (§E)");
+  ok("형제 수 축은 제외됨 (데이터 부재)", !AXES.includes("siblings" as never), AXES.join(","));
+  ok("축 4종 중 3개 추첨", (() => {
+    for (let i = 0; i < 200; i++) {
+      const a = drawAxes();
+      if (a.length !== BATTLE.axesPerBattle || new Set(a).size !== a.length) return false;
+    }
+    return true;
+  })(), `${BATTLE.axesPerBattle}개, 중복 없음`);
+  const strong = { id: 1, lifeExp: 100, income: 500000, pop: 0.1, rarityScore: 1e-8 };
+  const weak = { id: 2, lifeExp: 50, income: 500, pop: 1400, rarityScore: 0.5 };
+  ok("압도적 우위는 사전 승률 ~1", axisWinProb(1000, 1) > 0.999);
+  ok("동일 값은 사전 승률 0.5", Math.abs(axisWinProb(100, 100) - 0.5) < 0.01);
+  /* 뒤집힘 한계는 두 보정의 비, 즉 (1+j)/(1-j) 다.
+     A가 최대로 뜨고(×1+j) B가 최소로 내려도(×1-j) 못 이기면 확률은 정확히 0이 된다. */
+  {
+    const j = BATTLE.axisJitter ?? 0;
+    const limit = (1 + j) / (1 - j);
+    ok("격차가 보정 한계를 넘으면 절대 안 뒤집힌다",
+      axisWinProb(100, 100 * limit * 1.001) === 0, `한계 배율 ${limit.toFixed(3)}`);
+    ok("한계 안쪽이면 뒤집힐 여지가 있다",
+      axisWinProb(100, 100 * limit * 0.999) > 0);
+  }
+  ok("3판 2선승 확률식", Math.abs(matchWinProb([0.5, 0.5, 0.5]) - 0.5) < 1e-9);
+  ok("전승 확률 계산", Math.abs(matchWinProb([1, 1, 1]) - 1) < 1e-9);
+  /* 희귀도는 낮은 쪽이 이겨야 한다 (§E) */
+  const rareWins = resolveBattle(
+    { ...weak, rarityScore: 1e-9 }, { ...weak, id: 3, rarityScore: 0.9 }, ["rarity"]);
+  ok("희귀도는 낮은 확률 쪽 승", rareWins.winner === "a");
+
+  console.log("\n[16] 배틀 공정성 · 밸런스 (2만 판)");
+  {
+    const mk = (id: number) => {
+      const l = rollLife();
+      return { id, lifeExp: l.lifeExp, income: l.income, pop: l.c.pop, rarityScore: rarityScore(l) };
+    };
+    let aw = 0, up = 0, cl = 0, merit = 0;
+    const N = 20000;
+    for (let i = 0; i < N; i++) {
+      const r = resolveBattle(mk(i * 2), mk(i * 2 + 1));
+      if (r.winner === "a") aw++;
+      if (r.upset) up++;
+      if (r.close) cl++;
+      merit += r.upset ? (MERIT.underdogWin ?? 0) : (MERIT.favoriteWin ?? 0);
+    }
+    const rate = aw / N;
+    ok("선공 편향 없음 (49~51%)", rate > 0.49 && rate < 0.51, `${(rate * 100).toFixed(1)}%`);
+    ok("업셋이 희소하다 (1~15%)", up / N > 0.01 && up / N < 0.15, `${(up / N * 100).toFixed(1)}%`);
+    ok("접전이 다수 (>50%)", cl / N > 0.5, `2-1이 ${(cl / N * 100).toFixed(1)}%`);
+    ok("추가 뽑기 1회에 2~10승 필요",
+      (() => { const n = (MERIT.rerollCost ?? 10) / (merit / N); return n >= 2 && n <= 10; })(),
+      `${((MERIT.rerollCost ?? 10) / (merit / N)).toFixed(1)}승`);
+  }
+
+  console.log("\n[17] 자동 선발 (§E 축별 최적)");
+  {
+    const deck = [
+      { id: 10, lifeExp: 100, income: 100, pop: 500, rarityScore: 0.5 },
+      { id: 11, lifeExp: 50, income: 100000, pop: 500, rarityScore: 0.5 },
+    ];
+    ok("수명 축이면 장수한 생", pickBestLife(deck, ["lifeExp"])!.id === 10);
+    ok("소득 축이면 부유한 생", pickBestLife(deck, ["income"])!.id === 11);
+    ok("빈 덱은 null", pickBestLife([], ["income"]) === null);
+    ok("한 장이면 그 생", pickBestLife([deck[0]!], ["income"])!.id === 10);
+  }
+
+  console.log("\n[18] 배틀 기록 (전적·도장·공덕 원자성)");
+  {
+    const U2 = "user-B";
+    await ensureUser(U2);
+    const s = await saveLife({ discordId: U2, guildId: G, life: rollLife(), inheritedTrait: null });
+    const myDeck = await getBattleDeck(U);
+    const a = myDeck[0]!;
+    const before = await getMerit(U);
+    const rec = await recordBattle({
+      lifeA: a.id, lifeB: s.id, axes: ["lifeExp", "income", "rarity"],
+      winnerLifeId: a.id, winnerUserId: U, loserLifeId: s.id,
+      loserCountryCode: (await getLife(s.id))!.country_code,
+      upset: true, meritAward: MERIT.underdogWin ?? 0,
+    });
+    const wl = await pg.query<any>("SELECT wins,losses FROM lives WHERE id=$1", [a.id]);
+    const wl2 = await pg.query<any>("SELECT wins,losses FROM lives WHERE id=$1", [s.id]);
+    ok("승자 wins +1", Number(wl.rows[0].wins) === 1 && Number(wl.rows[0].losses) === 0);
+    ok("패자 losses +1", Number(wl2.rows[0].losses) === 1 && Number(wl2.rows[0].wins) === 0);
+    ok("공덕 지급", rec.merit === before + (MERIT.underdogWin ?? 0), `${before} → ${rec.merit}`);
+    ok("방문 도장 획득", rec.newStamp && (await getStamps(U)).size === 1);
+    const b2 = await pg.query<any>("SELECT axes, upset, winner FROM battles ORDER BY id DESC LIMIT 1");
+    ok("배틀 기록 저장", b2.rows[0].axes.length === 3 && b2.rows[0].upset === true);
+    ok("같은 상대 오늘 대전 수 집계", (await countBattlesToday(U, U2)) === 1);
+    /* 같은 나라에 또 이겨도 도장은 하나 */
+    const rec2 = await recordBattle({
+      lifeA: a.id, lifeB: s.id, axes: ["pop"], winnerLifeId: a.id, winnerUserId: U,
+      loserLifeId: s.id, loserCountryCode: (await getLife(s.id))!.country_code,
+      upset: false, meritAward: MERIT.favoriteWin ?? 0,
+    });
+    ok("같은 국가 도장은 중복 안 됨", !rec2.newStamp && (await getStamps(U)).size === 1);
+    ok("상한 판정에 반영", (await countBattlesToday(U, U2)) === 2);
+  }
+
   await pg.close();
   console.log(`\n=== ${pass} PASS / ${fail} FAIL ===`);
   if (fail) process.exit(1);

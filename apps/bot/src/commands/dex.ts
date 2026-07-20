@@ -68,10 +68,12 @@ async function buildDex(guildId: string, page: number, guildName: string) {
   const slice = SORTED.slice(safePage * size, (safePage + 1) * size);
   e.addFields({
     name: "국가",
-    /* 모은 나라는 국기와 이름, 아직인 나라는 흐릿하게 — 빈칸이 보여야 모으고 싶어진다 */
+    /* 모은 나라는 그대로, 아직인 나라는 스포일러로 가린다.
+       국기도 스포일러 **안에** 넣는다 — 밖에 두면 눌러도 국기가 안 나타나서,
+       "가려진 걸 열어 본다"는 동작에 아무 보상이 없다. */
     value: slice.map(c => {
       const code = isoCode(c.flag);
-      return owned.has(code) ? `${c.flag} ${c.name}` : `⬛ ||${c.name}||`;
+      return owned.has(code) ? `${c.flag} ${c.name}` : `||${c.flag} ${c.name}||`;
     }).join("\n"),
   });
 

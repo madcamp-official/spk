@@ -195,3 +195,66 @@ export async function getGuildDex(guildId: string): Promise<Map<string, number |
     "SELECT country_code, first_life_id FROM guild_dex WHERE guild_id=$1", [guildId]);
   return new Map(r.rows.map(x => [x.country_code, x.first_life_id]));
 }
+
+/* ===== 4단계 — /배틀 ============================================ */
+
+/** 배틀 출전 후보. pop은 저장돼 있지 않고 국가 코드에서 파생한다. */
+export async function getBattleDeck(discordId: string): Promise<LifeRow[]> {
+  const r = await db.query<LifeRow>(
+    "SELECT * FROM lives WHERE user_id=$1 ORDER BY id ASC", [discordId]);
+  return r.rows;
+}
+
+/** 오늘 이 두 사람이 붙은 횟수 (§E 같은 상대 1일 상한).
+ *  battles에는 생 번호만 있으므로 lives를 두 번 조인해 유저로 되돌린다. */
+export async function countBattlesToday(userA: string, userB: string): Promise<number> {
+  const r = await db.query<{ n: number }>(
+    `SELECT count(*)::int AS n FROM battles b
+       JOIN lives la ON la.id = b.life_a
+       JOIN lives lb ON lb.id = b.life_b
+      WHERE ((la.user_id=$1 AND lb.user_id=$2) OR (la.user_id=$2 AND lb.user_id=$1))
+        AND (b.created_at AT TIME ZONE $3)::date = (now() AT TIME ZONE $3)::date`,
+    [userA, userB, env.rollDayTz]);
+  return Number(r.rows[0]?.n ?? 0);
+}
+
+export interface BattleRecord {
+  lifeA: number;
+  lifeB: number;
+  axes: string[];
+  winnerLifeId: number;
+  winnerUserId: string;
+  loserLifeId: number;
+  loserCountryCode: string;
+  upset: boolean;
+  meritAward: number;
+}
+
+/** 배틀 결과를 기록한다 — 전적·방문 도장·공덕을 **한 트랜잭션**으로.
+ *  나뉘면 "전적은 올랐는데 공덕은 안 들어온" 상태가 남고, 사용자는 그걸 버그로만 본다. */
+export async function recordBattle(r: BattleRecord): Promise<{ merit: number; newStamp: boolean }> {
+  return db.withTx(async (tx) => {
+    await tx.query(
+      `INSERT INTO battles (life_a, life_b, axes, winner, upset)
+       VALUES ($1,$2,$3,$4,$5)`,
+      [r.lifeA, r.lifeB, r.axes, r.winnerLifeId, r.upset]);
+    await tx.query("UPDATE lives SET wins = wins + 1 WHERE id=$1", [r.winnerLifeId]);
+    await tx.query("UPDATE lives SET losses = losses + 1 WHERE id=$1", [r.loserLifeId]);
+    /* §E 방문 도장 — 이긴 사람이 진 생의 국가에 도장을 찍는다(개인 도감 우회 수집로) */
+    const st = await tx.query(
+      `INSERT INTO stamps (user_id, country_code) VALUES ($1,$2)
+       ON CONFLICT (user_id, country_code) DO NOTHING`,
+      [r.winnerUserId, r.loserCountryCode]);
+    const m = await tx.query<{ merit: number }>(
+      "UPDATE users SET merit = merit + $2 WHERE discord_id=$1 RETURNING merit",
+      [r.winnerUserId, r.meritAward]);
+    return { merit: m.rows[0]?.merit ?? 0, newStamp: st.rowCount === 1 };
+  });
+}
+
+/** 내가 찍은 방문 도장 (개인 수집) */
+export async function getStamps(discordId: string): Promise<Set<string>> {
+  const r = await db.query<{ country_code: string }>(
+    "SELECT country_code FROM stamps WHERE user_id=$1", [discordId]);
+  return new Set(r.rows.map(x => x.country_code));
+}

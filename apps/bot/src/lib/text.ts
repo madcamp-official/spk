@@ -66,3 +66,24 @@ export function fmtIncomeMult(life: Life): string {
   if (m >= 1) return `국가 중위의 ${m.toFixed(1)}배`;
   return `국가 중위의 ${(m * 100).toFixed(0)}%`;
 }
+
+/** §E 배틀 축 이름 */
+export const AXIS_LABEL: Record<string, string> = {
+  lifeExp: "수명", income: "소득", pop: "모국 인구", rarity: "희귀도",
+};
+export const AXIS_EMOJI: Record<string, string> = {
+  lifeExp: "⏳", income: "💰", pop: "🌏", rarity: "💎",
+};
+export function axisText(axis: string): string {
+  return `${AXIS_EMOJI[axis] ?? "•"} ${AXIS_LABEL[axis] ?? axis}`;
+}
+/** 축의 원값을 사람이 읽는 형태로 (희귀도는 역수를 되돌린다) */
+export function axisDisplay(axis: string, raw: number): string {
+  switch (axis) {
+    case "lifeExp": return `${Math.round(raw)}세`;
+    case "income": return `${fmtUSD(raw)}/년`;
+    case "pop": return fmtPop(raw);
+    case "rarity": return fmtTopPct(1 / raw);
+    default: return String(Math.round(raw));
+  }
+}

@@ -89,11 +89,18 @@ export const KARMA = {
 export const BATTLE = {
     /** 3축 3판 2선승 — 축 개수 */
     axesPerBattle: 3,
-    /** 각 축 판정에 거는 랜덤 보정 폭(±비율). §E는 "±10% 이내"라고만 한다.
-     *  TODO(balance): 정확한 폭과 분포(균등/정규) 미확정. */
-    axisJitter: null,
+    /** 각 축 판정에 거는 랜덤 보정 폭(±비율). §E "±10% 이내"의 상한을 그대로 쓴다.
+     *  균등분포다 — 정규분포로 하면 꼬리가 드물게 10%를 넘어 "이내"가 깨진다.
+     *  TODO(balance): 이 값이 업셋 빈도를 정한다. 올리면 약한 덱도 이길 만해지고,
+     *  내리면 스탯이 곧 결과가 되어 배틀이 조회에 가까워진다. */
+    axisJitter: 0.1,
     /** 같은 상대와의 1일 배틀 상한 (§E) */
     dailyPerOpponent: 3,
+    /** 승자의 **사전** 기대 승률이 이 값 미만이었으면 업셋(언더독 승리)으로 본다.
+     *  0.5로 두면 승리의 절반이 업셋이 되어 "대폭 보상"이 흔해진다. 0.4는
+     *  "질 것 같았는데 이겼다"에 해당하는 구간만 남긴다.
+     *  TODO(balance): 실제 업셋 빈도를 보고 조정. */
+    underdogThreshold: 0.4,
 };
 /** 공덕(merit) 수치 — §C 추가 뽑기, §E 언더독 보상 */
 export const MERIT = {
@@ -103,10 +110,17 @@ export const MERIT = {
      *  TODO(balance): 제안 초기값 10. 공덕을 버는 유일한 통로가 아직 배틀(4단계)뿐이라,
      *  이 값은 배틀 보상(underdogWin·favoriteWin)이 정해진 뒤 함께 다시 봐야 한다. */
     rerollCost: 10,
-    /** 열세 측이 이겼을 때 지급(대폭). TODO(balance) */
-    underdogWin: null,
-    /** 우세 측이 이겼을 때 지급(소액). TODO(balance) */
-    favoriteWin: null,
+    /* 아래 두 값은 rerollCost(10)를 기준으로 잡았다 — 공덕의 유일한 쓸모가 추가 뽑기라,
+       "몇 판 이겨야 한 번 더 뽑나"가 곧 체감 보상이다.
+       같은 상대와 1일 3판 상한이 있으므로 상대를 늘리지 않는 한 하루 수급은 제한된다. */
+    /** 열세 측이 이겼을 때(대폭). 업셋 한 번이면 추가 뽑기 1회를 넘긴다 — 이겼을 때
+     *  기억에 남아야 배틀을 다시 건다.
+     *  TODO(balance): 업셋 빈도(BATTLE.underdogThreshold)와 함께 봐야 한다. */
+    underdogWin: 12,
+    /** 우세 측이 이겼을 때(소액). 이길 게 뻔한 상대만 골라 도는 것을 막는다 —
+     *  5판을 이겨야 겨우 한 번 더 뽑는다.
+     *  TODO(balance) */
+    favoriteWin: 2,
 };
 /** §D 출생 번호 라운드 넘버 칭호 — 어느 번호에 줄지만 정하고 문구는 2단계에서. */
 export const MILESTONE_BIRTH_NUMBERS = [100, 1000, 10000];
