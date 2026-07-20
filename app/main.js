@@ -3,14 +3,15 @@ import {DATA} from "./core/data.js";
 import {$} from "./core/util.js";
 import {ST,session,persist} from "./core/state.js";
 import {rollLife,rollIQ,iqTopPct} from "./engine/roll.js";
-import {renderLife,recordLife,updateStats,showSample} from "./ui/render.js";
+import {renderLife,recordLife,updateStats} from "./ui/render.js";
 import {track,markRoll,sendDwell,sendExit,flushEvents,daysSinceFirst} from "./analytics/track.js";
 import {probPct} from "./core/util.js";
-import {closeDex,openDex} from "./ui/dex.js";
+import {closeDex} from "./ui/dex.js";
 import {closeShare,shareURL,shareText} from "./ui/share.js";
 import {decodeLife,encodeLife} from "./engine/permalink.js";
 import {takeLife,verifyLife,takeSharedByCode} from "./engine/lifepool.js";
 import {t} from "./i18n/i18n.js";
+import "./ui/odds.js";
 import "./ui/fortune.js";
 import "./ui/suggest.js";
 import "./ui/effects.js";
@@ -38,8 +39,7 @@ function doRoll(){
   history.replaceState(null,"",u);
  }
 }
-$("rollBtn").addEventListener("click",doRoll);   /* 결과 화면의 리롤 버튼 */
-$("introRoll").addEventListener("click",doRoll); /* 첫 화면(intro-card)의 CTA */
+$("rollBtn").addEventListener("click",doRoll);
 
 /* Escape는 두 모달 모두를 닫아야 해서 어느 한 기능 모듈에도 속하지 않는다 */
 addEventListener("keydown",e=>{
@@ -93,16 +93,6 @@ if(SHARED_CODE){
 
 updateStats();
 if(!SHARED_CODE&&!SHARED_RAW&&ST.total>0)$("lifeNo").textContent=t("지금까지 {n}번 환생했습니다",{n:ST.total.toLocaleString()});
-/* 화면 초기 노출 결정. 리롤 전엔 intro-card만, 공유받은 생을 볼 땐 hero(곧 renderLife가 채움)를
-   즉시 드러낸다 — 둘 다 동기라 FOUC 없이 처음부터 맞는 화면이 뜬다.
-   (모두의 환생 수 줄은 counter.js가 fetch 후 채운다.) */
-if(!SHARED_CODE&&!SHARED_RAW){
- showSample();
- $("introCard").hidden=false;
-}else{
- $("hero").hidden=false;$("controls").hidden=false;$("controlsAfter").hidden=false;$("stats").hidden=false;
-}
-$("dexTease").addEventListener("click",openDex);
 /* visit은 아래에 붙는 분석 스니펫이 로드된 뒤(window load) 발화해야 유실되지 않는다.
    days_since_first=0이면 신규, 1이면 어제 처음 온 기기의 D1 복귀다.
    used_fortune은 visit만으로 "운세를 써 본 기기가 더 돌아오는가"를 가르는 열쇠. */

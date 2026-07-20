@@ -42,7 +42,7 @@ const IX=cur==="en"?0:cur==="ja"?1:cur==="zh"?2:cur==="es"?3:4; /* TERMS/STR 배
 /* ── UI 문구 사전: "한국어 원문":[영어, 일본어, 중국어(간체)] ── */
 const STR={
 "환생 시뮬레이터":["Rebirth Simulator","輪廻転生シミュレーター","转世模拟器","Simulador de Reencarnación","Simulador de Reencarnação"],
-"인도에서 태어날 확률 17.8%, 모나코는 20만 분의 1. 당신은?":["17.8% chance of being born in India, 1 in 200,000 for Monaco. And you?","インドに生まれる確率17.8%、モナコは20万分の1。あなたは?","生在印度的概率17.8%,摩纳哥则是二十万分之一。你呢?","17,8% de nacer en India, 1 entre 200.000 en Mónaco. ¿Y tú?","17,8% de nascer na Índia, 1 em 200.000 em Mônaco. E você?"],
+"당신의 다음 생은, 실제 지구 인구 분포 확률 그대로 정해집니다":["Your next life is decided by the real population distribution of Earth","あなたの来世は、実際の地球の人口分布の確率どおりに決まります","你的下一世,将按真实的地球人口分布概率决定","Tu próxima vida se decide según la distribución real de la población mundial","Sua próxima vida é decidida pela distribuição real da população mundial"],
 "🔗 친구가 공유한 생 — 아래 버튼으로 내 생을 뽑아 보세요":["🔗 A life shared by a friend — roll your own with the button below","🔗 友達がシェアした人生 — 下のボタンで自分の人生を引いてみよう","🔗 朋友分享的人生 — 点下方按钮抽取你自己的人生","🔗 Una vida compartida por un amigo — saca la tuya con el botón de abajo","🔗 Uma vida compartilhada por um amigo — sorteie a sua no botão abaixo"],
 "아직 태어나기 전입니다":["You haven't been born yet","まだ生まれる前です","你还没有出生","Aún no has nacido","Você ainda não nasceu"],
 "아래 버튼을 누르면 새로운 생을 받습니다":["Press the button below to receive a new life","下のボタンを押すと新しい人生を授かります","按下方按钮,获得新的人生","Pulsa el botón de abajo para recibir una nueva vida","Aperte o botão abaixo para receber uma nova vida"],
@@ -169,15 +169,6 @@ const STR={
 "수집한 나라 {a} / {b} ({p}%) · 밝은 칸이 태어나 본 나라입니다":["Collected {a} / {b} countries ({p}%) · bright tiles are countries you've been born in","収集した国 {a} / {b} ({p}%) · 明るいマスは生まれたことのある国です","已收集国家 {a} / {b} ({p}%) · 亮色格子是你出生过的国家","Países coleccionados {a} / {b} ({p}%) · las casillas iluminadas son donde has nacido","Países coletados {a} / {b} ({p}%) · as casas iluminadas são onde você nasceu"],
 "중국과 인도만 합쳐도 약 {p}%. 환생 3번 중 1번은 두 나라 중 하나에서 시작됩니다. 반대로 투발루(인구 1.1만 명)가 나올 확률은 약 {n}번 중 1번입니다.":["China and India alone add up to about {p}%. One rebirth in three starts in one of those two countries. Tuvalu (pop. 11,000), on the other hand, is roughly a 1-in-{n} roll.","中国とインドだけで約{p}%。転生3回に1回はこの2か国のどちらかで始まります。逆にツバル(人口1.1万人)が出る確率は約{n}回に1回です。","仅中国和印度加起来就约占{p}%,每3次转世就有1次从这两国之一开始。相反,抽中图瓦卢(人口1.1万)的概率约为{n}分之一。","China e India juntos suman ≈{p}%. Una de cada tres reencarnaciones empieza en uno de esos dos países. En cambio, Tuvalu (pob. 11.000) es aproximadamente 1 entre {n}.","China e Índia juntos somam ≈{p}%. Uma em cada três reencarnações começa em um desses dois países. Já Tuvalu (pop. 11.000) é cerca de 1 em {n}."],
 "제안 고마워요! 다음 개선 후보로 담아 둘게요 📝":["Thanks for the idea! It's on the improvement list 📝","提案ありがとう!次の改善候補に入れておきます 📝","谢谢你的建议!我们会列入下一步改进候选 📝","¡Gracias por la sugerencia! La guardamos como próxima mejora 📝","Obrigado pela sugestão! Vamos guardá-la como próxima melhoria 📝"],
-/* ── 첫 화면(intro-card): 예시 카드·CTA·사회적 증거·도감 ── */
-"예시 결과":["Sample result","結果の例","结果示例","Resultado de ejemplo","Resultado de exemplo"],
-"상위 {p}":["Top {p}","上位 {p}","前 {p}","Top {p}","Top {p}"],
-"가구 소득":["Household income","世帯収入","家庭收入","Ingreso del hogar","Renda familiar"],
-"내 다음 생 뽑기":["Roll my next life","次の人生を引く","抽取我的下一世","Sacar mi próxima vida","Sortear minha próxima vida"],
-"3초면 끝나요 · 가입 없음":["Takes 3 seconds · no sign-up","3秒で完了 · 登録不要","3秒搞定 · 无需注册","Tarda 3 segundos · sin registro","Leva 3 segundos · sem cadastro"],
-"지금까지 {n}번의 환생":["{n} rebirths so far","これまで{n}回の転生","至今已转世{n}次","{n} reencarnaciones hasta ahora","{n} reencarnações até agora"],
-"나의 도감":["My Dex","私の図鑑","我的图鉴","Mi Dex","Meu Dex"],
-"칭호 잠김":["Title locked","称号ロック中","称号未解锁","Título bloqueado","Título bloqueado"],
 };
 
 /* 대륙: data.js의 CONT_NAME(한국어)을 언어별로 대체 */
@@ -258,7 +249,7 @@ function applyStatic(){
  document.documentElement.lang=cur;
  document.title=t("환생 시뮬레이터");
  q("header h1").textContent=t("환생 시뮬레이터");
- {const el=id("introHook");if(el)el.textContent=t("인도에서 태어날 확률 17.8%, 모나코는 20만 분의 1. 당신은?");}
+ q(".tagline").textContent=t("당신의 다음 생은, 실제 지구 인구 분포 확률 그대로 정해집니다");
  id("sharedNote").textContent=t("🔗 친구가 공유한 생 — 아래 버튼으로 내 생을 뽑아 보세요");
  id("country").textContent=t("아직 태어나기 전입니다");
  id("subline").textContent=t("아래 버튼을 누르면 새로운 생을 받습니다");
@@ -269,12 +260,9 @@ function applyStatic(){
  id("stTotal").nextElementSibling.textContent=t("나의 환생 횟수");
  id("stGlobal").nextElementSibling.textContent=t("모두의 환생 횟수 🌏");
  id("stSeen").nextElementSibling.textContent=t("태어나 본 나라 · 도감 📖");
- {const el=id("introRoll");if(el)el.textContent=t("내 다음 생 뽑기");}
- {const el=id("introFriction");if(el)el.textContent=t("3초면 끝나요 · 가입 없음");}
- {const el=id("dexTeaseLabel");if(el)el.textContent=t("나의 도감");}
- {const el=id("titleLock");if(el)el.innerHTML='<span aria-hidden="true">🔒</span> '+t("칭호 잠김");}
  id("stBest").nextElementSibling.textContent=t("최고 희귀 기록");
  id("dexBtn").title=t("환생 도감 열기");
+ q("details.card summary").textContent=t("어느 나라로 태어날 확률이 가장 높을까?");
  q("#suggest h3").textContent=t("💡 이런 항목도 환생 결과에 넣어 주세요");
  q("#suggest .hint").textContent=t("한 줄이면 충분해요. 다음 개선 후보로 담아 둡니다.");
  id("sgInput").placeholder=t("예: 형제 수, 태어난 계절, 평균 키…");

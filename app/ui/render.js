@@ -19,26 +19,6 @@ export function updateStats(){
  let rarest=null;
  for(const i of seenSet){const c=DATA[i];if(c&&(!rarest||c.pop<rarest.pop))rarest=c;}
  $("stBest").textContent=rarest?countryName(rarest)+" "+fmtPct(rarest.pop/TOTAL):"·";
- /* 첫 화면 도감 티저의 카운트도 같은 값으로 맞춘다(태어나 본 나라 / 전체). */
- const dt=$("dexTeaseCount");if(dt)dt.textContent=seenSet.size+" / "+DATA.length;
-}
-
-/* 리롤 전 첫 화면 전용: 예시 결과 카드. 실제 데이터(아이슬란드)로 채워 "뽑으면
-   이런 게 나온다"를 글 없이 보여준다. 첫 생을 그리면 renderLife가 이 카드를 숨긴다. */
-export function showSample(){
- const c=DATA.find(x=>x.name==="아이슬란드")||DATA[0];
- const row=(k,v)=>'<div class="sc-row"><span class="sc-k">'+k+'</span><span class="sc-v">'+v+'</span></div>';
- const sc=$("sampleCard");
- sc.innerHTML=
-  '<span class="sc-tag">'+t("예시 결과")+'</span>'+
-  '<div class="sc-head"><span class="sc-country">'+c.flag+' '+countryName(c)+'</span>'+
-  '<span class="sc-rare">'+t("상위 {p}",{p:fmtPct(c.pop/TOTAL)})+'</span></div>'+
-  '<div class="sc-rows">'+
-   row(t("성별")+' · '+t("키"),t("여성")+' · '+Math.round(c.hf)+'cm')+
-   row(t("가구 소득"),t("상위 {p}",{p:"12%"}))+
-   row(t("기대수명"),t("{n}세",{n:c.life}))+
-  '</div>';
- sc.hidden=false;
 }
 
 /* ===== 렌더링 ===== */
@@ -58,10 +38,6 @@ export const CHIP_DEFS=[
 ];
 export function renderLife(l){
  session.currentLife=l;
- /* 리롤 전 첫 화면(intro-card)을 걷고, 결과·리롤 버튼·부가 컨트롤·통계를 드러낸다.
-    hero 등은 기본 hidden(FOUC 방지)이라 여기서 반드시 켜 준다 — 리롤/공유 양쪽 다 이 경로를 탄다. */
- $("introCard").hidden=true;
- $("hero").hidden=false;$("controls").hidden=false;$("controlsAfter").hidden=false;$("stats").hidden=false;
  const hero=$("hero");
  hero.style.setProperty("--rarity-color",rarityColor(l.c.pop));
  $("popline").hidden=false;
