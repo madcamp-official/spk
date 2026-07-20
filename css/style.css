@@ -291,7 +291,7 @@ footer a{color:var(--gold)}
   .btn-primary{padding:12px 26px;font-size:15px}
 
   /* 칩 11개를 631px → 200px대로. 설명줄(.s)은 값이 아니라 해설이라 여기서만 접는다.
-     3열이면 "주로 쓰는 손" 같은 긴 라벨도 안 깨진다. */
+     3열이면 "당뇨 합병증" 같은 긴 값도 안 깨진다. */
   .chips{grid-template-columns:repeat(3,1fr);gap:6px;margin-top:10px}
   .chip{padding:6px 8px;border-radius:10px}
   .chip .k{font-size:9px;letter-spacing:.06em}
