@@ -43,7 +43,11 @@ const CAUSES=[
  {key:"감염병",     emoji:"🦠", wt:a=>clamp(22-(a-45)*0.35,4,22)},
  {key:"사고",       emoji:"🚗", wt:(a,m)=>clamp(30-(a-45)*0.6,3,30)*(m?1.4:1)},
  {key:"치매",       emoji:"🧩", wt:(a,m)=>clamp((a-70)*1.6,0,40)*(m?1:1.2)},
- {key:"노환",       emoji:"🕯️", wt:a=>clamp((a-82)*2.2,0,40)},
+ /* 기울기를 2.2→3.5로 올렸다. 만성질환 쪽(심장병 등)은 상한이 없어 나이에 비례해 계속
+    자라는데 노환만 40에서 잘려서, 106세에도 최빈 사인이 심장병으로 나왔다(노환 15%).
+    상한만 올려도 안 된다 — 106세 심장병 가중치가 64.9라 기울기 2.2로는 못 넘는다.
+    이 값이면 90대 후반부터 노환이 앞서고(106세 27%), 45~80세 분포는 그대로다. */
+ {key:"노환",       emoji:"🕯️", wt:a=>clamp((a-82)*3.5,0,90)},
 ];
 export function rollCause(l){
  const seed=strHash([isoCode(l.c.flag),l.lifeExp,Math.round(l.income),l.iq,l.height,Math.round(l.weight*10)].join("-"));
