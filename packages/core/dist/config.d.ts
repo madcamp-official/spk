@@ -39,15 +39,52 @@ export declare const SAMPLING: {
      *  값을 지어내지 말고, 국가별 출산율을 추가한 뒤 Country.fertility 를 참조할 것. */
     readonly siblingsLambda: number | null;
 };
-/** §D 생 희귀도 점수 — 축별 국가 내 백분위 합성 × 국가 확률.
- *  TODO(balance): 합성 공식(가중치·정규화 방식)이 미정이다. 표기는 "상위 n%". */
+/** §D 생 희귀도 점수 — 축별 국가 내 백분위 합성 × 국가 확률. 표기는 "상위 n%".
+ *
+ *  점수의 뜻: **"이 생보다 희귀한 생이 나올 확률"**. 그래서 값이 작을수록 희귀하고,
+ *  100을 곱하면 그대로 "상위 n%"가 된다(별도 환산표가 필요 없다).
+ *    score = P(국가)^countryWeight × Π P(축이 이만큼 극단적일 확률)^lifeWeight
+ *  축 극단성은 양쪽 꼬리를 본다 — 아주 크거나 아주 작거나 둘 다 드문 일이다.
+ *
+ *  TODO(balance): 아래 세 값은 제안 초기값이다. 중립(1.0)에서 시작해
+ *  실제 분포를 보고 조정할 것 — countryWeight를 올리면 소국 출생이, lifeWeight를
+ *  올리면 극단적 스탯이 더 희귀하게 잡힌다. */
 export declare const RARITY_SCORE: {
-    /** 국가 뽑힐 확률에 걸 지수/가중치 */
+    /** 국가 뽑힐 확률에 걸 지수. 1 = 그대로 반영 */
     readonly countryWeight: number | null;
-    /** 생 극단성(축별 백분위 합성)에 걸 가중치 */
+    /** 생 극단성에 걸 지수. 1 = 그대로 반영 */
     readonly lifeWeight: number | null;
-    /** 합성에 쓸 축과 각 축의 비중 */
+    /** 합성에 쓸 축과 비중. 키는 국가 평균이 있어 "국가 내 백분위"를 낼 수 있는 축만.
+     *  소득·수명은 서사에 크게 걸려 동등하게, 키는 절반만 준다. */
     readonly axisWeights: Record<string, number> | null;
+};
+/** §D 특성 태그 — 업 계승(§C)의 이월 단위.
+ *
+ *  ⚠ 데이터가 없어 「대가족」(형제 수)은 아직 만들 수 없다. 여기 있는 것은 전부
+ *  지금 core가 이미 뽑고 있는 값에서 파생한 것뿐이다(새 데이터 0).
+ *
+ *  ⚠ 톤 가이드(§F): 저소득·단명을 태그로 만들지 않는다. "꽝"으로 읽히는 이름표를
+ *  붙이는 순간 그 생이 덱의 자산이 아니라 실패가 된다. 그래서 태그는 전부 긍정형이고,
+ *  태그가 하나도 없는 생도 결과 화면에서 결핍처럼 보이지 않게 렌더한다.
+ *
+ *  TODO(balance): 임계값은 제안 초기값이다. 태그가 너무 흔하면 이월 선택이 무의미해지고,
+ *  너무 드물면 버튼이 대부분 비어 보인다. 실제 발생률을 보고 조정할 것. */
+export declare const TRAITS: {
+    /** 기대수명(년) 이상이면 「장수」 */
+    readonly longevityMinYears: 85;
+    /** 세계 소득 상위 % 이내면 「부」 */
+    readonly wealthTopPct: 10;
+    /** 모국 인구(백만) 미만이면 「희귀한 고향」 */
+    readonly rareLandMaxPopM: 30;
+    /** IQ 이상이면 「명석」 */
+    readonly geniusMinIq: 120;
+};
+/** §C 업 계승 — 직전 생의 특성 1개를 물려받아 다음 생을 뽑는다.
+ *  구현은 기각 표집(그 특성이 나올 때까지 다시 뽑기)이라 상한이 필요하다. */
+export declare const KARMA: {
+    /** 이 횟수 안에 특성이 안 나오면 마지막 생을 그대로 쓴다(계승 실패를 솔직히 알린다).
+     *  TODO(balance): 태그별 실제 발생률을 보고 조정. 뽑기는 순수 계산이라 수백 회도 즉시 끝난다. */
+    readonly maxResamples: 500;
 };
 /** §E 배틀 */
 export declare const BATTLE: {
@@ -63,7 +100,9 @@ export declare const BATTLE: {
 export declare const MERIT: {
     /** 1일 기본 뽑기 횟수 (§C) */
     readonly dailyRolls: 3;
-    /** 추가 뽑기 1회의 공덕 비용. TODO(balance) */
+    /** 추가 뽑기 1회의 공덕 비용.
+     *  TODO(balance): 제안 초기값 10. 공덕을 버는 유일한 통로가 아직 배틀(4단계)뿐이라,
+     *  이 값은 배틀 보상(underdogWin·favoriteWin)이 정해진 뒤 함께 다시 봐야 한다. */
     readonly rerollCost: number | null;
     /** 열세 측이 이겼을 때 지급(대폭). TODO(balance) */
     readonly underdogWin: number | null;

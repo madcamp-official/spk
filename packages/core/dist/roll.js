@@ -4,7 +4,7 @@
 
    웹·서버(server/counter.js)·봇(2단계)이 전부 이 파일 하나를 쓴다. */
 import { DATA, TOTAL, CUM, REL, RARITY } from "./data.js";
-import { SAMPLING } from "./config.js";
+import { SAMPLING, RARITY_SCORE, TRAITS, KARMA } from "./config.js";
 import { rand, gauss, phi, clamp, pickWeighted } from "./util.js";
 /** 인구 가중 국가 추첨. CUM(누적 인구)에 이분 탐색. */
 export function pickCountryIdx() {
@@ -93,15 +93,74 @@ export function rollSiblings(_c) {
 export function rollOccupation(_life) {
     throw new Error("rollOccupation: 미구현 — 소득수준별 직업군 테이블이 필요합니다 (DiscordBot.md §D, 2단계)");
 }
-/** §D 특성 태그 — 위 조합에서 파생(「장수」「대가족」…). 업 계승(§C)의 이월 단위.
- *  TODO(2단계): 태그 목록·임계값 확정. 임계값은 밸런스 수치이므로 config.ts에 둘 것. */
-export function deriveTraits(_life) {
-    throw new Error("deriveTraits: 미구현 — 특성 태그 목록과 임계값이 필요합니다 (DiscordBot.md §D, 2단계)");
+/* ── §D 특성 태그 · 희귀도 (2단계에서 구현) ───────────────────────── */
+/** §D 특성 태그 — 지금 뽑고 있는 값에서만 파생한다(새 데이터 0).
+ *  「대가족」은 형제 수가 필요해 아직 없다 — 출산율 데이터가 생기면 여기 추가한다.
+ *  임계값은 전부 config.TRAITS(§A.8). 태그는 전부 긍정형이다(§F 톤 가이드). */
+export function deriveTraits(life) {
+    const t = [];
+    if (life.lifeExp >= TRAITS.longevityMinYears)
+        t.push({ key: "longevity", axis: "lifeExp" });
+    if (life.top <= TRAITS.wealthTopPct)
+        t.push({ key: "wealth", axis: "income" });
+    if (life.c.pop < TRAITS.rareLandMaxPopM)
+        t.push({ key: "rare_land", axis: "pop" });
+    if (life.iq >= TRAITS.geniusMinIq)
+        t.push({ key: "genius" });
+    if (life.lefty)
+        t.push({ key: "lefty" });
+    return t;
 }
-/** §D 생 희귀도 점수 — 축별 국가 내 백분위 합성 × 국가 확률. 표기는 "상위 n%".
- *  막힌 이유: 합성 공식이 미정이다(RARITY_SCORE의 계수가 전부 null).
- *  참고: 지금 웹이 쓰는 Life.prob(국가×성별×도시)은 이것과 다른 값이다 — 대체하지 말 것. */
-export function rarityScore(_life) {
-    throw new Error("rarityScore: 미구현 — 희귀도 합성 공식이 미확정입니다 (DiscordBot.md §D, config.RARITY_SCORE)");
+/** 업 계승으로 물려받을 수 있는 태그 목록(고정 순서). 버튼을 만들 때 쓴다. */
+export const TRAIT_KEYS = ["longevity", "wealth", "rare_land", "genius", "lefty"];
+export function hasTrait(life, key) {
+    return deriveTraits(life).some(t => t.key === key);
 }
+/** 한 축이 "이만큼 극단적일" 확률(양쪽 꼬리). 1이면 평범, 0에 가까울수록 드물다. */
+function tailProb(value, mean, sigma) {
+    if (!(sigma > 0))
+        return 1;
+    const p = phi((value - mean) / sigma);
+    return clamp(1 - Math.abs(2 * p - 1), 1e-9, 1);
+}
+/** §D 생 희귀도 점수 = "이 생보다 희귀한 생이 나올 확률". ×100 하면 "상위 n%".
+ *  값이 작을수록 희귀하다. 공식과 계수는 config.RARITY_SCORE 참고.
+ *
+ *  ⚠ Life.prob(국가×성별×도시)과는 다른 값이다 — prob은 "이 조합이 나올 확률"이고
+ *  이건 국가 확률에 스탯 극단성까지 곱한 것이다. 서로 대체하지 말 것. */
+export function rarityScore(life) {
+    const cw = RARITY_SCORE.countryWeight ?? 1;
+    const lw = RARITY_SCORE.lifeWeight ?? 1;
+    const w = RARITY_SCORE.axisWeights ?? {};
+    const c = life.c;
+    /* 국가: 인구 비중이 곧 뽑힐 확률 */
+    let score = Math.pow(c.pop / TOTAL, cw);
+    /* 축별 극단성. 평균·표준편차는 그 생을 만든 분포 그대로 쓴다(샘플링과 같은 기준). */
+    const axes = [
+        /* [값, 국가 평균, 표준편차, 가중치] */
+        [life.lifeExp, c.life, SAMPLING.lifespanSigmaYears, w.lifeExp ?? 0],
+        [Math.log(life.income), Math.log(c.gdp), SAMPLING.incomeLogSigma, w.income ?? 0],
+        [life.iq, SAMPLING.iq.mean, SAMPLING.iq.sigma, w.iq ?? 0],
+        [life.height, life.male ? c.hm : c.hf,
+            life.male ? SAMPLING.heightSigmaCm.male : SAMPLING.heightSigmaCm.female, w.height ?? 0],
+    ];
+    for (const [v, mean, sigma, weight] of axes) {
+        if (weight > 0)
+            score *= Math.pow(tailProb(v, mean, sigma), lw * weight);
+    }
+    return clamp(score, 1e-12, 1);
+}
+/** §C 업 계승 — 주어진 특성을 가진 생이 나올 때까지 다시 뽑는다(기각 표집).
+ *  상한(config.KARMA.maxResamples) 안에 못 찾으면 마지막 생을 그대로 돌려주고
+ *  inherited:false 로 알린다 — 실패를 성공인 척하지 않는다. */
+export function rollLifeWithTrait(traitKey) {
+    let life = rollLife();
+    for (let i = 1; i <= KARMA.maxResamples; i++) {
+        if (hasTrait(life, traitKey))
+            return { life, inherited: true, tries: i };
+        life = rollLife();
+    }
+    return { life, inherited: false, tries: KARMA.maxResamples };
+}
+/* ── §D 미구현 — 데이터가 없어서 못 만든 것 (3단계 이후) ──────────── */
 //# sourceMappingURL=roll.js.map

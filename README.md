@@ -80,6 +80,12 @@ apps/web/             정적 웹 (프레임워크·번들러 없음)
   og-image.png        링크 미리보기 배너 — og-image-<lang>.png 로 en/ja/zh/es/pt 도 있다
   en.html … pt.html   언어별 공유 랜딩. tools/make_share.py 가 생성
 
+apps/bot/             Discord 봇 (독립 프로세스). 기준 문서는 DiscordBot.md
+  src/commands/       /환생 (2단계). /여권·/덱·/도감은 3단계, /배틀은 4단계
+  src/db/             pg + 마이그레이션 (§G 스키마)
+  src/lib/            인생 요약(템플릿+LLM) · 임베드 · 표시 문구
+  src/verify.ts       WASM Postgres로 도는 자체 검증 (비밀값 불필요)
+
 server/counter.js   카운터·이벤트 수집 (VM에서만 동작). CommonJS 고정.
 tools/              dev-server.mjs · sync-core.mjs · make_og.py · make_share.py · analyze.py
 deploy.sh           배포
