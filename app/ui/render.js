@@ -66,9 +66,6 @@ export function renderLife(l){
  $("lifeNo").textContent=t("당신의 {n}번째 생",{n:ST.total.toLocaleString()});
  $("rollBtn").textContent=t("🔄 다시 환생하기");
  $("shareRow").hidden=false;
- const fl=$("fortuneLine");
- if(l.fortune){fl.hidden=false;fl.textContent="🔮 "+l.fortune;}
- else fl.hidden=true;
  /* 이 생을 보기 시작한 시각부터 dwell 시계가 돈다. lifeShownAt·마지막 상호작용 시각을
     함께 찍고, 자리를 비우면 dwell을 닫을 idle 타이머를 건다(track.js). */
  startDwellClock();

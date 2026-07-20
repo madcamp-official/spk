@@ -254,7 +254,6 @@ function applyStatic(){
  id("country").textContent=t("아직 태어나기 전입니다");
  id("subline").textContent=t("아래 버튼을 누르면 새로운 생을 받습니다");
  id("rollBtn").textContent=t("🌏 환생 시작하기");
- id("fortuneBtn").textContent=t("🔮 오늘의 환생 운세");
  id("shareImg").textContent=t("🖼️ 결과 카드 저장");
  id("shareBtn").textContent=t("📤 공유하기");
  id("stTotal").nextElementSibling.textContent=t("나의 환생 횟수");

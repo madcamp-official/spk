@@ -185,8 +185,6 @@ details.card summary::marker{color:var(--gold)}
 .odds-list .pc{color:var(--gold);font-weight:700}
 .odds-note{color:var(--muted);font-size:13px;margin-top:12px}
 
-.controls-sub{display:flex;gap:10px;justify-content:center;margin-top:12px}
-.fortune-line{color:#b78ef0;font-size:14px;margin:10px 0 0}
 .sg-row{display:flex;gap:8px}
 .sg-input{
   flex:1;min-width:0;padding:9px 12px;border-radius:10px;

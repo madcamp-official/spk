@@ -64,7 +64,7 @@
 <meta property="og:url" content="https://life-reroll.com/">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌏</text></svg>">
-<link rel="stylesheet" href="css/style.css?v=6">
+<link rel="stylesheet" href="css/style.css?v=10">
 <script>
 /* 칩 설명줄(.chip .s) 표시 판정. CSS의 min-height 미디어쿼리로 하면 모바일에서
    스크롤로 주소창이 접히고 펴질 때마다 뷰포트 높이가 변해 쿼리가 재평가되고,
@@ -107,7 +107,6 @@
     <div class="flag" id="flag">🌌</div>
     <h2 class="country" id="country">아직 태어나기 전입니다</h2>
     <p class="subline" id="subline">아래 버튼을 누르면 새로운 생을 받습니다</p>
-    <p class="fortune-line" id="fortuneLine" hidden></p>
     <div class="badges" id="badges"></div>
   </section>
 
@@ -119,12 +118,9 @@
 
   <section class="chips" id="chips" hidden></section>
 
-  <!-- 운세·공유는 결과를 다 본 뒤의 행동이라 칩 아래에 둔다. 리롤 버튼과 칩 사이에 끼우면
+  <!-- 공유는 결과를 다 본 뒤의 행동이라 칩 아래에 둔다. 리롤 버튼과 칩 사이에 끼우면
        모바일에서 76px을 밀어내 "국가+칩11+버튼"이 한 화면에 안 들어온다. -->
   <div class="controls controls-after">
-    <div class="controls-sub">
-      <button id="fortuneBtn">🔮 오늘의 환생 운세</button>
-    </div>
     <div class="share-row" id="shareRow" hidden>
       <button id="shareImg">🖼️ 결과 카드 저장</button>
       <button id="shareBtn">📤 공유하기</button>
