@@ -1,6 +1,8 @@
+import {TOTAL} from "../core/data.js";
 import {$,fmtPct,fmtUSD,isoCode,probPct} from "../core/util.js";
 import {t,term,countryName,contName,bigNum} from "../i18n/i18n.js";
 import {titleLine} from "./titlechip.js";
+import {CHIP_DEFS,lifeBadges} from "./render.js";
 import {ST,session} from "../core/state.js";
 import {flagOK,FLAG_FONT} from "./flags.js";
 import {rarityColor} from "../engine/roll.js";
@@ -183,67 +185,204 @@ export async function shareVia(ch){
 }
 document.querySelectorAll(".share-opt").forEach(b=>b.addEventListener("click",()=>shareVia(b.dataset.ch)));
 
-/* 결과 카드 이미지 (1080x1350) */
+/* 결과 카드 이미지 (1080x1350) — 사이트 결과 화면을 그대로 재현한다("다시 환생하기"
+   버튼만 없음): 히어로 패널(인구·국기·국가·서브라인·배지) + 칩 그리드.
+   칩 내용은 화면과 같은 CHIP_DEFS, 배지는 lifeBadges를 그대로 써서 둘이 어긋나지 않는다. */
 export function drawCard(l){
  const W=1080,H=1350,cv=document.createElement("canvas");cv.width=W;cv.height=H;
  const x=cv.getContext("2d");
+ /* 일본어 글리프는 Malgun Gothic에 없을 수 있어 Yu Gothic·Meiryo를 뒤에 받친다 */
+ const SANS="'Malgun Gothic','Apple SD Gothic Neo','Yu Gothic','Meiryo',sans-serif";
+ const SERIF="'Nanum Myeongjo','Noto Serif KR',Batang,'Malgun Gothic','Yu Mincho',serif";
+ const INK="#ece9f5",MUTED="#9a98b5",GOLD="#f3c95c",SURFACE="#141a33",LINE="#2a3158";
+ const rarity=rarityColor(l.c.pop);
+ const sp=v=>{try{x.letterSpacing=v;}catch(e){}};
+
+ /* 배경: 심연 그라데이션 + 별 (사이트 body + #stars) */
  const g=x.createLinearGradient(0,0,0,H);
  g.addColorStop(0,"#0a0d1c");g.addColorStop(.6,"#141a33");g.addColorStop(1,"#0a0d1c");
  x.fillStyle=g;x.fillRect(0,0,W,H);
  for(let i=0;i<160;i++){x.fillStyle="rgba(236,233,245,"+(Math.random()*.7+.1)+")";
   const r=Math.random()*1.8+.4;
   x.beginPath();x.arc(Math.random()*W,Math.random()*H,r,0,7);x.fill();}
+
+ /* 폭이 넘치면 글자를 줄여서 맞춘다 */
+ function fitFont(text,size,weight,fam,maxW,min){
+  let s=size;
+  x.font=(weight?weight+" ":"")+s+"px "+fam;
+  while(s>min&&x.measureText(text).width>maxW){s--;x.font=(weight?weight+" ":"")+s+"px "+fam;}
+  return s;
+ }
+ /* 현재 폰트 기준, 글자 단위 줄바꿈(최대 n줄, 넘치면 말줄임) — CJK엔 단어 경계가 없다 */
+ function wrapChars(text,maxW,n){
+  const out=[];let line="";
+  for(const ch of String(text)){
+   if(x.measureText(line+ch).width>maxW&&line){
+    if(out.length===n-1){ while(line&&x.measureText(line+"…").width>maxW)line=line.slice(0,-1);
+     out.push(line+"…");return out; }
+    out.push(line);line="";
+   }
+   line+=ch;
+  }
+  if(line)out.push(line);
+  return out;
+ }
+
+ /* ── 헤더 (사이트 header: 제목 + lifeno) ── */
  x.textAlign="center";
- /* 일본어 글리프는 Malgun Gothic에 없을 수 있어 Yu Gothic·Meiryo를 뒤에 받친다 */
- const SANS="'Malgun Gothic','Apple SD Gothic Neo','Yu Gothic','Meiryo',sans-serif";
- x.fillStyle="#f3c95c";x.font="600 34px "+SANS;
- x.fillText(t("환 생 시 뮬 레 이 터"),W/2,120);
- x.fillStyle="#9a98b5";x.font="30px "+SANS;
- x.fillText(t("나의 {n}번째 생",{n:ST.total.toLocaleString()}),W/2,175);
- /* 칭호 — 원래 목표였던 "자랑 공유"와 "도감작"이 만나는 지점이다.
-    "삼사라 중독자 · 47개국 수집"이 카드에 박히면 수집 자체가 공유 동기가 된다.
-    국기(240px)가 y≈290부터라 이 알약은 202~254 구간에 안전하게 들어간다. */
- const label=titleLine();
- if(label){
-  x.font="600 32px "+SANS;
-  const tw=x.measureText(label).width, ph=52;
-  roundRect(x,W/2-tw/2-26,202,tw+52,ph,ph/2);
+ sp("8px");
+ x.fillStyle=GOLD;x.font="600 34px "+SANS;
+ x.fillText(t("환 생 시 뮬 레 이 터"),W/2,96);
+ sp("0px");
+ /* 칭호 + 생 번호를 한 줄에 — 사이트 헤더(.idrow)와 같은 구성이다.
+    이 카드의 규칙이 "결과 화면을 그대로 재현"이므로 화면과 같은 줄에 둔다.
+    히어로(hy=192)를 밀지 않으니 아래 높이 계산은 그대로 둬도 된다. */
+ const lifeNo=t("당신의 {n}번째 생",{n:ST.total.toLocaleString()});
+ const title=titleLine();
+ if(title){
+  x.font="600 24px "+SANS;
+  const lw=x.measureText(title).width, pw=lw+28, ph=38, gap=12;
+  x.font="26px "+SANS;
+  const numW=x.measureText(lifeNo).width;
+  const left=W/2-(pw+gap+numW)/2;
+  roundRect(x,left,148-27,pw,ph,ph/2);
   x.fillStyle="rgba(243,201,92,.14)";x.fill();
   x.strokeStyle="rgba(243,201,92,.5)";x.lineWidth=2;x.stroke();
-  x.fillStyle="#f3c95c";x.fillText(label,W/2,236);
- }
- if(flagOK){
-  x.font="240px "+FLAG_FONT;
-  x.fillText(l.c.flag,W/2,470);
+  x.textAlign="left";
+  x.fillStyle=GOLD;x.font="600 24px "+SANS;
+  x.fillText(title,left+14,148);
+  x.font="26px "+SANS;
+  x.fillText(lifeNo,left+pw+gap,148);
+  x.textAlign="center";
  }else{
-  x.strokeStyle="#f3c95c";x.lineWidth=8;
-  x.beginPath();x.arc(W/2,380,130,0,7);x.stroke();
-  x.fillStyle="#f3c95c";x.font="800 96px 'Segoe UI',sans-serif";
-  x.fillText(isoCode(l.c.flag),W/2,415);
+  x.font="26px "+SANS;
+  x.fillText(lifeNo,W/2,148);
  }
- x.fillStyle="#ece9f5";x.font="800 88px Batang,'Malgun Gothic','Yu Mincho',serif";
- x.fillText(countryName(l.c),W/2,610);
- x.fillStyle="#9a98b5";x.font="36px "+SANS;
- x.fillText(contName(l.c.cont)+" · "+t(l.urban?"도시":"농촌")+" · "+t(l.male?"남자":"여자"),W/2,672);
- /* 등급 배지가 있던 자리. 이제 확률 자체가 희귀도를 말하므로 숫자를 크게 세운다. */
- x.fillStyle=rarityColor(l.c.pop);x.font="800 56px "+SANS;
- x.fillText(t("확률 {p}",{p:fmtPct(l.prob)}),W/2,762);
- x.fillStyle="#9a98b5";x.font="30px "+SANS;
- x.fillText(t("약 {n}번 중 1번",{n:bigNum(1/l.prob)}),W/2,810);
- /* 12개 항목을 2열 × 6줄로. 공유 문구와 같은 lifeStatLines()를 써서 둘이 어긋나지 않는다. */
- const stats=lifeStatLines(l);
- x.font="30px "+SANS;x.textAlign="left";
- const colX=[96,W/2+30], rowY0=880, rowGap=56;
- stats.forEach((line,i)=>{
-  const col=i%2, row=(i-col)/2;
-  x.fillStyle="#ece9f5";
-  x.fillText(line,colX[col],rowY0+row*rowGap);
+
+ /* ── 히어로 패널 내용 계획 (높이를 먼저 계산해야 테두리를 그린다) ── */
+ const badges=lifeBadges(l);
+ const hx=54,hw=W-108,hy=192;
+ let heroH=86+170+84+46+26;              /* popline+국기+국가+서브라인+아래 여백 */
+ if(l.fortune)heroH+=44;
+ if(badges.length)heroH+=64;
+
+ /* 패널: 표면 그라데이션 + 희귀도 색 테두리·광채 (사이트 .hero) */
+ const pg=x.createLinearGradient(0,hy,0,hy+heroH);
+ pg.addColorStop(0,SURFACE);pg.addColorStop(1,"#10152b");
+ x.fillStyle=pg;roundRect(x,hx,hy,hw,heroH,20);x.fill();
+ x.save();
+ x.shadowColor=rarity;x.shadowBlur=46;
+ x.strokeStyle=rarity;x.lineWidth=3;
+ roundRect(x,hx,hy,hw,heroH,20);x.stroke();
+ x.restore();
+
+ let cy=hy+60;
+ /* popline: 인구 + 걸릴 확률 */
+ const pop=t("{n}명",{n:l.c.pop>=1?bigNum(l.c.pop*1e6):Math.round(l.c.pop*1e6).toLocaleString()});
+ const popline=t("인구 {p}",{p:pop})+" · "+t("걸릴 확률 {p}",{p:fmtPct(l.c.pop/TOTAL)});
+ x.fillStyle=MUTED;
+ fitFont(popline,26,"",SANS,hw-80,18);
+ x.fillText(popline,W/2,cy);
+ cy+=26;
+ /* 국기 (미지원이면 사이트 .code-flag 스타일의 원형 ISO 배지) */
+ if(flagOK){
+  x.font="150px "+FLAG_FONT;
+  x.fillText(l.c.flag,W/2,cy+140);
+ }else{
+  x.strokeStyle=GOLD;x.lineWidth=6;
+  x.beginPath();x.arc(W/2,cy+85,80,0,7);x.stroke();
+  x.fillStyle="#1c2445";x.beginPath();x.arc(W/2,cy+85,77,0,7);x.fill();
+  x.fillStyle=GOLD;x.font="800 58px 'Segoe UI',sans-serif";
+  x.fillText(isoCode(l.c.flag),W/2,cy+106);
+ }
+ cy+=170;
+ /* 국가명 (serif) */
+ const cname=countryName(l.c);
+ x.fillStyle=INK;
+ fitFont(cname,64,"800",SERIF,hw-80,34);
+ x.fillText(cname,W/2,cy+58);
+ cy+=84;
+ /* 서브라인 */
+ const sub=t("{cont} · {urban}에서 {gender}로 태어났습니다",
+  {cont:contName(l.c.cont),urban:t(l.urban?"도시":"농촌"),gender:t(l.male?"남자":"여자")});
+ x.fillStyle=MUTED;
+ fitFont(sub,30,"",SANS,hw-80,20);
+ x.fillText(sub,W/2,cy+30);
+ cy+=46;
+ /* 운세 (있을 때만 — 사이트 .fortune-line) */
+ if(l.fortune){
+  const fl="🔮 "+l.fortune;
+  x.fillStyle="#b78ef0";
+  fitFont(fl,26,"",SANS,hw-80,17);
+  x.fillText(fl,W/2,cy+28);
+  cy+=44;
+ }
+ /* 배지 (사이트 .badge 알약) */
+ if(badges.length){
+  let bf=21;
+  x.font="600 "+bf+"px "+SANS;
+  const padX=16,gapB=10,hB=42;
+  let widths=badges.map(b=>x.measureText(b).width+padX*2);
+  let total=widths.reduce((a,b)=>a+b,0)+gapB*(badges.length-1);
+  while(total>hw-40&&bf>14){
+   bf--;x.font="600 "+bf+"px "+SANS;
+   widths=badges.map(b=>x.measureText(b).width+padX*2);
+   total=widths.reduce((a,b)=>a+b,0)+gapB*(badges.length-1);
+  }
+  let bx=W/2-total/2;
+  badges.forEach((b,i)=>{
+   x.fillStyle="rgba(243,201,92,.14)";
+   roundRect(x,bx,cy+8,widths[i],hB,21);x.fill();
+   x.strokeStyle="rgba(243,201,92,.4)";x.lineWidth=2;
+   roundRect(x,bx,cy+8,widths[i],hB,21);x.stroke();
+   x.fillStyle=GOLD;x.textAlign="left";
+   x.fillText(b,bx+padX,cy+8+28);
+   bx+=widths[i]+gapB;
+  });
+  x.textAlign="center";
+  cy+=64;
+ }
+
+ /* ── 칩 그리드 (사이트 .chips — 화면과 같은 CHIP_DEFS) ── */
+ const defs=CHIP_DEFS.map(d=>{const r=d.f(l);return {k:t(d.k),v:String(r.v),s:String(r.s)};});
+ const cols=3,gap=14,rows=Math.ceil(defs.length/cols);
+ const cw=(hw-gap*(cols-1))/cols;
+ const chY=hy+heroH+20,footH=118;
+ let ch=Math.floor((H-chY-footH-(rows-1)*gap)/rows);
+ ch=Math.max(112,Math.min(152,ch));
+ const tall=ch>=128;   /* 히어로가 길면 칩이 낮아진다 — 안 배치를 압축한다 */
+ x.textAlign="left";
+ defs.forEach((d,i)=>{
+  const col=i%cols,row=(i-col)/cols;
+  const px=hx+col*(cw+gap),py=chY+row*(ch+gap);
+  x.fillStyle=SURFACE;roundRect(x,px,py,cw,ch,14);x.fill();
+  x.strokeStyle=LINE;x.lineWidth=2;roundRect(x,px,py,cw,ch,14);x.stroke();
+  const pad=18,tx=px+pad,maxW=cw-pad*2;
+  sp("2px");
+  x.fillStyle=MUTED;
+  fitFont(d.k,15,"600",SANS,maxW,11);
+  x.fillText(d.k,tx,py+(tall?34:30));
+  sp("0px");
+  x.fillStyle=INK;
+  fitFont(d.v,27,"700",SANS,maxW,17);
+  x.fillText(d.v,tx,py+(tall?74:66));
+  x.fillStyle=MUTED;
+  if(tall){ /* 설명줄 최대 2줄 */
+   x.font="16px "+SANS;
+   wrapChars(d.s,maxW,2).forEach((ln,j)=>x.fillText(ln,tx,py+100+j*22));
+  }else{   /* 낮은 칩: 글자를 줄여서라도 한 줄에 최대한 다 넣는다 */
+   fitFont(d.s,16,"",SANS,maxW,12);
+   x.fillText(wrapChars(d.s,maxW,1)[0],tx,py+94);
+  }
  });
+
+ /* ── 푸터 ── */
  x.textAlign="center";
- x.fillStyle="#9a98b5";x.font="28px "+SANS;
- x.fillText(t("당신의 다음 생은 어디에서 시작될까요?"),W/2,H-116);
- x.fillStyle="#f3c95c";
- x.fillText(location.host||t("환생 시뮬레이터"),W/2,H-68);
+ x.fillStyle=MUTED;
+ fitFont(t("당신의 다음 생은 어디에서 시작될까요?"),26,"",SANS,W-120,18);
+ x.fillText(t("당신의 다음 생은 어디에서 시작될까요?"),W/2,H-84);
+ x.fillStyle=GOLD;x.font="26px "+SANS;
+ x.fillText(location.host||t("환생 시뮬레이터"),W/2,H-42);
  return cv;
 }
 export function roundRect(x,px,py,w,h,r){
