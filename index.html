@@ -64,7 +64,7 @@
 <meta property="og:url" content="https://life-reroll.com/">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌏</text></svg>">
-<link rel="stylesheet" href="css/style.css?v=6">
+<link rel="stylesheet" href="css/style.css?v=9">
 <script>
 /* 칩 설명줄(.chip .s) 표시 판정. CSS의 min-height 미디어쿼리로 하면 모바일에서
    스크롤로 주소창이 접히고 펴질 때마다 뷰포트 높이가 변해 쿼리가 재평가되고,
@@ -97,11 +97,13 @@
   <header>
     <div class="eyebrow">Samsara Simulator</div>
     <h1>환생 시뮬레이터</h1>
-    <p class="tagline">당신의 다음 생은, 실제 지구 인구 분포 확률 그대로 정해집니다</p>
     <p class="lifeno" id="lifeNo"></p>
   </header>
 
-  <section class="hero" id="hero">
+  <!-- 결과(hero)·리롤 버튼·통계는 리롤 후에만 쓰인다. 리롤 전엔 아래 intro-card가 화면을 대신하므로
+       기본 hidden으로 두고, main.js가 상황(리롤 전 / 공유받은 생)에 맞게 드러낸다 —
+       기본 노출로 두면 로드 순간 전체 앱이 번쩍였다 접히는 FOUC가 생긴다. -->
+  <section class="hero" id="hero" hidden>
     <p class="shared-note" id="sharedNote" hidden>🔗 친구가 공유한 생 — 아래 버튼으로 내 생을 뽑아 보세요</p>
     <p class="popline" id="popline" hidden></p>
     <div class="flag" id="flag">🌌</div>
@@ -111,17 +113,35 @@
     <div class="badges" id="badges"></div>
   </section>
 
-  <!-- 리롤이 핵심 루프라 버튼은 결과 바로 아래에 둔다. 칩(11개)이 사이에 있으면
-       모바일에서 631px을 밀어내 버튼이 화면 밖으로 나간다. -->
-  <div class="controls">
-    <button class="btn-primary" id="rollBtn">🌏 환생 시작하기</button>
+  <!-- 리롤 전 첫 화면. 예시 결과·CTA·사회적 증거·도감을 한 카드로 묶어 첫 클릭에 집중시킨다.
+       로그인 없이 그대로 동작한다("가입 없음"). render.js showSample()이 예시 카드를 실제 데이터로
+       채우고, 첫 생을 그리는 순간 renderLife()가 이 카드를 숨기며 hero·리롤·통계를 드러낸다.
+       공유받은 생(?s=/?l=)은 이 카드를 거치지 않고 바로 hero에 그려진다. -->
+  <section class="intro-card" id="introCard" hidden>
+    <p class="intro-hook" id="introHook">인도에서 태어날 확률 17.8%, 모나코는 20만 분의 1. 당신은?</p>
+    <div class="sample-card" id="sampleCard" aria-hidden="true" hidden></div>
+    <button class="btn-roll" id="introRoll">내 다음 생 뽑기</button>
+    <p class="intro-friction" id="introFriction">3초면 끝나요 · 가입 없음</p>
+    <p class="roll-social" id="rollSocial" hidden></p>
+    <div class="intro-foot">
+      <button class="dex-tease" id="dexTease" title="환생 도감 열기">
+        <span class="dt-ico" aria-hidden="true">📖</span>
+        <span class="dt-label" id="dexTeaseLabel">나의 도감</span>
+        <span class="dt-count" id="dexTeaseCount">0 / 0</span>
+      </button>
+      <span class="title-lock" id="titleLock"><span aria-hidden="true">🔒</span> 칭호 잠김</span>
+    </div>
+  </section>
+
+  <!-- 리롤 버튼은 결과(hero) 바로 아래. 리롤 전엔 위 intro-card의 CTA가 대신하므로 숨겨 둔다. -->
+  <div class="controls" id="controls" hidden>
+    <button class="btn-primary" id="rollBtn">🔄 다시 환생하기</button>
   </div>
 
   <section class="chips" id="chips" hidden></section>
 
-  <!-- 운세·공유는 결과를 다 본 뒤의 행동이라 칩 아래에 둔다. 리롤 버튼과 칩 사이에 끼우면
-       모바일에서 76px을 밀어내 "국가+칩11+버튼"이 한 화면에 안 들어온다. -->
-  <div class="controls controls-after">
+  <!-- 운세·공유는 결과를 다 본 뒤의 행동이라 칩 아래에 둔다. -->
+  <div class="controls controls-after" id="controlsAfter" hidden>
     <div class="controls-sub">
       <button id="fortuneBtn">🔮 오늘의 환생 운세</button>
     </div>
@@ -131,7 +151,7 @@
     </div>
   </div>
 
-  <section class="stats">
+  <section class="stats" id="stats" hidden>
     <div class="stat"><div class="n" id="stTotal">0</div><div class="l">나의 환생 횟수</div></div>
     <!-- 카운터 API가 없는 환경(로컬에서 index.html만 띄울 때)에서는 계속 hidden으로 남는다 -->
     <div class="stat" id="globalStat" hidden><div class="n" id="stGlobal">—</div><div class="l">모두의 환생 횟수 🌏</div></div>

@@ -1,4 +1,6 @@
 import {$,isAutomated} from "../core/util.js";
+import {t} from "../i18n/i18n.js";
+import {session} from "../core/state.js";
 
 /* ===== 모두의 환생 횟수 (같은 도메인의 /api/counter) =====
    카운터 서버가 없으면 globalTotal이 null로 남고 타일은 숨겨진 채 앱은 그대로 동작한다. */
@@ -8,6 +10,13 @@ export function showGlobal(n){
  globalTotal=n;
  $("stGlobal").textContent=n.toLocaleString();
  $("globalStat").hidden=false;
+ /* CTA 바로 아래 사회적 증거 줄. 리롤 전에만 띄운다 — 첫 생이 뜨면 아래 stats 타일이
+    같은 수를 이어받으므로, 결과 화면에서 같은 숫자가 두 번 보이지 않게 여기서 숨긴다. */
+ const rs=$("rollSocial");
+ if(rs){
+  rs.textContent="👥 "+t("지금까지 {n}번의 환생",{n:n.toLocaleString()});
+  if(!session.currentLife)rs.hidden=false;
+ }
 }
 function readGlobal(j){return j&&Number.isFinite(j.total)?j.total:null;}
 fetch(COUNTER_API,{cache:"no-store"})
