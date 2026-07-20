@@ -5,7 +5,7 @@ import {ST,seenSet,persist,session} from "../core/state.js";
 import {startDwellClock} from "../analytics/track.js";
 import {flagHTML} from "./flags.js";
 import {rarityColor,iqTopPct} from "../engine/roll.js";
-import {bumpGlobal} from "./counter.js";
+import {bumpGlobal,revealGlobalStat} from "./counter.js";
 import {burstConfetti} from "./effects.js";
 
 export function updateStats(){
@@ -38,6 +38,8 @@ export const CHIP_DEFS=[
 ];
 export function renderLife(l){
  session.currentLife=l;
+ /* 헤더가 넘겨받은 '모두의 환생 횟수' 타일을 통계에 드러낸다. */
+ revealGlobalStat();
  const hero=$("hero");
  hero.style.setProperty("--rarity-color",rarityColor(l.c.pop));
  $("popline").hidden=false;

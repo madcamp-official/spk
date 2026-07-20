@@ -47,6 +47,8 @@ const STR={
 "아직 태어나기 전입니다":["You haven't been born yet","まだ生まれる前です","你还没有出生","Aún no has nacido","Você ainda não nasceu"],
 "아래 버튼을 누르면 새로운 생을 받습니다":["Press the button below to receive a new life","下のボタンを押すと新しい人生を授かります","按下方按钮,获得新的人生","Pulsa el botón de abajo para recibir una nueva vida","Aperte o botão abaixo para receber uma nova vida"],
 "🌏 환생 시작하기":["🌏 Start Reincarnation","🌏 転生を始める","🌏 开始转世","🌏 Empezar la Reencarnación","🌏 Começar a Reencarnação"],
+/* ── 첫 화면: 헤더의 모두의 환생 횟수(counter.js) ── */
+"🌏 다 함께 {n}번 환생했어요":["🌏 {n} rebirths and counting","🌏 みんなで{n}回 転生しました","🌏 大家已经转世 {n} 次","🌏 {n} reencarnaciones y subiendo","🌏 {n} reencarnações e contando"],
 "🔮 오늘의 환생 운세":["🔮 Today's Rebirth Fortune","🔮 今日の転生占い","🔮 今日转世运势","🔮 Fortuna de Reencarnación de Hoy","🔮 Sorte de Reencarnação de Hoje"],
 "🖼️ 결과 카드 저장":["🖼️ Save Result Card","🖼️ 結果カードを保存","🖼️ 保存结果卡片","🖼️ Guardar Tarjeta de Resultado","🖼️ Salvar Cartão de Resultado"],
 "📤 공유하기":["📤 Share","📤 シェア","📤 分享","📤 Compartir","📤 Compartilhar"],
