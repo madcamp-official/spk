@@ -7,12 +7,14 @@ import {topTitle,nextGoal,dexProgress} from "../engine/titles.js";
    ⚠ 실험 단계라 ko/en 두 벌뿐이다 — ja/zh/es/pt 는 영어로 떨어진다. */
 export const tname=x=>x?(cur==="ko"?x.ko:x.en):"";
 
-/* 대표 칭호 칩. hero의 .badges 행 맨 앞에 끼워 넣는다 —
-   그 행은 min-height로 이미 자리를 잡고 있어서 세로 높이가 늘지 않는다
-   (모바일에서 "국가+칩11+버튼"이 한 화면에 들어가야 하는 제약을 깨면 안 된다). */
-export function titleChipHTML(){
+/* 대표 칭호를 헤더의 정체성 줄(생 번호 옆)에 그린다.
+   hero의 배지 행이 아니라 여기인 이유: 칭호는 누적 성취고 배지는 이번 생 한 판짜리라
+   나란히 두면 같은 종류로 읽힌다. 기존 줄에 얹으므로 모바일 한 화면 제약도 안 건드린다. */
+export function paintTitle(){
+ const el=$("titleTag"); if(!el)return;
  const x=topTitle();
- return x?'<span class="badge badge-title">'+x.icon+" "+tname(x)+"</span>":"";
+ el.textContent=x?x.icon+" "+tname(x):"";
+ el.hidden=!x;
 }
 
 /* 공유 카드와 공유 문구가 함께 쓰는 한 줄 — "🏅 삼사라 중독자 · 47개국 수집".

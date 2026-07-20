@@ -331,6 +331,16 @@ footer a{color:var(--gold)}
   background:linear-gradient(180deg,rgba(243,201,92,.22),rgba(243,201,92,.10));
   border-color:rgba(243,201,92,.55);color:var(--gold);font-weight:700;
 }
+/* 정체성 줄: 칭호 + 생 번호를 한 줄에. 기존 .lifeno 줄에 얹으므로 세로가 거의 안 는다
+   (모바일에서 "국가+칩12+버튼 한 화면" 제약을 지켜야 한다). */
+.idrow{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;margin-top:10px}
+.idrow .lifeno{margin:0}
+.idrow .badge-title{font-size:12px;padding:3px 10px}
+@media (max-width:480px),(max-height:720px){
+  .idrow{margin-top:4px;gap:6px}
+  .idrow .badge-title{font-size:11px;padding:2px 8px}
+}
+
 /* 진행률 바 — 숫자만 두면 "얼마나 남았는지"가 안 읽힌다. 시각화 자체가 리텐션 장치다. */
 .dexbar{margin-top:8px;height:5px;border-radius:99px;background:rgba(236,233,245,.12);overflow:hidden}
 .dexbar i{display:block;height:100%;width:0;border-radius:99px;
@@ -340,3 +350,23 @@ footer a{color:var(--gold)}
   .dexgoal{font-size:10px}
   .dexbar{margin-top:6px;height:4px}
 }
+
+/* ===== 업적 목록 (실험) ===== */
+.badge-title{cursor:pointer}
+/* .modal 은 max-height:82vh 플렉스 컬럼이라, 목록이 스스로 스크롤해야 밖으로 넘치지 않는다.
+   min-height:0 이 없으면 플렉스 자식이 안 줄어들어 overflow-y가 안 먹는다. */
+.ach-grid{display:grid;gap:14px;margin-top:10px;overflow-y:auto;min-height:0;padding:2px}
+.ach-group h4{margin:0 0 6px;font-size:13px;color:var(--muted);font-weight:600}
+.ach-count{color:var(--gold);font-variant-numeric:tabular-nums}
+.ach-item{display:flex;flex-direction:column;gap:3px;padding:8px 10px;border-radius:10px;
+  background:rgba(236,233,245,.04);border:1px solid rgba(236,233,245,.08);margin-bottom:6px}
+/* 딴 것만 금색으로 세운다 — 못 딴 것이 흐려야 목표로 읽힌다 */
+.ach-item.ok{background:linear-gradient(180deg,rgba(243,201,92,.14),rgba(243,201,92,.06));
+  border-color:rgba(243,201,92,.4)}
+.ach-item.ok .ach-name{color:var(--gold);font-weight:700}
+.ach-name{font-size:13px}
+.ach-item:not(.ok) .ach-name{opacity:.65}
+.ach-sub{font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums}
+.ach-bar{height:4px;border-radius:99px;background:rgba(236,233,245,.12);overflow:hidden}
+.ach-bar i{display:block;height:100%;background:linear-gradient(90deg,#6fb1e8,#f3c95c)}
+@media (min-width:560px){.ach-grid{grid-template-columns:1fr 1fr}}

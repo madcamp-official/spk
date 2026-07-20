@@ -1,12 +1,25 @@
 /* ===== 저장 상태 (localStorage) ===== */
-export let ST={total:0,seen:[],best:null,dev:null,ab:null,vIn:null,viaIn:null,refFirst:null,metrics:{},suggests:[],fortuneDay:null};
+/* rec·relSeen·ethSeen 은 업적용 누적 기록이다(실험).
+   나라(seen)와 달리 지금까지는 아무 데도 안 남던 값들 — 최고 IQ, 최장신, 겪어본 종교 등.
+   여기 없으면 업적을 계산할 근거 자체가 없어서 상태에 추가했다. */
+export let ST={total:0,seen:[],best:null,dev:null,ab:null,vIn:null,viaIn:null,refFirst:null,metrics:{},suggests:[],fortuneDay:null,
+ rec:{},relSeen:[],ethSeen:[]};
 try{const s=localStorage.getItem("rebirth_state");if(s)ST=Object.assign(ST,JSON.parse(s));}catch(e){}
 /* 손상·구버전 저장 데이터 방어 */
 if(!Array.isArray(ST.seen))ST.seen=[];
 if(typeof ST.total!=="number"||!isFinite(ST.total))ST.total=0;
 if(typeof ST.metrics!=="object"||!ST.metrics)ST.metrics={};
+/* 업적 기록도 같은 방어를 받는다 — 이 필드들이 없던 시절의 저장본이 그대로 올라온다 */
+if(typeof ST.rec!=="object"||!ST.rec)ST.rec={};
+if(!Array.isArray(ST.relSeen))ST.relSeen=[];
+if(!Array.isArray(ST.ethSeen))ST.ethSeen=[];
 export const seenSet=new Set(ST.seen);
-export function persist(){try{ST.seen=[...seenSet];localStorage.setItem("rebirth_state",JSON.stringify(ST));}catch(e){}}
+export const relSet=new Set(ST.relSeen);
+export const ethSet=new Set(ST.ethSeen);
+export function persist(){try{
+ ST.seen=[...seenSet];ST.relSeen=[...relSet];ST.ethSeen=[...ethSet];
+ localStorage.setItem("rebirth_state",JSON.stringify(ST));
+}catch(e){}}
 
 /* 지금 보고 있는 생. 여러 모듈(트래킹·공유·제안)이 함께 읽고 쓰기 때문에
    모듈 지역 변수 대신 이 객체 하나에 모아 둔다.
