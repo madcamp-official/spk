@@ -53,7 +53,6 @@ const STR={
 "나의 환생 횟수":["My rebirths","私の転生回数","我的转世次数","Mis reencarnaciones","Minhas reencarnações"],
 "모두의 환생 횟수 🌏":["Everyone's rebirths 🌏","みんなの転生回数 🌏","大家的转世次数 🌏","Reencarnaciones de todos 🌏","Reencarnações de todos 🌏"],
 "태어나 본 나라 · 도감 📖":["Countries lived · Dex 📖","生まれた国 · 図鑑 📖","出生过的国家 · 图鉴 📖","Países vividos · Dex 📖","Países vividos · Dex 📖"],
-"최고 희귀 기록":["Rarest record","最高レア記録","最稀有记录","Récord más raro","Recorde mais raro"],
 "환생 도감 열기":["Open the rebirth dex","転生図鑑を開く","打开转世图鉴","Abrir el dex de reencarnación","Abrir o dex de reencarnação"],
 "어느 나라로 태어날 확률이 가장 높을까?":["Which country are you most likely to be born in?","どの国に生まれる確率がいちばん高い?","出生在哪个国家的概率最高?","¿En qué país es más probable que nazcas?","Em qual país é mais provável você nascer?"],
 "💡 이런 항목도 환생 결과에 넣어 주세요":["💡 Tell us what to add to the rebirth results","💡 こんな項目も転生結果に入れてほしい","💡 希望转世结果里也加入这些项目","💡 Dinos qué añadir a los resultados","💡 Diga o que adicionar aos resultados"],
@@ -151,6 +150,10 @@ const STR={
 "🎰 확률 {p}의 환생 뽑기 성공! {flag}{country}":["🎰 Hit a {p} rebirth roll! {flag}{country}","🎰 確率{p}の転生ガチャ成功! {flag}{country}","🎰 抽中了概率{p}的转世!{flag}{country}","🎰 ¡Reencarnación conseguida con probabilidad {p}! {flag}{country}","🎰 Reencarnação de probabilidade {p} conquistada! {flag}{country}"],
 "이 생을 받을 확률 {p} · ":["Odds of this life: {p} · ","この人生を引く確率 {p} · ","抽中这一世的概率 {p} · ","Probabilidad de esta vida {p} · ","Probabilidade desta vida {p} · "],
 "나의 {n}번째 생":["My life #{n}","私の{n}回目の人生","我的第{n}世","Mi vida n.º {n}","Minha vida nº {n}"],
+/* 칭호(실험): ko/en 두 벌만 채웠다. 나머지 4개 언어는 t()가 한국어 키로 폴백한다.
+   채택하면 ja/zh/es/pt 칸을 반드시 채울 것 — 지금 유입이 영어권이라 en이 우선이었다. */
+"{n}개국 수집":["{n} countries collected"],
+"업적 · 칭호 🏅":["Achievements 🏅"],
 "나도 환생해 보기 👉 {url}":["Try your own rebirth 👉 {url}","あなたも転生してみて 👉 {url}","你也来转世看看 👉 {url}","Prueba tu reencarnación 👉 {url}","Faça sua reencarnação 👉 {url}"],
 "{flag}{country}에서 태어났습니다":["Born in {flag}{country}","{flag}{country}で生まれました","出生在{flag}{country}","Nací en {flag}{country}","Nasci em {flag}{country}"],
 "확률 {p} · 나의 {n}번째 생":["Odds {p} · my life #{n}","確率 {p} · 私の{n}回目の人生","概率 {p} · 我的第{n}世","Probabilidad {p} · mi vida n.º {n}","Probabilidade {p} · minha vida nº {n}"],
@@ -260,7 +263,7 @@ function applyStatic(){
  id("stTotal").nextElementSibling.textContent=t("나의 환생 횟수");
  id("stGlobal").nextElementSibling.textContent=t("모두의 환생 횟수 🌏");
  id("stSeen").nextElementSibling.textContent=t("태어나 본 나라 · 도감 📖");
- id("stBest").nextElementSibling.textContent=t("최고 희귀 기록");
+ id("stAch").nextElementSibling.textContent=t("업적 · 칭호 🏅");
  id("dexBtn").title=t("환생 도감 열기");
  q("details.card summary").textContent=t("어느 나라로 태어날 확률이 가장 높을까?");
  q("#suggest h3").textContent=t("💡 이런 항목도 환생 결과에 넣어 주세요");

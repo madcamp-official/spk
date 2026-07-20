@@ -1,6 +1,7 @@
 import {TOTAL} from "../core/data.js";
 import {$,fmtPct,fmtUSD,isoCode,probPct} from "../core/util.js";
 import {t,term,countryName,contName,bigNum} from "../i18n/i18n.js";
+import {titleLine} from "./titlechip.js";
 import {CHIP_DEFS,lifeBadges} from "./render.js";
 import {ST,session} from "../core/state.js";
 import {flagOK,FLAG_FONT} from "./flags.js";
@@ -64,6 +65,8 @@ export function shareText(l,via,code){
   head,
   /* b(성과형)는 머리줄에서 이미 확률을 말했으므로 되풀이하지 않는다 */
   (ST.ab==="a"?t("이 생을 받을 확률 {p} · ",{p:fmtPct(l.prob)}):"")+t("나의 {n}번째 생",{n:ST.total.toLocaleString()}),
+  /* 칭호 줄. 카드에 박힌 것과 같은 문구를 텍스트에도 실어 둘이 어긋나지 않게 한다 */
+  ...(titleLine()?[titleLine()]:[]),
   "",
   ...lifeStatLines(l),   /* 12개 항목 전부 */
   "",
@@ -231,8 +234,30 @@ export function drawCard(l){
  x.fillStyle=GOLD;x.font="600 34px "+SANS;
  x.fillText(t("환 생 시 뮬 레 이 터"),W/2,96);
  sp("0px");
- x.font="26px "+SANS;
- x.fillText(t("당신의 {n}번째 생",{n:ST.total.toLocaleString()}),W/2,148);
+ /* 칭호 + 생 번호를 한 줄에 — 사이트 헤더(.idrow)와 같은 구성이다.
+    이 카드의 규칙이 "결과 화면을 그대로 재현"이므로 화면과 같은 줄에 둔다.
+    히어로(hy=192)를 밀지 않으니 아래 높이 계산은 그대로 둬도 된다. */
+ const lifeNo=t("당신의 {n}번째 생",{n:ST.total.toLocaleString()});
+ const title=titleLine();
+ if(title){
+  x.font="600 24px "+SANS;
+  const lw=x.measureText(title).width, pw=lw+28, ph=38, gap=12;
+  x.font="26px "+SANS;
+  const numW=x.measureText(lifeNo).width;
+  const left=W/2-(pw+gap+numW)/2;
+  roundRect(x,left,148-27,pw,ph,ph/2);
+  x.fillStyle="rgba(243,201,92,.14)";x.fill();
+  x.strokeStyle="rgba(243,201,92,.5)";x.lineWidth=2;x.stroke();
+  x.textAlign="left";
+  x.fillStyle=GOLD;x.font="600 24px "+SANS;
+  x.fillText(title,left+14,148);
+  x.font="26px "+SANS;
+  x.fillText(lifeNo,left+pw+gap,148);
+  x.textAlign="center";
+ }else{
+  x.font="26px "+SANS;
+  x.fillText(lifeNo,W/2,148);
+ }
 
  /* ── 히어로 패널 내용 계획 (높이를 먼저 계산해야 테두리를 그린다) ── */
  const badges=lifeBadges(l);

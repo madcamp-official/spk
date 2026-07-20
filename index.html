@@ -98,7 +98,12 @@
     <div class="eyebrow">Samsara Simulator</div>
     <h1>환생 시뮬레이터</h1>
     <p class="tagline">당신의 다음 생은, 실제 지구 인구 분포 확률 그대로 정해집니다</p>
-    <p class="lifeno" id="lifeNo"></p>
+    <!-- 칭호는 "당신이 누구인가"라 생 번호와 같은 줄(정체성 줄)에 둔다.
+         hero의 배지 행에 두면 이번 생 한 판짜리 배지(왼손잡이 등)와 같은 종류로 읽힌다. -->
+    <div class="idrow">
+      <span class="badge badge-title" id="titleTag" hidden></span>
+      <p class="lifeno" id="lifeNo"></p>
+    </div>
   </header>
 
   <section class="hero" id="hero">
@@ -135,8 +140,11 @@
     <div class="stat"><div class="n" id="stTotal">0</div><div class="l">나의 환생 횟수</div></div>
     <!-- 카운터 API가 없는 환경(로컬에서 index.html만 띄울 때)에서는 계속 hidden으로 남는다 -->
     <div class="stat" id="globalStat" hidden><div class="n" id="stGlobal">—</div><div class="l">모두의 환생 횟수 🌏</div></div>
-    <button class="stat stat-btn" id="dexBtn" title="환생 도감 열기"><div class="n" id="stSeen">0</div><div class="l">태어나 본 나라 · 도감 📖</div></button>
-    <div class="stat"><div class="n" id="stBest">·</div><div class="l">최고 희귀 기록</div></div>
+    <button class="stat stat-btn" id="dexBtn" title="환생 도감 열기"><div class="n" id="stSeen">0</div><div class="l">태어나 본 나라 · 도감 📖</div><div class="dexbar"><i id="dexBarFill"></i></div><div class="dexgoal" id="dexGoal"></div></button>
+    <!-- 업적으로 들어가는 문. 헤더의 칭호 칩만으로는 존재를 알아채기 어려워서
+         도감과 똑같은 타일 버튼으로 세운다. "최고 희귀 기록"이 있던 자리인데,
+         그 값은 업적 모달의 기록 탭("가장 희귀했던 나라")으로 옮겨가 사라지지 않는다. -->
+    <button class="stat stat-btn" id="achBtn" title="업적·칭호 열기"><div class="n" id="stAch">0</div><div class="l">업적 · 칭호 🏅</div><div class="dexbar"><i id="achBarFill"></i></div><div class="dexgoal" id="achTop"></div></button>
   </section>
 
   <details class="card">
@@ -171,6 +179,18 @@
     종교·소득은 국가별 대표 분포 기반 추정이며, 재미로만 즐겨 주세요. 🌏<br>
     💬 아이디어·버그 제보: <a href="https://github.com/madcamp-official/spk/issues" target="_blank" rel="noopener">GitHub Issues</a>
   </footer>
+</div>
+
+<div class="modal-backdrop" id="achModal" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-label="업적">
+    <div class="modal-head">
+      <h3>🏅 업적 · 칭호</h3>
+      <button id="achClose" aria-label="닫기">✕</button>
+    </div>
+    <div class="ach-tabs" id="achTabs"></div>
+    <p class="hint" id="achProgress"></p>
+    <div class="ach-grid" id="achGrid"></div>
+  </div>
 </div>
 
 <div class="modal-backdrop" id="dexModal" hidden>

@@ -7,6 +7,7 @@ import {renderLife,recordLife,updateStats} from "./ui/render.js";
 import {track,markRoll,sendDwell,sendExit,flushEvents,daysSinceFirst} from "./analytics/track.js";
 import {probPct} from "./core/util.js";
 import {closeDex} from "./ui/dex.js";
+import {closeAch} from "./ui/achievements.js";
 import {closeShare,shareURL,shareText} from "./ui/share.js";
 import {decodeLife,encodeLife} from "./engine/permalink.js";
 import {takeLife,verifyLife,takeSharedByCode} from "./engine/lifepool.js";
@@ -45,6 +46,7 @@ $("rollBtn").addEventListener("click",doRoll);
 addEventListener("keydown",e=>{
  if(e.key!=="Escape")return;
  if(!$("dexModal").hidden)closeDex();
+ if(!$("achModal").hidden)closeAch();
  if(!$("shareModal").hidden)closeShare();
 });
 

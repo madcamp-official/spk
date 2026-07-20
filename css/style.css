@@ -324,3 +324,78 @@ footer a{color:var(--gold)}
   text-transform:uppercase;margin-bottom:6px;opacity:.6;
 }
 .ad-slot .adsbygoogle{min-height:90px}
+
+/* ===== 칭호 · 도감 진행률 (실험) ===== */
+/* 대표 칭호는 이 생의 배지와 구분돼야 한다 — 일회성이 아니라 누적 성취이므로 금색으로 세운다 */
+.badge-title{
+  background:linear-gradient(180deg,rgba(243,201,92,.22),rgba(243,201,92,.10));
+  border-color:rgba(243,201,92,.55);color:var(--gold);font-weight:700;
+}
+/* 정체성 줄: 칭호 + 생 번호를 한 줄에. 기존 .lifeno 줄에 얹으므로 세로가 거의 안 는다
+   (모바일에서 "국가+칩12+버튼 한 화면" 제약을 지켜야 한다). */
+.idrow{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;margin-top:10px}
+.idrow .lifeno{margin:0}
+.idrow .badge-title{font-size:12px;padding:3px 10px}
+@media (max-width:480px),(max-height:720px){
+  .idrow{margin-top:4px;gap:6px}
+  .idrow .badge-title{font-size:11px;padding:2px 8px}
+}
+
+/* 진행률 바 — 숫자만 두면 "얼마나 남았는지"가 안 읽힌다. 시각화 자체가 리텐션 장치다. */
+.dexbar{margin-top:8px;height:5px;border-radius:99px;background:rgba(236,233,245,.12);overflow:hidden}
+.dexbar i{display:block;height:100%;width:0;border-radius:99px;
+  background:linear-gradient(90deg,#6fb1e8,#f3c95c);transition:width .5s ease}
+.dexgoal{margin-top:6px;font-size:11px;color:var(--gold);opacity:.9;min-height:14px}
+@media (max-width:480px){
+  .dexgoal{font-size:10px}
+  .dexbar{margin-top:6px;height:4px}
+}
+
+/* ===== 업적 목록 (실험) ===== */
+.badge-title{cursor:pointer}
+/* .modal 은 max-height:82vh 플렉스 컬럼이라, 목록이 스스로 스크롤해야 밖으로 넘치지 않는다.
+   min-height:0 이 없으면 플렉스 자식이 안 줄어들어 overflow-y가 안 먹는다. */
+.ach-grid{display:grid;gap:14px;margin-top:10px;overflow-y:auto;min-height:0;padding:2px}
+.ach-group h4{margin:0 0 6px;font-size:13px;color:var(--muted);font-weight:600}
+.ach-count{color:var(--gold);font-variant-numeric:tabular-nums}
+.ach-item{display:flex;flex-direction:column;gap:3px;padding:8px 10px;border-radius:10px;
+  background:rgba(236,233,245,.04);border:1px solid rgba(236,233,245,.08);margin-bottom:6px}
+/* 딴 것만 금색으로 세운다 — 못 딴 것이 흐려야 목표로 읽힌다 */
+.ach-item.ok{background:linear-gradient(180deg,rgba(243,201,92,.14),rgba(243,201,92,.06));
+  border-color:rgba(243,201,92,.4)}
+.ach-item.ok .ach-name{color:var(--gold);font-weight:700}
+.ach-name{font-size:13px}
+.ach-item:not(.ok) .ach-name{opacity:.65}
+.ach-sub{font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums}
+.ach-bar{height:4px;border-radius:99px;background:rgba(236,233,245,.12);overflow:hidden}
+.ach-bar i{display:block;height:100%;background:linear-gradient(90deg,#6fb1e8,#f3c95c)}
+/* 2열은 그룹이 여러 개인 칭호 탭에서만 쓴다. 기록·수집 목록은 한 덩어리라
+   2열을 걸면 왼쪽 절반만 쓰고 오른쪽이 통째로 빈다.
+   ⚠ grid 로 2열을 만들면 안 된다 — 그리드는 행마다 높이를 맞춰 늘려서(stretch)
+   항목이 적은 그룹이 옆 그룹 높이에 끌려간다(민족 4개가 877px를 먹었다).
+   멀티컬럼은 신문처럼 흘려 담아 빈틈이 안 생긴다. break-inside 로 그룹이 두 칸에
+   쪼개지는 것만 막으면 된다. */
+@media (min-width:560px){
+  .ach-grid.cols{display:block;columns:2;column-gap:14px}
+  .ach-grid.cols .ach-group{
+    break-inside:avoid;-webkit-column-break-inside:avoid;page-break-inside:avoid;
+    margin-bottom:14px;
+  }
+}
+
+/* 업적 탭 — 축이 늘어나면 한 화면에 다 못 담는다. 축별로 갈라 보여준다. */
+.ach-tabs{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 2px}
+.ach-tab{background:rgba(236,233,245,.06);border:1px solid rgba(236,233,245,.12);
+  color:var(--muted);border-radius:99px;padding:6px 12px;font-size:12px;cursor:pointer}
+.ach-tab.on{background:rgba(243,201,92,.16);border-color:rgba(243,201,92,.5);
+  color:var(--gold);font-weight:700}
+/* 기록실 — 값이 주인공이라 좌우 정렬로 읽히게 */
+.rec-list{display:flex;flex-direction:column;gap:6px}
+.rec-row{display:flex;justify-content:space-between;align-items:center;gap:10px;
+  padding:9px 11px;border-radius:10px;background:rgba(236,233,245,.04);
+  border:1px solid rgba(236,233,245,.08)}
+.rec-k{font-size:13px;color:var(--muted)}
+.rec-v{font-size:14px;font-weight:700;color:var(--gold);font-variant-numeric:tabular-nums;text-align:right}
+.rec-none{color:var(--muted);font-weight:400;opacity:.7}
+/* 업적 모달 안의 수집 그리드는 자체 스크롤을 갖지 않는다 — 바깥 .ach-grid 가 스크롤한다 */
+#achGrid .dex-grid{overflow:visible}
