@@ -23,4 +23,20 @@ async function main(): Promise<void> {
   for (const c of body) console.log(`  /${c.name}`);
 }
 
-main().catch((e) => { console.error("[commands] 등록 실패:", e); process.exit(1); });
+main().catch((e: unknown) => {
+  /* 흔한 실패는 원인이 뻔한데 스택만 길게 나와 묻힌다 — 무엇을 해야 하는지 먼저 말한다. */
+  const code = (e as { code?: number }).code;
+  if (code === 50001) {
+    console.error("[commands] 등록 실패: Missing Access (403)");
+    console.error("  → 봇이 그 서버에 없거나 applications.commands 스코프 없이 초대됐습니다.");
+    console.error(`  → 초대 링크: https://discord.com/oauth2/authorize?client_id=${env.appId}` +
+      "&permissions=19456&scope=bot%20applications.commands");
+  } else if (code === 0 || (e as { status?: number }).status === 401) {
+    console.error("[commands] 등록 실패: 토큰이 거부됐습니다(401). DISCORD_TOKEN을 확인하세요.");
+  } else {
+    console.error("[commands] 등록 실패:", e);
+  }
+  /* process.exit()로 즉시 끊으면 REST의 열린 핸들 때문에 Windows에서 libuv assert가 뜬다.
+     종료 코드만 세워 두고 이벤트 루프가 자연히 비워지게 둔다. */
+  process.exitCode = 1;
+});

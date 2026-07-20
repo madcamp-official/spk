@@ -32,6 +32,8 @@ export const env = {
 
   databaseUrl: required("DATABASE_URL"),
   pgSslMode: optional("PGSSLMODE"),
+  /** verify-ca·verify-full 일 때 쓸 CA 인증서 파일 경로 */
+  pgSslRootCert: optional("PGSSLROOTCERT"),
   /** "1일 3회"의 하루 경계 (Postgres 시간대 이름) */
   rollDayTz: optional("ROLL_DAY_TZ", "Asia/Seoul"),
 

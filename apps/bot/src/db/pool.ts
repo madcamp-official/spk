@@ -1,3 +1,4 @@
+import fs from "node:fs";
 import pg from "pg";
 import { env } from "../env.js";
 
@@ -12,11 +13,32 @@ pg.types.setTypeParser(pg.types.builtins.NUMERIC, (v: string) => Number(v));
 /* bigint(출생 번호). JS number로 안전한 범위(2^53)를 한참 밑돌므로 숫자로 받는다. */
 pg.types.setTypeParser(pg.types.builtins.INT8, (v: string) => Number(v));
 
+/* PGSSLMODE 해석.
+ *
+ * ⚠ node-postgres는 libpq가 아니다. `ssl: {}` 를 주면 Node의 기본 검증(엄격)이 켜지는데,
+ * libpq에서 `sslmode=require` 는 "암호화는 하되 인증서는 검증하지 않는다"는 뜻이다.
+ * 이 차이를 무시하면 Supabase 풀러처럼 체인이 공개 CA로 안 이어지는 곳에서
+ * SELF_SIGNED_CERT_IN_CHAIN 으로 막힌다. 그래서 libpq 의미에 맞춰 매핑한다.
+ *
+ * 진짜 검증(verify-ca/verify-full)을 하려면 CA 인증서가 필요하다 —
+ * PGSSLROOTCERT 에 파일 경로를 주면 그것으로 검증한다. */
+function sslConfig(): pg.ClientConfig["ssl"] {
+  const mode = env.pgSslMode.trim().toLowerCase();
+  if (!mode || mode === "disable") return undefined;
+  if (mode === "verify-ca" || mode === "verify-full") {
+    if (!env.pgSslRootCert) {
+      console.error(`[db] PGSSLMODE=${mode} 에는 PGSSLROOTCERT(CA 파일 경로)가 필요합니다.`);
+      process.exit(1);
+    }
+    return { rejectUnauthorized: true, ca: fs.readFileSync(env.pgSslRootCert, "utf8") };
+  }
+  /* require · prefer · no-verify — 암호화하되 인증서는 검증하지 않는다(libpq 의미) */
+  return { rejectUnauthorized: false };
+}
+
 export const pool = new pg.Pool({
   connectionString: env.databaseUrl,
-  /* Supabase 등 관리형은 TLS가 필수인데 자체 서명 체인을 쓰는 곳이 있다. */
-  ssl: env.pgSslMode === "no-verify" ? { rejectUnauthorized: false }
-    : env.pgSslMode === "require" ? {} : undefined,
+  ssl: sslConfig(),
   max: 10,
   idleTimeoutMillis: 30_000,
 });

@@ -7,10 +7,10 @@
   "main": "./dist/index.js",
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "start": "node dist/index.js",
-    "dev": "tsc -p tsconfig.json && node dist/index.js",
-    "migrate": "tsc -p tsconfig.json && node dist/db/migrate.js",
-    "sync-commands": "tsc -p tsconfig.json && node dist/deploy-commands.js",
+    "start": "node --env-file-if-exists=.env dist/index.js",
+    "dev": "tsc -p tsconfig.json && node --env-file-if-exists=.env dist/index.js",
+    "migrate": "tsc -p tsconfig.json && node --env-file-if-exists=.env dist/db/migrate.js",
+    "sync-commands": "tsc -p tsconfig.json && node --env-file-if-exists=.env dist/deploy-commands.js",
     "verify": "tsc -p tsconfig.json && node --env-file-if-exists=.env dist/verify.js"
   },
   "dependencies": {
