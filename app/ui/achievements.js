@@ -96,3 +96,4 @@ $("achTabs").addEventListener("click",e=>{
 });
 /* 칭호 자체가 목록으로 들어가는 문이다 — 따로 버튼을 만들면 첫 화면이 더 복잡해진다 */
 $("titleTag").addEventListener("click",()=>openAch("title"));
+$("achBtn").addEventListener("click",()=>openAch("title"));

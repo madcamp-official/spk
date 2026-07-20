@@ -1,7 +1,7 @@
 import {DATA,TOTAL} from "../core/data.js";
 import {$,reduceMotion,fmtPct,fmtTop,fmtUSD} from "../core/util.js";
 import {t,term,countryName,contName,bigNum} from "../i18n/i18n.js";
-import {paintTitle,paintProgress} from "./titlechip.js";
+import {paintTitle,paintProgress,paintAch} from "./titlechip.js";
 import {noteLife} from "../engine/titles.js";
 import {ST,seenSet,persist,session} from "../core/state.js";
 import {startDwellClock} from "../analytics/track.js";
@@ -13,18 +13,11 @@ import {burstConfetti} from "./effects.js";
 export function updateStats(){
  $("stTotal").textContent=ST.total.toLocaleString();
  $("stSeen").textContent=seenSet.size+"/"+DATA.length;
- /* 최고 희귀 기록 = 태어나 본 나라(seenSet) 중 인구가 가장 적은 나라.
-    도감이 나라별로 보여주는 "걸릴 확률"(c.pop/TOTAL)과 똑같은 척도로 계산해,
-    같은 나라가 도감과 최고 기록에서 다른 %로 보이던 문제를 없앤다.
-    seenSet에서 매번 뽑으므로 옛 저장본(생 전체 확률로 기록된 best)도 자동 교정된다.
-    이름은 표시할 때만 현재 언어로 바꾼다. */
- let rarest=null;
- for(const i of seenSet){const c=DATA[i];if(c&&(!rarest||c.pop<rarest.pop))rarest=c;}
- $("stBest").textContent=rarest?countryName(rarest)+" "+fmtPct(rarest.pop/TOTAL):"·";
  /* 아직 안 뽑은 첫 화면에도 칭호가 보인다 — 돌아온 사람에게는 이게 정체성이다.
     updateStats는 최초 로드와 환생 직후 양쪽에서 불리므로 여기 한 곳이면 충분하다. */
  paintTitle();
  paintProgress();
+ paintAch();
 }
 
 /* ===== 렌더링 ===== */

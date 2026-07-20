@@ -141,7 +141,10 @@
     <!-- 카운터 API가 없는 환경(로컬에서 index.html만 띄울 때)에서는 계속 hidden으로 남는다 -->
     <div class="stat" id="globalStat" hidden><div class="n" id="stGlobal">—</div><div class="l">모두의 환생 횟수 🌏</div></div>
     <button class="stat stat-btn" id="dexBtn" title="환생 도감 열기"><div class="n" id="stSeen">0</div><div class="l">태어나 본 나라 · 도감 📖</div><div class="dexbar"><i id="dexBarFill"></i></div><div class="dexgoal" id="dexGoal"></div></button>
-    <div class="stat"><div class="n" id="stBest">·</div><div class="l">최고 희귀 기록</div></div>
+    <!-- 업적으로 들어가는 문. 헤더의 칭호 칩만으로는 존재를 알아채기 어려워서
+         도감과 똑같은 타일 버튼으로 세운다. "최고 희귀 기록"이 있던 자리인데,
+         그 값은 업적 모달의 기록 탭("가장 희귀했던 나라")으로 옮겨가 사라지지 않는다. -->
+    <button class="stat stat-btn" id="achBtn" title="업적·칭호 열기"><div class="n" id="stAch">0</div><div class="l">업적 · 칭호 🏅</div><div class="dexbar"><i id="achBarFill"></i></div><div class="dexgoal" id="achTop"></div></button>
   </section>
 
   <details class="card">
