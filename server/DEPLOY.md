@@ -135,6 +135,81 @@ curl -s "localhost:1558/api/verify?l=MC-1-1-1-0-0-106-999999999-150-215-2000&sig
 `copytruncate`인 이유: `counter.js`는 파일 핸들을 계속 들고 있지 않고 매번
 `fs.appendFile`로 열고 닫지만, 로테이션 중 쓰기가 겹칠 수 있어 안전한 쪽을 택한다.
 
+## 6. 실험판(lab) 인프라
+
+`lab.sh`가 쓰는 서버 쪽 구성. **레포 밖(`/etc`)에 사는 것들이라 여기에 적어 둔다** —
+VM을 갈아엎으면 이 절만 보고 되살릴 수 있어야 한다. 사용법은 README의 "실험판(lab)" 참고.
+
+### systemd — 실험판 전용 카운터 (`life-reroll-counter-lab`)
+
+프로덕션과 **겹치는 것이 하나도 없어야 한다.** 포트·카운터·이벤트·공유·서명키 전부 별도다.
+특히 `LIFE_SECRET`을 프로덕션과 공유하면 실험판에서 만든 서명이 프로덕션에서도 유효해진다.
+
+```ini
+# /etc/systemd/system/life-reroll-counter-lab.service
+[Unit]
+Description=life-reroll 실험판(lab) 카운터/롤 API
+After=network.target
+
+[Service]
+User=www-data
+ExecStart=/usr/bin/node /opt/life-reroll-lab/counter.js
+Environment=COUNTER_PORT=1559
+Environment=COUNTER_FILE=/var/lib/life-reroll-lab/counter.json
+Environment=EVENTS_FILE=/var/lib/life-reroll-lab/events.jsonl
+Environment=SHARES_FILE=/var/lib/life-reroll-lab/shares.jsonl
+Environment=APP_JS_DIR=/var/www/life-reroll/lab/app
+Environment=LIFE_SECRET=<openssl rand -hex 32 — 프로덕션 키와 반드시 다르게>
+Environment=ROLL_RATE_PER_MIN=600
+Restart=on-failure
+RestartSec=3s
+
+[Install]
+WantedBy=multi-user.target
+```
+
+```bash
+sudo install -d -o www-data -g www-data /var/lib/life-reroll-lab
+sudo systemctl daemon-reload && sudo systemctl enable --now life-reroll-counter-lab
+```
+
+### nginx — `/lab/`, `/lab-api/`
+
+```nginx
+# 기존 location / 보다 앞. ^~ 라야 하위 자산(.js/.css)까지 이 블록이 처리한다
+location ^~ /lab/ {
+    add_header X-Robots-Tag "noindex, nofollow" always;
+    add_header Cache-Control "no-store" always;   # 실험은 늘 최신이어야 한다
+    try_files $uri $uri.html $uri/ =404;
+}
+
+location ^~ /lab-api/ {
+    limit_req zone=liferoll_api burst=15 nodelay;
+    limit_req_status 429;
+    proxy_set_header CF-IPCountry $http_cf_ipcountry;
+    rewrite ^/lab-api/(.*)$ /api/$1 break;        # 실험판 앱은 빌드 시 /api/ → /lab-api/ 로 치환된다
+    proxy_pass http://127.0.0.1:1559;
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+}
+```
+
+`/lab-api/`는 `/lab/`에 안 걸린다(`/lab-` ≠ `/lab/`)이므로 순서 걱정은 없다.
+
+### git worktree
+
+```bash
+git -C /root/spk worktree add /root/spk-lab -b lab main
+```
+
+### 되살린 뒤 확인
+
+```bash
+sudo /root/spk/lab.sh up     # 저장소·API 격리까지 스스로 검사하고, 뚫려 있으면 멈춘다
+curl -s localhost:1559/api/counter    # 프로덕션(1558)과 값이 달라야 정상
+```
+
 ## 남은 것 (코드 아님)
 
 - [ ] Google Search Console 등록 (DNS TXT) → 노출수·클릭수·CTR
