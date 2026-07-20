@@ -1,0 +1,9 @@
+{
+  "name": "@life-reroll/counter",
+  "version": "0.1.0",
+  "private": true,
+  "description": "카운터·이벤트 수집 서버. CommonJS로 고정한다 — 루트에 type:module이 생겨도 이 파일이 죽지 않도록 하는 안전장치다(의존성 0, node로 바로 실행).",
+  "type": "commonjs",
+  "main": "counter.js",
+  "dependencies": {}
+}

@@ -1,1 +1,7 @@
 __pycache__/
+node_modules/
+
+# packages/core/dist 의 복사본. 정본은 packages/core/dist(커밋됨)이고,
+# 이건 브라우저·node가 경로로 찾을 수 있게 배포 트리 모양을 로컬에 재현한 것뿐이다.
+# tools/sync-core.mjs 가 빌드마다 다시 만든다.
+apps/web/core/

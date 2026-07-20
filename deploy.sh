@@ -11,7 +11,11 @@
 
 set -euo pipefail
 
-REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+MONO="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# 모노레포 전환: 웹은 apps/web, 공용 로직은 packages/core(빌드 산출물 dist)에 있다.
+# REPO는 "웹 트리의 뿌리"를 가리키므로 아래 복사·검증 로직은 예전 그대로 쓸 수 있다.
+REPO="$MONO/apps/web"
+CORE_DIST="$MONO/packages/core/dist"
 WWW=/var/www/life-reroll
 COUNTER_SRC=server/counter.js
 COUNTER_DST=/opt/life-reroll/counter.js
@@ -19,14 +23,25 @@ SERVICE=life-reroll-counter
 HOST=life-reroll.com
 LOCAL=http://127.0.0.1:1557
 LIVE=https://$HOST
-# 루트 파일 + css/ app/ 아래 전부. 모듈은 하나라도 빠지면 앱이 통째로 죽으므로
+# 루트 파일 + css/ app/ core/ 아래 전부. 모듈은 하나라도 빠지면 앱이 통째로 죽으므로
 # 목록을 손으로 관리하지 않고 레포에 있는 것을 그대로 훑는다.
+#
+# core/ 는 packages/core/dist 를 웹 트리 안으로 복사해 만든다 — 브라우저에는 번들러도
+# node_modules도 없어서 core를 URL 경로로 찾기 때문이다(웹 모듈의 ../../core/…).
+# 서버(counter.js)도 같은 디렉터리를 읽으므로 이 복사가 빠지면 /api/roll이 503이 된다.
+if [ -d "$CORE_DIST" ]; then
+  rm -rf "$REPO/core"
+  cp -r "$CORE_DIST" "$REPO/core"
+else
+  echo "packages/core/dist 가 없습니다 — 먼저 빌드하세요:  npm run build:core" >&2
+  exit 1
+fi
 mapfile -t ASSETS < <(
   cd "$REPO" || exit 1
-  # 루트 파일 + 언어별 공유 랜딩(en/ja/zh/es/pt.html) + 언어별 og 배너 + css/app 전부.
+  # 루트 파일 + 언어별 공유 랜딩(en/ja/zh/es/pt.html) + 언어별 og 배너 + css/app/core 전부.
   printf '%s\n' index.html TwemojiCountryFlags.woff2 ads.txt en.html ja.html zh.html es.html pt.html
   find . -maxdepth 1 -name 'og-image*.png' -printf '%f\n' | sort
-  find css app -type f \( -name '*.css' -o -name '*.js' \) | sort
+  find css app core -type f \( -name '*.css' -o -name '*.js' \) | sort
 )
 
 PULL=0
@@ -55,12 +70,12 @@ bad() { printf '  \033[31m✘\033[0m %s\n' "$*"; fail=1; }
 # ── 1. 소스 최신화 ────────────────────────────────────────────────
 if [ "$PULL" -eq 1 ]; then
   say "1. git pull"
-  git -C "$REPO" pull --ff-only
+  git -C "$MONO" pull --ff-only
 else
   say "1. 소스 (pull 생략, --pull 로 켤 수 있음)"
 fi
-printf '  HEAD %s  %s\n' "$(git -C "$REPO" rev-parse --short HEAD)" "$(git -C "$REPO" log -1 --format=%s)"
-if [ -n "$(git -C "$REPO" status --porcelain)" ]; then
+printf '  HEAD %s  %s\n' "$(git -C "$MONO" rev-parse --short HEAD)" "$(git -C "$MONO" log -1 --format=%s)"
+if [ -n "$(git -C "$MONO" status --porcelain)" ]; then
   printf '  \033[33m⚠\033[0m 커밋되지 않은 변경이 있습니다. 작업트리 상태 그대로 배포합니다.\n'
 fi
 
@@ -93,11 +108,11 @@ fi
 # 굳이 끊을 이유가 없다.
 say "3. 카운터 서버"
 if [ "$CHECK_ONLY" -eq 1 ]; then
-  cmp -s "$REPO/$COUNTER_SRC" "$COUNTER_DST" 2>/dev/null && ok "counter.js 동일" || bad "counter.js 배포본과 다름"
-elif cmp -s "$REPO/$COUNTER_SRC" "$COUNTER_DST" 2>/dev/null; then
+  cmp -s "$MONO/$COUNTER_SRC" "$COUNTER_DST" 2>/dev/null && ok "counter.js 동일" || bad "counter.js 배포본과 다름"
+elif cmp -s "$MONO/$COUNTER_SRC" "$COUNTER_DST" 2>/dev/null; then
   ok "counter.js 변경 없음 → 재시작 생략 (무중단)"
 else
-  install -D -m 644 "$REPO/$COUNTER_SRC" "$COUNTER_DST"
+  install -D -m 644 "$MONO/$COUNTER_SRC" "$COUNTER_DST"
   systemctl restart "$SERVICE"
   chg "counter.js 갱신 → $SERVICE 재시작"
 fi
@@ -150,7 +165,7 @@ font_code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 25 "$LIVE/TwemojiC
 # 라이브로 찌르면 아직 없는 파일의 응답을 Cloudflare가 캐시해 버려 오히려 사고가 난다.
 missing=""
 n=0
-for f in $(cd "$REPO" && find css app -type f \( -name '*.css' -o -name '*.js' \) | sort); do
+for f in $(cd "$REPO" && find css app core -type f \( -name '*.css' -o -name '*.js' \) | sort); do
   n=$((n+1))
   ct=$(curl -s -o /dev/null -w '%{content_type}' -H "Host: $HOST" "$LOCAL/$f" || echo "?")
   case "$f:$ct" in

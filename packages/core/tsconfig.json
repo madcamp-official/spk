@@ -1,0 +1,24 @@
+{
+  /* 브라우저가 번들러 없이 바로 로드할 ESM을 뽑는다.
+     - target/lib를 낮추면 안 된다: 결과물이 헬퍼로 부풀어 원본과 대조가 어려워진다.
+     - DOM lib을 넣지 않는 것이 이 패키지의 안전장치다. document·window를 실수로
+       쓰면 여기서 컴파일이 깨진다(§A.3 "core는 플랫폼 무관"). */
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "lib": ["ES2022"],
+    "types": [],
+    "strict": true,
+    "noUncheckedIndexedAccess": false,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "verbatimModuleSyntax": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true
+  },
+  "include": ["src/**/*.ts"]
+}
