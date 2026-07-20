@@ -324,3 +324,19 @@ footer a{color:var(--gold)}
   text-transform:uppercase;margin-bottom:6px;opacity:.6;
 }
 .ad-slot .adsbygoogle{min-height:90px}
+
+/* ===== 칭호 · 도감 진행률 (실험) ===== */
+/* 대표 칭호는 이 생의 배지와 구분돼야 한다 — 일회성이 아니라 누적 성취이므로 금색으로 세운다 */
+.badge-title{
+  background:linear-gradient(180deg,rgba(243,201,92,.22),rgba(243,201,92,.10));
+  border-color:rgba(243,201,92,.55);color:var(--gold);font-weight:700;
+}
+/* 진행률 바 — 숫자만 두면 "얼마나 남았는지"가 안 읽힌다. 시각화 자체가 리텐션 장치다. */
+.dexbar{margin-top:8px;height:5px;border-radius:99px;background:rgba(236,233,245,.12);overflow:hidden}
+.dexbar i{display:block;height:100%;width:0;border-radius:99px;
+  background:linear-gradient(90deg,#6fb1e8,#f3c95c);transition:width .5s ease}
+.dexgoal{margin-top:6px;font-size:11px;color:var(--gold);opacity:.9;min-height:14px}
+@media (max-width:480px){
+  .dexgoal{font-size:10px}
+  .dexbar{margin-top:6px;height:4px}
+}

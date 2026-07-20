@@ -151,6 +151,9 @@ const STR={
 "🎰 확률 {p}의 환생 뽑기 성공! {flag}{country}":["🎰 Hit a {p} rebirth roll! {flag}{country}","🎰 確率{p}の転生ガチャ成功! {flag}{country}","🎰 抽中了概率{p}的转世!{flag}{country}","🎰 ¡Reencarnación conseguida con probabilidad {p}! {flag}{country}","🎰 Reencarnação de probabilidade {p} conquistada! {flag}{country}"],
 "이 생을 받을 확률 {p} · ":["Odds of this life: {p} · ","この人生を引く確率 {p} · ","抽中这一世的概率 {p} · ","Probabilidad de esta vida {p} · ","Probabilidade desta vida {p} · "],
 "나의 {n}번째 생":["My life #{n}","私の{n}回目の人生","我的第{n}世","Mi vida n.º {n}","Minha vida nº {n}"],
+/* 칭호(실험): ko/en 두 벌만 채웠다. 나머지 4개 언어는 t()가 한국어 키로 폴백한다.
+   채택하면 ja/zh/es/pt 칸을 반드시 채울 것 — 지금 유입이 영어권이라 en이 우선이었다. */
+"{n}개국 수집":["{n} countries collected"],
 "나도 환생해 보기 👉 {url}":["Try your own rebirth 👉 {url}","あなたも転生してみて 👉 {url}","你也来转世看看 👉 {url}","Prueba tu reencarnación 👉 {url}","Faça sua reencarnação 👉 {url}"],
 "{flag}{country}에서 태어났습니다":["Born in {flag}{country}","{flag}{country}で生まれました","出生在{flag}{country}","Nací en {flag}{country}","Nasci em {flag}{country}"],
 "확률 {p} · 나의 {n}번째 생":["Odds {p} · my life #{n}","確率 {p} · 私の{n}回目の人生","概率 {p} · 我的第{n}世","Probabilidad {p} · mi vida n.º {n}","Probabilidade {p} · minha vida nº {n}"],

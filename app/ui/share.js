@@ -1,5 +1,6 @@
 import {$,fmtPct,fmtUSD,isoCode,probPct} from "../core/util.js";
 import {t,term,countryName,contName,bigNum} from "../i18n/i18n.js";
+import {titleLine} from "./titlechip.js";
 import {ST,session} from "../core/state.js";
 import {flagOK,FLAG_FONT} from "./flags.js";
 import {rarityColor} from "../engine/roll.js";
@@ -62,6 +63,8 @@ export function shareText(l,via,code){
   head,
   /* b(성과형)는 머리줄에서 이미 확률을 말했으므로 되풀이하지 않는다 */
   (ST.ab==="a"?t("이 생을 받을 확률 {p} · ",{p:fmtPct(l.prob)}):"")+t("나의 {n}번째 생",{n:ST.total.toLocaleString()}),
+  /* 칭호 줄. 카드에 박힌 것과 같은 문구를 텍스트에도 실어 둘이 어긋나지 않게 한다 */
+  ...(titleLine()?[titleLine()]:[]),
   "",
   ...lifeStatLines(l),   /* 12개 항목 전부 */
   "",
@@ -197,6 +200,18 @@ export function drawCard(l){
  x.fillText(t("환 생 시 뮬 레 이 터"),W/2,120);
  x.fillStyle="#9a98b5";x.font="30px "+SANS;
  x.fillText(t("나의 {n}번째 생",{n:ST.total.toLocaleString()}),W/2,175);
+ /* 칭호 — 원래 목표였던 "자랑 공유"와 "도감작"이 만나는 지점이다.
+    "삼사라 중독자 · 47개국 수집"이 카드에 박히면 수집 자체가 공유 동기가 된다.
+    국기(240px)가 y≈290부터라 이 알약은 202~254 구간에 안전하게 들어간다. */
+ const label=titleLine();
+ if(label){
+  x.font="600 32px "+SANS;
+  const tw=x.measureText(label).width, ph=52;
+  roundRect(x,W/2-tw/2-26,202,tw+52,ph,ph/2);
+  x.fillStyle="rgba(243,201,92,.14)";x.fill();
+  x.strokeStyle="rgba(243,201,92,.5)";x.lineWidth=2;x.stroke();
+  x.fillStyle="#f3c95c";x.fillText(label,W/2,236);
+ }
  if(flagOK){
   x.font="240px "+FLAG_FONT;
   x.fillText(l.c.flag,W/2,470);

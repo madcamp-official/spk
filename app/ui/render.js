@@ -1,6 +1,7 @@
 import {DATA,TOTAL} from "../core/data.js";
 import {$,reduceMotion,fmtPct,fmtTop,fmtUSD} from "../core/util.js";
 import {t,term,countryName,contName,bigNum} from "../i18n/i18n.js";
+import {titleChipHTML,paintProgress} from "./titlechip.js";
 import {ST,seenSet,persist,session} from "../core/state.js";
 import {startDwellClock} from "../analytics/track.js";
 import {flagHTML} from "./flags.js";
@@ -19,6 +20,11 @@ export function updateStats(){
  let rarest=null;
  for(const i of seenSet){const c=DATA[i];if(c&&(!rarest||c.pop<rarest.pop))rarest=c;}
  $("stBest").textContent=rarest?countryName(rarest)+" "+fmtPct(rarest.pop/TOTAL):"·";
+ paintProgress();
+ /* 아직 안 뽑은 첫 화면에도 칭호를 보여 준다 — 돌아온 사람에게는 이게 정체성이다.
+    비어 있을 때만 채우므로, 생을 뽑은 뒤 renderLife가 넣은 칭호+배지를 덮지 않는다. */
+ const b=$("badges");
+ if(b&&!b.innerHTML)b.innerHTML=titleChipHTML();
 }
 
 /* ===== 렌더링 ===== */
@@ -56,7 +62,9 @@ export function renderLife(l){
  if(l.lefty)badges.push(t("🫲 왼손잡이"));
  if(l.lifeExp>=100)badges.push(t("💯 100세 장수 예정"));
  if(l.top<=1)badges.push(t("💎 소득 상위 1%"));
- $("badges").innerHTML=badges.map(b=>'<span class="badge">'+b+"</span>").join("");
+ /* 대표 칭호를 맨 앞에 세운다 — 이 생의 배지(일회성)와 달리 누적 성취라 자리를 먼저 준다 */
+ $("badges").innerHTML=titleChipHTML()+badges.map(b=>'<span class="badge">'+b+"</span>").join("");
+ paintProgress();
  const chips=$("chips");chips.hidden=false;
  chips.innerHTML=CHIP_DEFS.map((d,i)=>{const r=d.f(l);
   return '<div class="chip" style="transition-delay:'+(reduceMotion?0:i*60)+'ms"><div class="k">'+t(d.k)+
