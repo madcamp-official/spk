@@ -26,5 +26,8 @@ export function persist(){try{
    lastActiveAt = 마지막 상호작용 시각. dwell 시계가 "자리를 비운" 시간을 빼는 기준이다.
    rollIdx·sincePrevRollMs·quickReroll = 이번 세션에서 이 생이 몇 번째 리롤인지와
    직전 리롤과의 간격. roll·dwell 이벤트에 실어 세션 안 몰입 곡선을 읽는다. */
+/* shareMode = 공유 시트가 지금 무엇을 내보내는가. 결과 카드(생)와 프로필(누적)이
+   같은 시트 DOM(#shareModal)을 나눠 쓰기 때문에, 어느 흐름이 채널 버튼을 처리할지
+   이 한 값으로 가른다. share.js(생)와 profile.js(프로필)가 각자 이 값을 보고 자기 차례만 처리한다. */
 export const session={currentLife:null,lifeShownAt:0,lastActiveAt:0,dwellSent:false,
- lifeShared:false,rollIdx:0,sincePrevRollMs:0,quickReroll:false};
+ lifeShared:false,rollIdx:0,sincePrevRollMs:0,quickReroll:false,shareMode:"life"};
