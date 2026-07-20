@@ -88,7 +88,8 @@ apps/bot/             Discord 봇 (독립 프로세스). 기준 문서는 Discor
 
 server/counter.js   카운터·이벤트 수집 (VM에서만 동작). CommonJS 고정.
 tools/              dev-server.mjs · sync-core.mjs · make_og.py · make_share.py · analyze.py
-deploy.sh           배포
+deploy.sh           웹·카운터 배포
+deploy-bot.sh       Discord 봇 배포 (systemd 상주)
 lab.sh              실험판(lab) — 배포 전에 띄워 보고 채택/폐기
 ```
 

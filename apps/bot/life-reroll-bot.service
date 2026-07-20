@@ -1,0 +1,38 @@
+# Life Reroll Discord 봇 — systemd 유닛 (deploy-bot.sh 가 /etc/systemd/system 으로 설치한다)
+#
+# 봇은 게이트웨이에 상시 연결된 장기 실행 프로세스다(§A.1). 웹처럼 파일을 복사하는 배포가
+# 아니라 "프로세스를 계속 살려 두는" 배포라서, 재시작 정책이 곧 가동률이다.
+#
+# 비밀값은 이 파일에 넣지 않는다 — /etc/life-reroll-bot.env 에 두고 EnvironmentFile로 읽는다.
+# (유닛 파일은 레포에 커밋되고, 토큰은 절대 커밋되면 안 된다.)
+
+[Unit]
+Description=Life Reroll Discord bot
+Documentation=https://github.com/madcamp-official/spk
+# 네트워크가 실제로 준비된 뒤에 뜬다. network.target만으로는 DNS가 아직일 수 있고,
+# 그러면 부팅 직후 Supabase 접속에 실패하며 재시작 루프로 들어간다.
+After=network-online.target
+Wants=network-online.target
+
+# 토큰이 틀렸거나 DB가 죽었을 때 무한 재시작으로 로그와 CPU를 태우지 않게 한다.
+# 5분 안에 10번 실패하면 포기하고 failed 상태로 남는다 — 그래야 사람이 알아챈다.
+StartLimitIntervalSec=300
+StartLimitBurst=10
+
+[Service]
+Type=simple
+WorkingDirectory=/root/spk/apps/bot
+EnvironmentFile=/etc/life-reroll-bot.env
+ExecStart=/usr/bin/env node dist/index.js
+# 게이트웨이는 끊기는 게 정상이다(네트워크 흔들림·Discord 점검). 항상 되살린다.
+Restart=always
+RestartSec=5
+# 종료 시 SIGTERM을 보낸다 — index.ts가 이걸 받아 클라이언트와 DB 풀을 정리한다.
+KillSignal=SIGTERM
+TimeoutStopSec=20
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=life-reroll-bot
+
+[Install]
+WantedBy=multi-user.target

@@ -23,5 +23,8 @@
     "@types/node": "^22.10.2",
     "@types/pg": "^8.11.10",
     "typescript": "^5.9.3"
+  },
+  "engines": {
+    "node": ">=22"
   }
 }

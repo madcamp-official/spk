@@ -22,6 +22,41 @@ pnpm -F @life-reroll/bot dev              # 봇 기동
 pnpm -F @life-reroll/bot verify           # WASM Postgres로 실제 SQL까지 검증 (30개 체크)
 ```
 
+## VM에 상주시키기 (배포)
+
+봇은 게이트웨이에 상시 연결된 **장기 실행 프로세스**다(§A.1). 웹처럼 파일을 복사하면 끝이
+아니라 프로세스를 계속 살려 둬야 해서, 웹과는 배포 스크립트가 다르다.
+
+```bash
+# ① 비밀값 파일 (레포에 없다. 한 번만)
+sudo install -m 600 /dev/null /etc/life-reroll-bot.env
+sudo nano /etc/life-reroll-bot.env
+#   DISCORD_TOKEN=...
+#   DISCORD_APP_ID=...
+#   DEV_GUILD_ID=              ← 운영에서는 비운다(전역 커맨드, 반영에 최대 1시간)
+#   DATABASE_URL=postgresql://...
+#   PGSSLMODE=require
+#   ROLL_DAY_TZ=Asia/Seoul
+#   ⚠ UNLIMITED_ROLLS 는 넣지 않는다 — 테스트 전용이고, 배포 스크립트가 막는다
+
+# ② 배포
+sudo ./deploy-bot.sh --pull    # git pull → 빌드 → 커맨드 등록 → 재시작 → 검증
+
+# ③ 확인
+./deploy-bot.sh --check        # 아무것도 바꾸지 않고 상태만 (sudo 불필요)
+./deploy-bot.sh --logs         # 최근 로그
+```
+
+- **재부팅해도 자동으로 뜬다** (`systemctl enable`). 끊겨도 5초 뒤 되살아난다.
+- 5분에 10번 실패하면 포기하고 `failed` 로 남는다 — 토큰이 틀렸는데 영원히 재시작하며
+  로그만 태우는 것을 막기 위해서다. `--logs` 로 원인을 본다.
+- 유닛 파일은 [life-reroll-bot.service](life-reroll-bot.service)이고 배포 때 자동 설치된다.
+  **비밀값은 유닛이 아니라 `/etc/life-reroll-bot.env`** 에 둔다 — 유닛은 레포에 커밋되기 때문이다.
+- 봇은 `/root/spk` 레포에서 그대로 돈다(웹처럼 `/var/www` 로 복사하지 않는다).
+  `node_modules` 가 필요한 프로세스라 복사보다 제자리 실행이 단순하다.
+- **슬래시 커맨드는 코드 배포로 갱신되지 않는다.** Discord 쪽에 등록된 정의라
+  `deploy-bot.sh` 가 매번 다시 등록한다.
+
 ## 구조
 
 ```
