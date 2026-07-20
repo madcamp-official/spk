@@ -30,7 +30,7 @@ export const CHIP_DEFS=[
  {k:"키",f:l=>({v:l.height+"cm",s:t("이 나라 {g} 평균 {v}cm",{g:t(l.male?"남성":"여성"),v:l.male?l.c.hm:l.c.hf})})},
  {k:"몸무게",f:l=>({v:l.weight+"kg",s:t("BMI {b} · 국가 평균 {a}",{b:l.bmi.toFixed(1),a:l.c.bmi})})},
  {k:"IQ",f:l=>({v:l.iq,s:t("평균 100인 세계 공통 분포 · 상위 {t}",{t:fmtTop(iqTopPct(l.iq))})})},
- {k:"주로 쓰는 손",f:l=>({v:t(l.lefty?"왼손잡이 🫲":"오른손잡이 🫱"),s:l.lefty?"10%":"90%"})},
+ {k:"사인",f:l=>({v:t(l.cause.key)+" "+l.cause.emoji,s:""})},
  {k:"탈모",f:l=>({v:t(l.balding?"탈모 예정 🧑‍🦲":"숱 유지 💇"),s:t("50세까지 {g} 약 {p}",{g:t(l.male?"남성":"여성"),p:l.male?"50%":"20%"})})},
  {k:"기대수명",f:l=>({v:t("{n}세",{n:l.lifeExp}),s:t("국가 평균 {n}세",{n:l.c.life})})},
  {k:"연 소득",f:l=>({v:fmtUSD(l.income),s:t("세계 상위 {t} · 1인당 GDP 기반 추정",{t:fmtTop(l.top)})})},
@@ -40,7 +40,6 @@ export function lifeBadges(l){
  const badges=[];
  if(l.c.pop<0.5)badges.push(t("🌟 인구 50만 미만의 나라"));
  else if(l.c.pop<5)badges.push(t("✨ 인구 500만 미만의 나라"));
- if(l.lefty)badges.push(t("🫲 왼손잡이"));
  if(l.lifeExp>=100)badges.push(t("💯 100세 장수 예정"));
  if(l.top<=1)badges.push(t("💎 소득 상위 1%"));
  return badges;
