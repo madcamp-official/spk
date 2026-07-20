@@ -16,11 +16,10 @@ export const TRAIT_LABEL: Record<string, string> = {
   wealth: "부",
   rare_land: "희귀한 고향",
   genius: "명석",
-  lefty: "왼손잡이",
 };
 /** 버튼·임베드에 쓰는 이모지 */
 export const TRAIT_EMOJI: Record<string, string> = {
-  longevity: "⏳", wealth: "💰", rare_land: "🗺️", genius: "🧠", lefty: "🫲",
+  longevity: "⏳", wealth: "💰", rare_land: "🗺️", genius: "🧠",
 };
 export function traitText(key: string): string {
   return `${TRAIT_EMOJI[key] ?? "✨"} ${TRAIT_LABEL[key] ?? key}`;
@@ -32,7 +31,6 @@ export function traitCondition(key: string): string {
     case "wealth": return `세계 소득 상위 ${TRAITS.wealthTopPct}% 이내`;
     case "rare_land": return `모국 인구 ${TRAITS.rareLandMaxPopM}백만 미만`;
     case "genius": return `IQ ${TRAITS.geniusMinIq} 이상`;
-    case "lefty": return "왼손잡이";
     default: return "";
   }
 }

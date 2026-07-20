@@ -58,12 +58,16 @@ async function main(): Promise<void> {
   };
   setDb(mem);
 
-  console.log("\n[1] 마이그레이션 (실제 001_init.sql)");
-  const sqlPath = [
-    path.join(HERE, "db", "migrations", "001_init.sql"),
-    path.join(HERE, "..", "src", "db", "migrations", "001_init.sql"),
+  console.log("\n[1] 마이그레이션 (migrations/ 전부, 파일명 순서대로)");
+  const sqlDir = [
+    path.join(HERE, "db", "migrations"),
+    path.join(HERE, "..", "src", "db", "migrations"),
   ].find(fs.existsSync)!;
-  await pg.exec(fs.readFileSync(sqlPath, "utf8"));
+  /* migrate.ts와 같은 순서로 전부 적용한다 — 001만 돌리면 이후 마이그레이션이
+     실제로 적용 가능한지(컬럼 추가·제약 변경) 검증되지 않는다. */
+  const sqlFiles = fs.readdirSync(sqlDir).filter(f => f.endsWith(".sql")).sort();
+  for (const f of sqlFiles) await pg.exec(fs.readFileSync(path.join(sqlDir, f), "utf8"));
+  ok("마이그레이션 전부 적용", sqlFiles.length >= 2, sqlFiles.join(" → "));
   const tables = await pg.query<{ tablename: string }>(
     "SELECT tablename FROM pg_tables WHERE schemaname='public' ORDER BY tablename");
   const names = tables.rows.map(r => r.tablename);
@@ -86,6 +90,39 @@ async function main(): Promise<void> {
     Number(r0.lifespan) === life1.lifeExp
     && Math.abs(Number(r0.income_mult) - life1.income / life1.c.gdp) < 1e-9);
   ok("국가 코드는 국기에서 파생 (ISO2)", /^[A-Z]{2}$/.test(r0.country_code), r0.country_code);
+
+  console.log("\n[2-1] 사인 (왼손잡이 교체분)");
+  {
+    const { rollCause } = await import("@life-reroll/core");
+    ok("모든 생에 사인이 있다",
+      Array.from({ length: 500 }, () => rollLife())
+        .every(l => l.cause && l.cause.key.length > 0 && l.cause.emoji.length > 0));
+    ok("lefty 필드는 사라졌다", !("lefty" in life1));
+    /* 같은 생이면 언제 계산해도 같은 사인 — 공유 링크 복원·운세 재렌더가 이걸 믿는다 */
+    ok("사인은 결정적", rollCause(life1).key === rollCause(life1).key
+      && rollCause(life1).key === life1.cause.key, life1.cause.key);
+    /* 젊어 죽으면 사고·감염병, 늙어 죽으면 노환·치매 쪽으로 기울어야 한다 */
+    const at = (age: number) => {
+      const c: Record<string, number> = {};
+      for (let i = 0; i < 400; i++) {
+        const l = rollLife();
+        const k = rollCause({ ...l, lifeExp: age, income: 1000 + i, iq: 100 }).key;
+        c[k] = (c[k] ?? 0) + 1;
+      }
+      return c;
+    };
+    const young = at(50), old = at(95);
+    ok("젊어 죽으면 사고·감염병이 흔하다",
+      ((young["사고"] ?? 0) + (young["감염병"] ?? 0)) > ((old["사고"] ?? 0) + (old["감염병"] ?? 0)),
+      `50세 ${(young["사고"] ?? 0) + (young["감염병"] ?? 0)} vs 95세 ${(old["사고"] ?? 0) + (old["감염병"] ?? 0)}`);
+    ok("늙어 죽으면 노환·치매가 흔하다",
+      ((old["노환"] ?? 0) + (old["치매"] ?? 0)) > ((young["노환"] ?? 0) + (young["치매"] ?? 0)),
+      `95세 ${(old["노환"] ?? 0) + (old["치매"] ?? 0)} vs 50세 ${(young["노환"] ?? 0) + (young["치매"] ?? 0)}`);
+    /* DB 왕복 */
+    const cr = await pg.query<any>("SELECT cause_key, cause_emoji, lefty FROM lives WHERE id=$1", [s1.id]);
+    ok("사인이 DB에 저장됨", cr.rows[0].cause_key === life1.cause.key, cr.rows[0].cause_key);
+    ok("lefty 컬럼은 NULL 허용으로 남음", cr.rows[0].lefty === null);
+  }
 
   console.log("\n[3] 서버 도감 첫 발견 (동시성)");
   const kr = { ...life1, c: { ...life1.c } };

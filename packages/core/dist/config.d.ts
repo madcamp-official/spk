@@ -27,8 +27,6 @@ export declare const SAMPLING: {
         readonly sigma: 15;
         readonly clamp: [number, number];
     };
-    /** 왼손잡이 비율. 국가 무관(기존 웹 값). */
-    readonly leftyRate: 0.1;
     /** 50세까지 안드로겐성 탈모 비율. 성별로만 뽑는다(기존 웹 값). */
     readonly baldingRate: {
         readonly male: 0.5;

@@ -1,4 +1,4 @@
-import type { Country, Life, Trait } from "./types.js";
+import type { Cause, CauseInput, Country, Life, Trait } from "./types.js";
 /** 인구 가중 국가 추첨. CUM(누적 인구)에 이분 탐색. */
 export declare function pickCountryIdx(): number;
 /** 이 소득이 세계 상위 몇 %인지. 모든 국가의 로그정규를 인구로 가중해 합친다. */
@@ -11,6 +11,8 @@ export declare function rollBody(c: Country, male: boolean): {
 };
 export declare function rollIQ(): number;
 export declare function iqTopPct(iq: number): number;
+/** 이 생의 사인. 고정값에서 결정적으로 정해진다 — 같은 생은 언제 그려도 같은 사인이다. */
+export declare function rollCause(l: CauseInput): Cause;
 /** 생 한 번 뽑기. fCi/fMale을 주면 그 값으로 고정한다(공유 링크 복원·운세용). */
 export declare function rollLife(fCi?: number | null, fMale?: boolean | null): Life;
 /** §D 형제 수 — 국가 합계출산율을 λ로 하는 포아송.
@@ -25,8 +27,10 @@ export declare function rollOccupation(_life: Life): string;
  *  「대가족」은 형제 수가 필요해 아직 없다 — 출산율 데이터가 생기면 여기 추가한다.
  *  임계값은 전부 config.TRAITS(§A.8). 태그는 전부 긍정형이다(§F 톤 가이드). */
 export declare function deriveTraits(life: Life): Trait[];
-/** 업 계승으로 물려받을 수 있는 태그 목록(고정 순서). 버튼을 만들 때 쓴다. */
-export declare const TRAIT_KEYS: readonly ["longevity", "wealth", "rare_land", "genius", "lefty"];
+/** 업 계승으로 물려받을 수 있는 태그 목록(고정 순서). 버튼을 만들 때 쓴다.
+ *  「왼손잡이」는 그 항목이 사인으로 교체되면서 사라졌다 — 사인은 생마다 반드시 하나씩
+ *  있어서 태그로 쓰면 변별력이 없다(전부가 가진 특성은 특성이 아니다). */
+export declare const TRAIT_KEYS: readonly ["longevity", "wealth", "rare_land", "genius"];
 export type TraitKey = typeof TRAIT_KEYS[number];
 export declare function hasTrait(life: Life, key: string): boolean;
 /** §D 생 희귀도 점수 = "이 생보다 희귀한 생이 나올 확률". ×100 하면 "상위 n%".

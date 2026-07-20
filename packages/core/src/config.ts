@@ -36,9 +36,6 @@ export const SAMPLING = {
   /** IQ 분포. 검사 점수는 정의상 평균 100·표준편차 15이며 국가와 무관하다. */
   iq: { mean: 100, sigma: 15, clamp: [50, 150] as [number, number] },
 
-  /** 왼손잡이 비율. 국가 무관(기존 웹 값). */
-  leftyRate: 0.1,
-
   /** 50세까지 안드로겐성 탈모 비율. 성별로만 뽑는다(기존 웹 값). */
   baldingRate: { male: 0.5, female: 0.2 },
 

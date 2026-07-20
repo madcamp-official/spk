@@ -1,6 +1,6 @@
 import {DATA,REL,TOTAL,P_MALE} from "../../core/data.js";
 import {isoCode} from "../core/util.js";
-import {incomeTopPct} from "../../core/roll.js";
+import {incomeTopPct,rollCause} from "../../core/roll.js";
 
 /* ===== 생을 링크에 담기 =====
    링크만 받은 사람도 공유한 사람이 뽑은 생을 그대로 본다. 없으면 링크를 눌러도
@@ -13,9 +13,14 @@ import {incomeTopPct} from "../../core/roll.js";
 
    국가는 인덱스가 아니라 ISO 코드다 — DATA 중간에 나라를 끼워 넣어도 안 깨지게.
 
-   형식: iso-male-urban-lefty-relIdx-ethIdx-lifeExp-income-iq-height-weight×10-balding
+   형식: iso-male-urban-_-relIdx-ethIdx-lifeExp-income-iq-height-weight×10-balding
    예:   KR-1-1-0-2-0-81-31400-103-174-684-1
    c·top·prob·bmi는 이 값들에서 계산되므로 싣지 않는다.
+
+   4번째 칸(_)은 예전 "왼손잡이" 자리다. 이 기능은 뺐지만 칸은 0으로 남겨 둔다 —
+   빼서 뒤 칸을 당기면 이미 뿌린 링크가 전부 다른 생을 가리키게 되기 때문이다(조용히
+   틀린다). 사인은 이 생의 고정값에서 rollCause로 되살리므로 링크에 싣지 않는다 —
+   그래서 옛 링크도 그대로 사인을 얻는다.
 
    balding은 나중에 붙어서 맨 뒤에 있다. 가운데 끼우면 이미 뿌린 링크가 전부 다른 생이
    되므로 append만 한다 — 새 값은 항상 뒤에 붙인다. */
@@ -31,7 +36,7 @@ export function encodeLife(l) {
     isoCode(l.c.flag),
     l.male ? 1 : 0,
     l.urban ? 1 : 0,
-    l.lefty ? 1 : 0,
+    0,   /* 예전 왼손잡이 자리 — 칸 유지용(위 형식 주석 참고) */
     relIdx < 0 ? 0 : relIdx,
     ethIdx < 0 ? 0 : ethIdx,
     l.lifeExp,
@@ -66,7 +71,7 @@ export function decodeLife(s, shared) {
     const v = Number(p[i]);
     return Number.isFinite(v) && v >= lo && v <= hi ? v : null;
   };
-  const male = n(1, 0, 1), urban = n(2, 0, 1), lefty = n(3, 0, 1);
+  const male = n(1, 0, 1), urban = n(2, 0, 1), legacy = n(3, 0, 1); /* p[3]=예전 왼손잡이 칸, 검증만 하고 버린다 */
   const relIdx = n(4, 0, 99), ethIdx = n(5, 0, 99);
   const lifeExp = n(6, 45, 106);
   const income = n(7, 1, 1e9);
@@ -74,7 +79,7 @@ export function decodeLife(s, shared) {
   const height = n(9, 130, 215);
   const w10 = n(10, 100, 6000);
   const balding = p.length === 12 ? n(11, 0, 1) : 0;
-  if ([male, urban, lefty, relIdx, ethIdx, lifeExp, income, iq, height, w10, balding].some(v => v === null)) return null;
+  if ([male, urban, legacy, relIdx, ethIdx, lifeExp, income, iq, height, w10, balding].some(v => v === null)) return null;
 
   const relArr = REL[c.rel] || [];
   const ethArr = c.eth || [];
@@ -87,13 +92,16 @@ export function decodeLife(s, shared) {
   const weight = w10 / 10;
   const pC = c.pop / TOTAL, pG = male ? P_MALE : 1 - P_MALE;
   const pU = urban ? c.urban / 100 : 1 - c.urban / 100;
-  return {
+  const l = {
     ci, c,
-    male: !!male, urban: !!urban, lefty: !!lefty, balding: !!balding,
+    male: !!male, urban: !!urban, balding: !!balding,
     rel, eth, lifeExp, income, iq, height, weight,
     bmi: weight / Math.pow(height / 100, 2),
     top: incomeTopPct(income),
     prob: pC * pG * pU,
     shared: !!shared,   /* true면 남이 뽑은 것 — 내 도감·최고기록·환생 횟수에 넣으면 안 된다 */
   };
+  /* 사인은 링크에 없다 — 이 생의 고정값에서 rollLife와 똑같은 방식으로 되살린다 */
+  l.cause = rollCause(l);
+  return l;
 }

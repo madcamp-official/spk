@@ -49,7 +49,7 @@ export function lifeStatLines(l){
   t("📏 키 {v}cm",{v:l.height}),
   t("⚖ 몸무게 {v}kg",{v:l.weight}),
   "🧠 IQ "+l.iq,
-  t(l.lefty?"🫲 왼손잡이":"🫱 오른손잡이"),
+  l.cause.emoji+" "+t(l.cause.key),
   t(l.balding?"🧑‍🦲 탈모 예정":"💇 숱 유지"),
   t("⏳ 기대수명 {n}세",{n:l.lifeExp}),
   t("💰 연 {v}",{v:fmtUSD(l.income)}),
@@ -370,7 +370,7 @@ export function drawCard(l){
   if(tall){ /* 설명줄 최대 2줄 */
    x.font="16px "+SANS;
    wrapChars(d.s,maxW,2).forEach((ln,j)=>x.fillText(ln,tx,py+100+j*22));
-  }else{   /* 낮은 칩: 글자를 줄여서라도 한 줄에 최대한 다 넣는다 */
+  }else if(d.s){   /* 낮은 칩: 글자를 줄여서라도 한 줄에 최대한 다 넣는다. 설명줄이 빈 칩(사인)은 건너뛴다 */
    fitFont(d.s,16,"",SANS,maxW,12);
    x.fillText(wrapChars(d.s,maxW,1)[0],tx,py+94);
   }

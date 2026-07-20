@@ -70,6 +70,12 @@ export function passportEmbed(row: LifeRow, ownerLabel: string): EmbedBuilder {
       inline: true,
     },
     {
+      name: "사인",
+      /* 옛 기록에는 사인이 없다(002_cause 이전). 그때 뽑힌 생은 —로 둔다 */
+      value: row.cause_key ? `${row.cause_emoji ?? ""} ${row.cause_key}`.trim() : "—",
+      inline: true,
+    },
+    {
       name: "희귀도",
       value: fmtTopPct(Number(row.rarity_score)),
       inline: true,

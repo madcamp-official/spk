@@ -73,14 +73,14 @@ export async function saveLife(opts: {
       `INSERT INTO lives (
          user_id, guild_id, country_code, country_name, gender, lifespan,
          income_usd, income_mult, income_top_pct, urban,
-         iq, height_cm, weight_kg, religion, ethnicity, lefty, balding,
-         traits, rarity_score, inherited_trait)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20)
+         iq, height_cm, weight_kg, religion, ethnicity, balding,
+         cause_key, cause_emoji, traits, rarity_score, inherited_trait)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21)
        RETURNING id`,                                   /* 출생 번호는 SEQUENCE가 준다 (§A.5) */
       [discordId, guildId, code, life.c.name, life.male ? "male" : "female", life.lifeExp,
         Math.round(life.income), life.income / life.c.gdp, life.top, life.urban,
-        life.iq, life.height, life.weight, life.rel[0], life.eth[0], life.lefty, life.balding,
-        traits, score, opts.inheritedTrait]);
+        life.iq, life.height, life.weight, life.rel[0], life.eth[0], life.balding,
+        life.cause.key, life.cause.emoji, traits, score, opts.inheritedTrait]);
     const id = ins.rows[0]!.id;
 
     /* 서버 첫 발견 판정. ON CONFLICT DO NOTHING 이므로 먼저 넣은 쪽만 행을 받는다 —
@@ -117,8 +117,11 @@ export interface LifeRow {
   weight_kg: number;
   religion: string;
   ethnicity: string;
-  lefty: boolean;
+  /** 옛 기록에만 있다 — 왼손잡이 항목은 사인으로 교체됐다(002_cause.sql) */
+  lefty: boolean | null;
   balding: boolean;
+  cause_key: string | null;
+  cause_emoji: string | null;
   traits: string[];
   rarity_score: number;
   inherited_trait: string | null;
