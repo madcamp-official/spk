@@ -88,6 +88,10 @@ h1{
   color:#ff9c8a;background:rgba(255,120,100,.12);border-color:rgba(255,120,100,.4);
 }
 .popline{font-size:13px;color:var(--muted);margin:0 0 14px;min-height:20px}
+/* 실시간 피드. 결과 카드 맨 아래 한 줄 — 배지보다 약하게 깔려 결과를 가리지 않는다.
+   min-height를 안 주면 줄이 나타날 때 카드가 커지며 리롤 버튼이 밀린다. */
+.livefeed{font-size:12px;color:var(--muted);opacity:.8;margin:14px 0 0;min-height:18px}
+.livefeed .lf-ago{opacity:.6}
 .pop-prob{font-size:.85em;opacity:.75;white-space:nowrap}
 .flag{
   font-size:clamp(72px,16vw,104px);
@@ -281,6 +285,7 @@ footer a{color:var(--gold)}
   /* subline(대륙·도시/농촌·성별)은 칩의 "태어난 곳"·"성별"과 겹친다 */
   .hero{padding:14px 14px 12px;border-radius:16px}
   .popline{font-size:11px;margin-bottom:6px;min-height:0}
+  .livefeed{font-size:11px;margin-top:8px;min-height:16px}
   .flag{font-size:44px}
   .country{font-size:26px;margin:4px 0 2px}
   .subline{display:none}
@@ -367,6 +372,16 @@ footer a{color:var(--gold)}
 .ach-name{font-size:13px}
 .ach-item:not(.ok) .ach-name{opacity:.65}
 .ach-sub{font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums}
+/* 딴 칭호의 "어떻게 땄나" 한 줄 — 자리는 늘 잡아 두고 투명도만 움직인다.
+   높이를 hover 때 바꾸면 안 되는 이유: .ach-grid.cols 가 CSS 멀티컬럼이라 한 칸이
+   커지는 순간 컬럼이 통째로 재배치돼 목록이 눈에 띄게 흔들린다. 절대 위치 툴팁도
+   같은 이유로 못 쓴다 — 멀티컬럼 조각 경계에서 잘린다. */
+.ach-how{font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums;
+  opacity:0;transition:opacity .15s;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ach-item.ok{cursor:help}
+.ach-item.ok:hover .ach-how,.ach-item.ok:focus-visible .ach-how{opacity:.85}
+/* 터치 기기엔 hover가 없다 — 영영 못 보느니 처음부터 옅게 깔아 둔다 */
+@media (hover:none){.ach-how{opacity:.5}}
 .ach-bar{height:4px;border-radius:99px;background:rgba(236,233,245,.12);overflow:hidden}
 .ach-bar i{display:block;height:100%;background:linear-gradient(90deg,#6fb1e8,#f3c95c)}
 /* 2열은 그룹이 여러 개인 칭호 탭에서만 쓴다. 기록·수집 목록은 한 덩어리라
