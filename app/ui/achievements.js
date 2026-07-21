@@ -31,12 +31,17 @@ function body(){
    '<div class="ach-group"><h4>'+g.icon+" "+t(g.k)+
     ' <span class="ach-count">'+g.items.filter(i=>i.ok).length+"/"+g.items.length+"</span></h4>"+
    g.items.map(i=>{
+    /* 달성 조건은 늘 보이게 둔다 — 진행 막대는 아직 못 딴 것에만 의미가 있으니
+       딴 뒤엔 접고, 조건(목표 수치 / 기록·희귀도의 note)만 그대로 남긴다.
+       예전엔 딴 마일스톤이 조건을 통째로 감춰 "몇 회짜리였는지"가 사라졌다. */
+    const sub=i.goal!=null
+     ? '<span class="ach-sub">'+i.now+" / "+i.goal+"</span>"
+     : (i.note?'<span class="ach-sub">'+i.note+"</span>":"");
     const bar=(i.goal!=null&&!i.ok)
      ? '<div class="ach-bar"><i style="width:'+Math.round(i.now/i.goal*100)+'%"></i></div>'
-       +'<span class="ach-sub">'+i.now+" / "+i.goal+"</span>"
-     : (i.note?'<span class="ach-sub">'+i.note+"</span>":"");
+     : "";
     return '<div class="ach-item'+(i.ok?" ok":"")+'"><span class="ach-name">'+
-     (i.ok?"":"🔒 ")+tname(i)+"</span>"+bar+"</div>";
+     (i.ok?"":"🔒 ")+tname(i)+"</span>"+bar+sub+"</div>";
    }).join("")+"</div>").join("");
  }
  if(active==="rec"){
