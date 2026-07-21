@@ -9,9 +9,6 @@ import {rarityColor} from "../engine/roll.js";
 import {track} from "../analytics/track.js";
 import {toast} from "./effects.js";
 import {encodeLife} from "../engine/permalink.js";
-/* 운세는 같은 시트·같은 흐름을 쓰되, 결과 카드가 아니라 미끼형 운세 카드·문구로 나간다.
-   isFortune으로 갈라 카드·문구·등록(결과별 OG 업로드)만 바꾼다 — 공유 시트 DOM은 그대로. */
-import {isFortune,drawFortuneCard,downloadFortuneCard,fortuneTeaseText,registerFortuneShare} from "./fortunecard.js";
 
 /* ===== 공유 =====
    문구 A/B 테스트: 기기별로 스토리형(a)/성과형(b)이 고정 배정되고,
@@ -31,14 +28,45 @@ export async function registerShare(l){
   return typeof d.code==="string"?d.code:null;
  }catch(e){return null;}
 }
+/* 오늘의 운세인가. 운세는 일반 공유와 '내용'은 똑같이(전부 담아) 나가되, 링크만 결과별
+   OG 랜딩(/s/코드)으로 내보내 카톡·링크 미리보기가 이 생의 결과 카드로 뜨게 한다.
+   fortuneKey(날짜)는 운세에만 붙으므로 이것으로 가른다(fortune.js). */
+export const isFortune=l=>!!(l&&l.fortuneKey);
+/* key "2026-7-21" → "2026.07.21". 운세 카드·미리보기에 날짜를 박아 "오늘만의 것"으로 만든다. */
+export function fmtFortuneDate(key){
+ const p=String(key||"").split("-");
+ return p.length===3&&p[0]?p[0]+"."+String(p[1]).padStart(2,"0")+"."+String(p[2]).padStart(2,"0"):"";
+}
 /* code가 있으면 짧은 링크(?s=코드), 없으면 생 없는 링크(받는 쪽이 새로 뽑는다).
+   landing이면 결과별 OG 랜딩(/s/코드)으로 — 크롤러가 이 생의 카드를 미리보기로 읽는다.
    생 값을 URL에 통째로 싣던 예전 방식(?l=&sig=)은 걷어냈다 — 링크만 보고 생이 읽히던 게
    지저분했다. 서버가 죽어 code를 못 받으면 문구로만 공유된다(예전의 미서명 폴백과 같다). */
-export function shareURL(via,code){
- let u=location.origin+location.pathname+"?ref=share&v="+ST.ab;
+export function shareURL(via,code,landing){
+ let u=location.origin+(landing&&code?("/s/"+code):location.pathname)+"?ref=share&v="+ST.ab;
  if(via)u+="&via="+via;
- if(code)u+="&s="+code;
+ if(code&&!landing)u+="&s="+code;   /* 랜딩은 /s/코드가 이미 코드를 나르므로 ?s=를 또 붙이지 않는다 */
  return u;
+}
+/* 운세를 서버에 등록하고 짧은 코드를 받는다 — 결과 카드 이미지(전체)를 함께 올려 결과별 OG로 쓴다.
+   카톡·링크 미리보기가 이 생의 카드로 뜨게. 이미지가 무거우니 채널마다 다시 올리지 않게
+   코드를 이 생에 캐시한다(l._fcode). 서명이 없으면(로컬·미서명) null → 생 없는 링크로 떨어진다. */
+export async function registerFortuneShare(l){
+ if(l._fcode!==undefined)return l._fcode;
+ if(!l||!l.sig){l._fcode=null;return null;}
+ let og="";
+ try{og=drawCard(l).toDataURL("image/jpeg",0.82);}catch(e){}
+ const title="🔮 "+t("{date}의 환생 운세",{date:fmtFortuneDate(l.fortuneKey)})
+  +" · "+(flagOK?l.c.flag+" ":"")+countryName(l.c);
+ const desc=lifeStatLines(l).join(" · ");   /* 미리보기 설명도 결과와 같은 12개 항목 */
+ try{
+  const r=await fetch("/api/fortune-share",{method:"POST",cache:"no-store",
+   headers:{"content-type":"application/json"},
+   body:JSON.stringify({l:encodeLife(l),sig:l.sig,og,t:title,d:desc})});
+  if(!r.ok){l._fcode=null;return null;}
+  const d=await r.json();
+  l._fcode=typeof d.code==="string"?d.code:null;
+  return l._fcode;
+ }catch(e){l._fcode=null;return null;}
 }
 /* 12개 항목을 "이모지 라벨 값" 형태로 한 줄씩. 공유 문구와 결과 카드가 같은 목록을 쓴다 —
    한쪽에만 항목을 추가해 둘이 어긋나는 일을 막는다. 화면 칩(CHIP_DEFS)과 순서를 맞췄다. */
@@ -58,7 +86,7 @@ export function lifeStatLines(l){
   t("💰 연 {v}",{v:fmtUSD(l.income)}),
  ];
 }
-export function shareText(l,via,code){
+export function shareText(l,via,code,landing){
  const flag=flagOK?l.c.flag+" ":"";
  const head=ST.ab==="a"
   ?t("🌏 나는 {flag}{country} {urban}에서 {gender}로 태어났다",
@@ -73,7 +101,7 @@ export function shareText(l,via,code){
   "",
   ...lifeStatLines(l),   /* 12개 항목 전부 */
   "",
-  t("나도 환생해 보기 👉 {url}",{url:shareURL(via,code)}),
+  t("나도 환생해 보기 👉 {url}",{url:shareURL(via,code,landing)}),
  ];
  return lines.join("\n");
 }
@@ -125,8 +153,7 @@ export async function kakaoShare(l,code){
 export async function nativeShare(l,txt){
  let payload={text:txt};
  try{
-  const cv=isFortune(l)?drawFortuneCard(l,"story"):drawCard(l);
-  const blob=await new Promise(res=>cv.toBlob(res,"image/png"));
+  const blob=await new Promise(res=>drawCard(l).toBlob(res,"image/png"));
   if(blob){
    const file=new File([blob],"rebirth.png",{type:"image/png"});
    if(navigator.canShare&&navigator.canShare({files:[file],text:txt}))payload={files:[file],text:txt};
@@ -154,14 +181,14 @@ export async function shareVia(ch){
  const l=session.currentLife;if(!l)return;
  closeShare();
  session.lifeShared=true;
- const fort=isFortune(l);   /* 운세면 미끼형 카드·문구·결과별 OG로 갈아탄다 */
+ const fort=isFortune(l);   /* 운세는 내용은 그대로 전부 담고, 링크만 결과별 OG 랜딩으로 */
  const props={country:l.c.name,prob:probPct(l.prob)};
  /* 생을 서버에 등록해 짧은 코드를 받는다(채널마다 한 번). 실패하면 code=null이라
     생 없는 링크로 나간다. 공유 시트를 이미 닫은 뒤라 이 await가 UI를 막지 않는다.
-    운세는 결과별 OG 이미지까지 함께 올린다(registerFortuneShare) — 카톡·링크 미리보기가
-    이 생의 운세 카드로 뜨게. 이미지가 무거워 첫 채널에서 한 번만 올리고 코드는 캐시된다. */
+    운세는 결과 카드 이미지까지 함께 올려(registerFortuneShare) 카톡·링크 미리보기가
+    이 생의 카드로 뜨게 하고 링크는 /s/코드로 나간다. 이미지가 무거워 첫 채널에서 한 번만 올린다. */
  const code=fort?await registerFortuneShare(l):await registerShare(l);
- const txt=fort?fortuneTeaseText(l,ch,code):shareText(l,ch,code);   /* 링크에 이 채널을 각인해서 내보낸다 */
+ const txt=shareText(l,ch,code,fort);   /* 내용은 일반 공유와 같고, 운세면 링크만 /s/코드 랜딩 */
  if(ch==="clip"){
   track("share_text",props);
   toast(await copyText(txt)?t("공유 문구를 복사했어요 ✅"):t("복사에 실패했어요 😢"));
@@ -181,7 +208,7 @@ export async function shareVia(ch){
   }
  }else if(ch==="insta"){
   track("share_insta",props);
-  fort?downloadFortuneCard(l):downloadCard(l);
+  downloadCard(l);
   /* 인스타는 텍스트 공유 API가 없다. 카드 이미지와 별개로 12개 항목 문구를 클립보드에
      넣어 두면, 스토리 스티커나 캡션에 바로 붙여넣을 수 있다. */
   const copied=await copyText(txt);
@@ -249,8 +276,10 @@ export function drawCard(l){
  sp("0px");
  /* 칭호 + 생 번호를 한 줄에 — 사이트 헤더(.idrow)와 같은 구성이다.
     이 카드의 규칙이 "결과 화면을 그대로 재현"이므로 화면과 같은 줄에 둔다.
-    히어로(hy=192)를 밀지 않으니 아래 높이 계산은 그대로 둬도 된다. */
- const lifeNo=t("당신의 {n}번째 생",{n:ST.total.toLocaleString()});
+    히어로(hy=192)를 밀지 않으니 아래 높이 계산은 그대로 둬도 된다.
+    운세면 생 번호 대신 날짜를 박는다 — 화면 lifeNo("오늘의 운세 환생")와 같이, 오늘만의 것임을 남긴다. */
+ const lifeNo=l.fortuneKey?t("{date}의 환생 운세",{date:fmtFortuneDate(l.fortuneKey)})
+  :t("당신의 {n}번째 생",{n:ST.total.toLocaleString()});
  const title=titleLine();
  if(title){
   x.font="600 24px "+SANS;
@@ -416,5 +445,5 @@ $("shareImg").addEventListener("click",()=>{
  const l=session.currentLife;if(!l)return;
  session.lifeShared=true;
  track("share_card",{country:l.c.name,prob:probPct(l.prob)});
- isFortune(l)?downloadFortuneCard(l):downloadCard(l);   /* 운세면 스토리 규격 운세 카드로 저장 */
+ downloadCard(l);
 });

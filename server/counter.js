@@ -408,7 +408,7 @@ function handleShareLanding(req, res, code, q) {
 <meta property="og:description" content="${esc(desc)}">
 <meta property="og:image" content="${esc(img)}">
 <meta property="og:image:width" content="1080">
-<meta property="og:image:height" content="1080">
+<meta property="og:image:height" content="1350">
 <meta property="og:url" content="${esc(landing)}">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="${esc(title)}">
