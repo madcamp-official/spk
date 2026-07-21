@@ -25,22 +25,15 @@ function collectionHTML(all,got){
   (got.has(n)?"":"🔒 ")+term(n)+"</span></div>").join("")+"</div>";
 }
 
-/* 딴 칭호의 "기준 · 내 값" 한 줄.
-   단위(회·개국·종)는 그룹이 사전 키(u)로 들고 있고 여기서 t()로 푼다 — 엔진은 한국어를 모른다.
-   기록·희귀도 그룹은 단위가 항목마다 달라(cm·kg·1/N…) 엔진이 문자열로 빚어 note/cur에 담아 준다. */
-function howHTML(g,i){
- let s="";
- /* 1은 따로 뽑는다 — 영어·스페인어·포르투갈어는 "1 rebirths"가 되기 때문.
-    첫 칭호("첫 생")의 기준이 1이라 이 자리는 영어권에서 늘 보인다. */
- const u=n=>t(n===1&&g.u1?g.u1:g.u,{n});
- if(g.u&&i.goal!=null&&i.cur!=null)
-  /* 기준과 내 값이 같으면 한 번만 쓴다. 대륙 정복은 "전부 모으기"가 곧 기준이라 늘 같고,
-     다른 칭호도 문턱에 딱 걸치면 같아진다 — "기준 12개국 · 지금 12개국"은 말이 겹친다. */
-  s=i.cur===i.goal?t("{a} 달성",{a:u(i.goal)})
-                  :t("기준 {a} · 지금 {b}",{a:u(i.goal),b:u(i.cur)});
- else if(i.note&&i.cur!=null)
-  s=t("기준 {a} · 내 기록 {b}",{a:i.note,b:i.cur});
- return s?'<span class="ach-how">'+s+"</span>":"";
+/* 기록·희귀도 칭호의 hover 보충. 상시 줄(sub)은 조건만 보여준다 — 기록형은 "≥130",
+   희귀도는 "1/10,000". 딴 뒤엔 hover로 내 실제 기록(143 · 1/737,104)까지 보탠다.
+   tier·대륙 정복은 상시 줄이 "now / goal"이라 내 값이 이미 들어 있어 여기서 다루지 않는다.
+   note/cur 문자열은 엔진이 언어중립으로 빚어 준다(단위가 cm·kg·1/N로 제각각이라). */
+function howHTML(i){
+ /* 조건(note)은 sub가 이미 상시 보여준다 — 반복하면 "≥130"이 두 번 뜬다.
+    hover는 sub가 못 담는 것, 내 실제 기록만 보탠다. */
+ if(!i.ok||!i.note||i.cur==null||i.cur===i.note)return "";
+ return '<span class="ach-how">'+t("내 기록 {b}",{b:i.cur})+"</span>";
 }
 
 function body(){
@@ -49,15 +42,19 @@ function body(){
    '<div class="ach-group"><h4>'+g.icon+" "+t(g.k)+
     ' <span class="ach-count">'+g.items.filter(i=>i.ok).length+"/"+g.items.length+"</span></h4>"+
    g.items.map(i=>{
+    /* 달성 조건은 딴 뒤에도 늘 보이게 둔다(seojinnlee) — goal이면 진행도 now/goal,
+       아니면 note(≥130·1/10,000). 예전엔 딴 마일스톤이 조건을 통째로 감춰
+       "몇 회짜리였는지"가 사라졌다. 진행 막대만 아직 못 딴 것에 남긴다. */
+    const sub=i.goal!=null
+     ? '<span class="ach-sub">'+i.now+" / "+i.goal+"</span>"
+     : (i.note?'<span class="ach-sub">'+i.note+"</span>":"");
     const bar=(i.goal!=null&&!i.ok)
      ? '<div class="ach-bar"><i style="width:'+Math.round(i.now/i.goal*100)+'%"></i></div>'
-       +'<span class="ach-sub">'+i.now+" / "+i.goal+"</span>"
-     : (i.note&&!i.ok?'<span class="ach-sub">'+i.note+"</span>":"");
-    /* 딴 칭호는 기준 대신 "그 기준을 어떻게 넘겼나"를 품는다(hover 때만 드러난다).
-       기준만 다시 보여주면 이미 딴 사람에겐 새 정보가 없다. */
-    const how=i.ok?howHTML(g,i):"";
+     : "";
+    /* 기록·희귀도는 딴 뒤 hover로 내 실제 기록을 보탠다(howHTML 참조) */
+    const how=howHTML(i);
     return '<div class="ach-item'+(i.ok?" ok":"")+'"'+(how?' tabindex="0"':"")+
-     '><span class="ach-name">'+(i.ok?"":"🔒 ")+tname(i)+"</span>"+bar+how+"</div>";
+     '><span class="ach-name">'+(i.ok?"":"🔒 ")+tname(i)+"</span>"+bar+sub+how+"</div>";
    }).join("")+"</div>").join("");
  }
  if(active==="rec"){

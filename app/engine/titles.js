@@ -186,19 +186,19 @@ export function noteLife(l){
 
 /* 업적 목록 화면용 — 딴 것과 못 딴 것을 진행도와 함께 전부 돌려준다.
    못 딴 것도 보여야 "다음에 뭘 노릴지"가 생긴다. */
-/* cur = 클램프하지 않은 실제 값. now는 진행 막대용이라 goal에서 잘리는데, 이미 딴 칭호는
-   "무슨 기준을 어떻게 넘겼나"를 보여줘야 해서 잘리지 않은 값이 따로 필요하다
-   (100회 칭호를 353회로 넘었다는 게 요점이다). u = 단위 사전 키 — UI가 t()로 푼다. */
+/* tier·대륙은 now/goal(진행도)로 조건을 상시 보여주므로 값이 따로 필요 없다.
+   기록·희귀도만 cur를 둔다 — 상시 줄은 조건(≥130·1/10,000)만 보여주고, 딴 뒤 hover로
+   내 실제 기록(143·1/737,104)을 보태는 데 쓴다(achievements.js howHTML). */
 export function catalog(){
  const r=ST.rec||{}, best=rarestProb();
- const tier=(items,now)=>items.map(x=>({k:x.k,ok:now>=x.n,now:Math.min(now,x.n),goal:x.n,cur:now}));
+ const tier=(items,now)=>items.map(x=>({k:x.k,ok:now>=x.n,now:Math.min(now,x.n),goal:x.n}));
  return [
-  {icon:"🔁",k:"환생 횟수",u:"{n}회",u1:"1회",items:tier(ROLL,ST.total)},
-  {icon:"📖",k:"나라 도감",u:"{n}개국",u1:"1개국",items:tier(DEX,seenSet.size)},
-  {icon:"👑",k:"대륙 정복",u:"{n}개국",u1:"1개국",items:contProgress().map(c=>
-    ({k:"{cont} 정복자",cont:c.code,ok:c.owned>=c.total,now:c.owned,goal:c.total,cur:c.owned}))},
-  {icon:"🙏",k:"종교",u:"{n}종",u1:"1종",items:tier(REL_TIERS,relSet.size)},
-  {icon:"🧬",k:"민족",u:"{n}종",u1:"1종",items:tier(ETH_TIERS,ethSet.size)},
+  {icon:"🔁",k:"환생 횟수",items:tier(ROLL,ST.total)},
+  {icon:"📖",k:"나라 도감",items:tier(DEX,seenSet.size)},
+  {icon:"👑",k:"대륙 정복",items:contProgress().map(c=>
+    ({k:"{cont} 정복자",cont:c.code,ok:c.owned>=c.total,now:c.owned,goal:c.total}))},
+  {icon:"🙏",k:"종교",items:tier(REL_TIERS,relSet.size)},
+  {icon:"🧬",k:"민족",items:tier(ETH_TIERS,ethSet.size)},
   {icon:"🏆",k:"기록",items:REC.map(x=>{
     const v=r[x.f], ok=v!=null&&(x.up?v>=x.v:v<=x.v);
     const unit=x.f==="top"?"%":x.f==="iq"?"":x.f[0]==="h"?"cm":x.f[0]==="w"?"kg":"yr";

@@ -135,17 +135,8 @@ const STR={
 "업적 · 칭호 🏅":["Achievements 🏅","実績 · 称号 🏅","成就 · 称号 🏅","Logros 🏅","Conquistas 🏅"],
 "🏅 업적 · 칭호":["🏅 Achievements","🏅 実績 · 称号","🏅 成就 · 称号","🏅 Logros","🏅 Conquistas"],
 "{n}개국 수집":["{n} countries collected","{n}カ国収集","收集 {n} 国","{n} países coleccionados","{n} países coletados"],
-/* 딴 칭호에 마우스를 올렸을 때 뜨는 "기준 · 내 값" (achievements.js howHTML) */
-"기준 {a} · 지금 {b}":["Needs {a} · now {b}","条件 {a} · 現在 {b}","条件 {a} · 当前 {b}","Requiere {a} · ahora {b}","Requer {a} · agora {b}"],
-"기준 {a} · 내 기록 {b}":["Needs {a} · your best {b}","条件 {a} · 自己ベスト {b}","条件 {a} · 你的最佳 {b}","Requiere {a} · tu mejor {b}","Requer {a} · seu melhor {b}"],
-"{n}회":["{n} rebirths","{n}回","{n} 次","{n} renacimientos","{n} renascimentos"],
-"{n}개국":["{n} countries","{n}カ国","{n} 国","{n} países","{n} países"],
-"{n}종":["{n} kinds","{n}種","{n} 种","{n} tipos","{n} tipos"],
-/* 단수형 — 영어·스페인어·포르투갈어에서 "1 rebirths"가 되는 걸 막는다 */
-"1회":["1 rebirth","1回","1 次","1 renacimiento","1 renascimento"],
-"1개국":["1 country","1カ国","1 国","1 país","1 país"],
-"1종":["1 kind","1種","1 种","1 tipo","1 tipo"],
-"{a} 달성":["{a} reached","{a} 達成","已达成 {a}","{a} alcanzado","{a} alcançado"],
+/* 기록·희귀도 칭호를 딴 뒤 hover하면 상시 줄(조건)에 내 실제 기록을 보탠다 (achievements.js howHTML). */
+"내 기록 {b}":["Your best {b}","自己ベスト {b}","你的最佳 {b}","Tu mejor {b}","Seu melhor {b}"],
 "업적 {done} / {all} 달성 · 보유 칭호 {n}개":["{done} of {all} unlocked · {n} titles held","実績 {done} / {all} 達成 · 称号 {n}個","成就 {done} / {all} · 持有称号 {n} 个","{done} de {all} desbloqueados · {n} títulos","{done} de {all} desbloqueados · {n} títulos"],
 "지금까지의 최고 기록":["Your all-time bests","これまでの最高記録","至今的最高记录","Tus mejores marcas","Seus melhores recordes"],
 "겪어 본 종교 {a} / {b}":["{a} of {b} religions lived","経験した宗教 {a} / {b}","经历过的宗教 {a} / {b}","{a} de {b} religiones vividas","{a} de {b} religiões vividas"],
