@@ -132,15 +132,21 @@ export async function nativeShare(l,txt){
 }
 export function openShare(){
  if(!session.currentLife)return;
+ session.shareMode="life";
+ document.querySelector("#shareModal h3").textContent=t("📤 공유하기");
  track("share_open",{country:session.currentLife.c.name,prob:probPct(session.currentLife.prob)});
  $("shareModal").hidden=false;document.body.style.overflow="hidden";
 }
-export function closeShare(){$("shareModal").hidden=true;document.body.style.overflow="";}
+/* 시트를 닫으면 결과-카드 모드로 되돌린다 — 다음에 다시 열 때(대개 결과 공유) 기본이 생이라야 한다.
+   프로필 공유(profile.js)도 이 시트를 쓰므로, 닫힘은 여기 한 곳에서 모드를 초기화한다. */
+export function closeShare(){$("shareModal").hidden=true;document.body.style.overflow="";session.shareMode="life";}
 $("shareBtn").addEventListener("click",openShare);
 $("shareClose").addEventListener("click",closeShare);
 $("shareModal").addEventListener("click",e=>{if(e.target===$("shareModal"))closeShare();});
 if(!navigator.share)$("shareOptNative").hidden=true;
 export async function shareVia(ch){
+ /* 프로필 공유 모드면 이 흐름은 빠진다 — 같은 채널 버튼을 profile.js 가 처리한다. */
+ if(session.shareMode!=="life")return;
  const l=session.currentLife;if(!l)return;
  closeShare();
  session.lifeShared=true;

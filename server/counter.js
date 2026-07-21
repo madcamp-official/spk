@@ -11,6 +11,7 @@
  *   POST /api/verify       -> {"ok":true|false}
  *   POST /api/share        -> {"code":"Xa9k2p"}  (서명된 생을 저장하고 짧은 코드 발급)
  *   GET  /api/shared?s=... -> {"l":"...","sig":"..."}  (코드로 생을 꺼낸다)
+ *   GET  /api/recent?n=12  -> {"rolls":[{"c":"인도","ago":7,"i":41}, ...]}  (최근 남의 리롤)
  *
  * ===== 왜 서버가 생을 뽑는가 =====
  * 공유 링크(?l=)는 생의 값을 그대로 싣는다. 값만 보고는 "정말 뽑힌 생인가"를 알 수 없어서
@@ -275,6 +276,65 @@ function handleShared(req, res, q) {
 /* ===== 이벤트 append =====
    한 줄 = 이벤트 하나(JSONL). 쓰기는 fire-and-forget이라 클라이언트를 절대 기다리게 하지
    않는다. 클라이언트는 응답을 보지 않으므로(sendBeacon) 실패해도 조용히 버린다. */
+/* ===== 최근 환생 피드 =====
+   티커가 보여주는 "방금 남이 뽑은 생". 지어낸 이벤트가 아니라 /api/track으로 들어온
+   진짜 리롤이다. events.jsonl은 append 전용이고 이미 40MB를 넘어서 되읽기가 비싸므로,
+   흘려보낼 최근 것만 메모리 링 버퍼에 든다. 재시작하면 비지만 몇십 초면 다시 찬다.
+
+   나라는 한국어 원문(life.c.name)으로 그대로 내보낸다 — 클라가 DATA에서 되찾아
+   보는 사람 언어로 옮기므로 서버에 6개 언어 사전을 둘 이유가 없다.
+
+   ===== 왜 봇을 거르는가 =====
+   정확히 같은 간격으로 자동 리롤하는 클라이언트가 실제로 붙어 있다(관측: 6시간 356건,
+   since_prev_ms가 100% 59~61초). 사람의 리롤 간격은 들쭉날쭉해서 이렇게 겹치지 않는다.
+   그대로 흘리면 "지금 다른 사람들"이 사실상 그 봇 중계기가 된다.
+   판정은 클라가 보낸 간격(since_prev_ms)으로 한다 — 서버 수신 시각은 배치 전송이라
+   한 배치 안 이벤트가 전부 같은 값이어서 간격을 잴 수 없다. 클라가 조작할 수 있는 값이지만
+   여기서 막는 건 위조범이 아니라 자동 리롤이라 이걸로 충분하다.
+   한 번 봇으로 찍히면 계속 봇이다(간격을 흩뜨려 빠져나가는 걸 막는다). */
+const RECENT_MAX = 30;
+const PERIODIC_EPS = 1500;   /* 최근 간격이 서로 이 안에 겹치면 '기계적으로 규칙적' */
+const PERIODIC_MIN = 5000;   /* 5초보다 촘촘한 연타는 사람도 하므로 주기 판정에서 뺀다 */
+const recent = [];           /* [{c,t,i}] 오래된 것이 앞 */
+const rollers = new Map();   /* ip_h -> {g:[최근 간격], bot, seen} */
+let rollSeq = 0;
+
+function noteRoll(h, gapMs, country, now) {
+  let st = rollers.get(h);
+  if (!st) { st = { g: [], bot: false, seen: 0 }; rollers.set(h, st); }
+  st.seen = now;
+  if (Number.isFinite(gapMs)) {
+    st.g.push(gapMs);
+    if (st.g.length > 5) st.g.shift();
+    const g = st.g.filter(x => x >= PERIODIC_MIN);
+    if (g.length >= 4 && Math.max(...g) - Math.min(...g) <= PERIODIC_EPS && !st.bot) {
+      /* 주기는 4번째 리롤에서야 드러난다 — 그때까지 흘려보낸 이 기기의 줄을 도로 걷는다.
+         안 걷으면 봇 하나가 붙을 때마다 앞의 3건이 그대로 피드에 남는다. */
+      st.bot = true;
+      for (let k = recent.length - 1; k >= 0; k--) if (recent[k].h === h) recent.splice(k, 1);
+    }
+  }
+  if (st.bot) return;
+  recent.push({ c: country, t: now, i: ++rollSeq, h });
+  if (recent.length > RECENT_MAX) recent.shift();
+}
+/* 한 시간 넘게 조용한 기기는 잊는다 — 안 지우면 Map이 방문자 수만큼 자란다. */
+setInterval(() => {
+  const cut = Date.now() - 3600e3;
+  for (const [h, st] of rollers) if (st.seen < cut) rollers.delete(h);
+}, 600e3).unref();
+
+/* 나이를 초로 계산해서 준다 — 클라 시계가 틀어져 있어도 "N초 전"이 어긋나지 않는다. */
+function handleRecent(res, qs) {
+  let n = Math.floor(Number(qs.get('n')));
+  if (!Number.isFinite(n) || n < 1) n = 12;
+  n = Math.min(n, RECENT_MAX);
+  const now = Date.now();
+  const rolls = recent.slice(-n).reverse()
+    .map(r => ({ c: r.c, ago: Math.max(0, Math.round((now - r.t) / 1000)), i: r.i }));
+  json(res, 200, { rolls });
+}
+
 function handleTrack(req, res) {
   const ip = clientIp(req);
   let body = '';
@@ -300,6 +360,13 @@ function handleTrack(req, res) {
         ip_h: h,
       })).join('\n') + '\n';
       fs.appendFile(EVENTS_FILE, lines, () => {});
+      /* 기록과 별개로, roll만 골라 실시간 피드 버퍼에도 넣는다(/api/recent) */
+      for (const ev of events) {
+        if (!ev || ev.e !== 'roll') continue;
+        const p = (ev.p && typeof ev.p === 'object') ? ev.p : {};
+        const c = typeof p.country === 'string' ? p.country.slice(0, 40) : '';
+        if (c) noteRoll(h, p.since_prev_ms, c, now);
+      }
     } catch (_) { /* 잘못된 요청은 조용히 버린다 */ }
   });
   req.on('error', () => {});
@@ -327,6 +394,7 @@ http.createServer((req, res) => {
   if (req.method === 'POST' && url === '/api/track') return handleTrack(req, res);
   if (req.method === 'POST' && url === '/api/share') return handleShare(req, res);
   if (req.method === 'GET' && url === '/api/shared') return handleShared(req, res, u.searchParams);
+  if (req.method === 'GET' && url === '/api/recent') return handleRecent(res, u.searchParams);
   if (req.method === 'GET' && url === '/api/roll') return handleRoll(req, res, u.searchParams);
   if (req.method === 'GET' && url === '/api/fortune') return handleFortune(req, res, u.searchParams);
   if (req.method === 'GET' && url === '/api/verify') return handleVerify(req, res, u.searchParams);

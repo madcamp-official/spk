@@ -114,6 +114,9 @@
     <p class="subline" id="subline">아래 버튼을 누르면 새로운 생을 받습니다</p>
     <p class="fortune-line" id="fortuneLine" hidden></p>
     <div class="badges" id="badges"></div>
+    <!-- 지금 다른 사람들이 굴린 진짜 리롤(/api/recent). 값이 도착해야 보인다 —
+         한 줄이라 리롤 버튼을 밀어내지 않는다. -->
+    <p class="livefeed" id="liveFeed" hidden></p>
   </section>
 
   <!-- 리롤이 핵심 루프라 버튼은 결과 바로 아래에 둔다. 칩(11개)이 사이에 있으면
@@ -185,7 +188,10 @@
   <div class="modal" role="dialog" aria-modal="true" aria-label="업적">
     <div class="modal-head">
       <h3>🏅 업적 · 칭호</h3>
-      <button id="achClose" aria-label="닫기">✕</button>
+      <div class="mh-actions">
+        <button class="mh-share" id="achShare" aria-label="내 프로필 공유하기">📤</button>
+        <button id="achClose" aria-label="닫기">✕</button>
+      </div>
     </div>
     <div class="ach-tabs" id="achTabs"></div>
     <p class="hint" id="achProgress"></p>
@@ -197,7 +203,10 @@
   <div class="modal" role="dialog" aria-modal="true" aria-label="환생 도감">
     <div class="modal-head">
       <h3>📖 환생 도감</h3>
-      <button id="dexClose" aria-label="닫기">✕</button>
+      <div class="mh-actions">
+        <button class="mh-share" id="dexShare" aria-label="내 프로필 공유하기">📤</button>
+        <button id="dexClose" aria-label="닫기">✕</button>
+      </div>
     </div>
     <p class="hint" id="dexProgress"></p>
     <div class="dex-grid" id="dexGrid"></div>

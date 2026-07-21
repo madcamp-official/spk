@@ -186,6 +186,9 @@ export function noteLife(l){
 
 /* 업적 목록 화면용 — 딴 것과 못 딴 것을 진행도와 함께 전부 돌려준다.
    못 딴 것도 보여야 "다음에 뭘 노릴지"가 생긴다. */
+/* tier·대륙은 now/goal(진행도)로 조건을 상시 보여주므로 값이 따로 필요 없다.
+   기록·희귀도만 cur를 둔다 — 상시 줄은 조건(≥130·1/10,000)만 보여주고, 딴 뒤 hover로
+   내 실제 기록(143·1/737,104)을 보태는 데 쓴다(achievements.js howHTML). */
 export function catalog(){
  const r=ST.rec||{}, best=rarestProb();
  const tier=(items,now)=>items.map(x=>({k:x.k,ok:now>=x.n,now:Math.min(now,x.n),goal:x.n}));
@@ -199,10 +202,12 @@ export function catalog(){
   {icon:"🏆",k:"기록",items:REC.map(x=>{
     const v=r[x.f], ok=v!=null&&(x.up?v>=x.v:v<=x.v);
     const unit=x.f==="top"?"%":x.f==="iq"?"":x.f[0]==="h"?"cm":x.f[0]==="w"?"kg":"yr";
-    return {k:x.k,ok,note:(x.up?"≥ ":"≤ ")+x.v+(unit==="yr"?"":unit)};
+    const fmt=n=>n+(unit==="yr"?"":unit);
+    return {k:x.k,ok,note:(x.up?"≥ ":"≤ ")+fmt(x.v),cur:v==null?null:fmt(v)};
   })},
   {icon:"🎰",k:"희귀도",items:RARE.map(x=>
-    ({k:x.k,ok:best!==null&&best<=x.p,note:"1/"+Math.round(1/x.p).toLocaleString()}))},
+    ({k:x.k,ok:best!==null&&best<=x.p,note:"1/"+Math.round(1/x.p).toLocaleString(),
+      cur:best==null?null:"1/"+Math.round(1/best).toLocaleString()}))},
  ];
 }
 

@@ -55,10 +55,22 @@ build() {
   ( cd "$web"
     # shellcheck disable=SC2046
     cp --parents index.html TwemojiCountryFlags.woff2 \
+       en.html ja.html zh.html es.html pt.html \
        $(find css app core -type f \( -name '*.css' -o -name '*.js' \)) "$tmp/" )
 
   # 1) 자산 기준 경로를 실험판 안으로
   sed -i 's|<base href="/">|<base href="/lab/">|' "$tmp/index.html"
+
+  # 1-b) 언어별 랜딩(en/ja/zh/es/pt.html)도 실험판 안에 가둔다.
+  #      이 스텁들은 언어를 저장하고 곧장 "/" 로 보내는 구조라, 그대로 복사하면 실험판에서
+  #      열었을 때 프로덕션으로 튕겨 나간다(실험 중인 코드를 못 보고 본 사이트로 나가 버린다).
+  #      검색엔진에도 실험판이 걸리면 안 되므로 index.html과 같은 noindex를 함께 박는다.
+  for f in en ja zh es pt; do
+    sed -i -e 's|location.replace("/")|location.replace("/lab/")|' \
+           -e 's|href="/"|href="/lab/"|' \
+           -e 's|<meta charset="utf-8">|<meta charset="utf-8">\n<meta name="robots" content="noindex, nofollow">|' \
+           "$tmp/$f.html"
+  done
 
   # 2) 저장소 격리 — 실제 진행상황(도감·환생 횟수)과 절대 섞이면 안 된다
   find "$tmp" -type f \( -name '*.js' -o -name '*.html' \) -print0 \
@@ -172,6 +184,17 @@ verify() {
   printf '%s' "$api" | grep -q '"total"' && ok "실험판 API        $api (프로덕션과 별도)" || { bad "실험판 API 응답 없음: ${api:-비어있음}"; fail=1; }
 
   # 격리가 실제로 걸렸는지 — 여기가 뚫리면 실험이 프로덕션 데이터를 건드린다
+  # 언어별 랜딩 — 떠 있는지, 그리고 실험판 밖으로 내보내지 않는지
+  local lbad="" lc
+  for f in en ja zh es pt; do
+    lc=$(curl -s -o /dev/null -w '%{http_code}' -H "Host: life-reroll.com" "http://127.0.0.1:1557/lab/$f.html" || echo 000)
+    [ "$lc" = 200 ] || lbad="$lbad $f(HTTP $lc)"
+    grep -q 'location.replace("/lab/")' "$LAB_WWW/$f.html" || lbad="$lbad $f(프로덕션으로 튕김)"
+    grep -q 'lab_rebirth_lang' "$LAB_WWW/$f.html" || lbad="$lbad $f(저장소 격리 안 됨)"
+    grep -q 'noindex' "$LAB_WWW/$f.html" || lbad="$lbad $f(noindex 없음)"
+  done
+  [ -z "$lbad" ] && ok "언어별 랜딩       5개 정상 (실험판 안에 갇힘)" || { bad "언어 랜딩:$lbad"; fail=1; }
+
   grep -q 'lab_rebirth_state' "$LAB_WWW/app/core/state.js" && ok "저장소 격리       lab_rebirth_*" || { bad "저장소 격리 안 됨"; fail=1; }
   grep -q '"/lab-api/' "$LAB_WWW/app/ui/counter.js" && ok "API 격리          /lab-api/" || { bad "API 격리 안 됨"; fail=1; }
   ! grep -q '"/api/' "$LAB_WWW/app/ui/counter.js" && ok "프로덕션 API 참조 없음" || { bad "프로덕션 /api/ 참조가 남음"; fail=1; }

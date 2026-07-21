@@ -45,6 +45,11 @@ const STR={
 "당신의 다음 생은, 실제 지구 인구 분포 확률 그대로 정해집니다":["Your next life is decided by the real population distribution of Earth","あなたの来世は、実際の地球の人口分布の確率どおりに決まります","你的下一世,将按真实的地球人口分布概率决定","Tu próxima vida se decide según la distribución real de la población mundial","Sua próxima vida é decidida pela distribuição real da população mundial"],
 "🔗 친구가 공유한 생 — 아래 버튼으로 내 생을 뽑아 보세요":["🔗 A life shared by a friend — roll your own with the button below","🔗 友達がシェアした人生 — 下のボタンで自分の人生を引いてみよう","🔗 朋友分享的人生 — 点下方按钮抽取你自己的人生","🔗 Una vida compartida por un amigo — saca la tuya con el botón de abajo","🔗 Uma vida compartilhada por um amigo — sorteie a sua no botão abaixo"],
 "아직 태어나기 전입니다":["You haven't been born yet","まだ生まれる前です","你还没有出生","Aún no has nacido","Você ainda não nasceu"],
+/* 실시간 피드(livefeed.js). 다른 사람이 실제로 굴린 리롤이라 문구도 사건을 그대로 적는다 */
+"{flag}{country}에서 누군가 환생했습니다":["Someone was reborn in {flag}{country}","{flag}{country}で誰かが転生しました","有人转世到了{flag}{country}","Alguien renació en {flag}{country}","Alguém renasceu em {flag}{country}"],
+"방금":["just now","たった今","刚刚","ahora mismo","agora mesmo"],
+"{n}초 전":["{n}s ago","{n}秒前","{n}秒前","hace {n}s","há {n}s"],
+"{n}분 전":["{n}m ago","{n}分前","{n}分钟前","hace {n}min","há {n}min"],
 "아래 버튼을 누르면 새로운 생을 받습니다":["Press the button below to receive a new life","下のボタンを押すと新しい人生を授かります","按下方按钮,获得新的人生","Pulsa el botón de abajo para recibir una nueva vida","Aperte o botão abaixo para receber uma nova vida"],
 "환생 시작하기":["Start Reincarnation","転生を始める","开始转世","Empezar la Reencarnación","Começar a Reencarnação"],
 "🔮 오늘의 환생 운세":["🔮 Today's Rebirth Fortune","🔮 今日の転生占い","🔮 今日转世运势","🔮 Fortuna de Reencarnación de Hoy","🔮 Sorte de Reencarnação de Hoje"],
@@ -130,6 +135,8 @@ const STR={
 "업적 · 칭호 🏅":["Achievements 🏅","実績 · 称号 🏅","成就 · 称号 🏅","Logros 🏅","Conquistas 🏅"],
 "🏅 업적 · 칭호":["🏅 Achievements","🏅 実績 · 称号","🏅 成就 · 称号","🏅 Logros","🏅 Conquistas"],
 "{n}개국 수집":["{n} countries collected","{n}カ国収集","收集 {n} 国","{n} países coleccionados","{n} países coletados"],
+/* 기록·희귀도 칭호를 딴 뒤 hover하면 상시 줄(조건)에 내 실제 기록을 보탠다 (achievements.js howHTML). */
+"내 기록 {b}":["Your best {b}","自己ベスト {b}","你的最佳 {b}","Tu mejor {b}","Seu melhor {b}"],
 "업적 {done} / {all} 달성 · 보유 칭호 {n}개":["{done} of {all} unlocked · {n} titles held","実績 {done} / {all} 達成 · 称号 {n}個","成就 {done} / {all} · 持有称号 {n} 个","{done} de {all} desbloqueados · {n} títulos","{done} de {all} desbloqueados · {n} títulos"],
 "지금까지의 최고 기록":["Your all-time bests","これまでの最高記録","至今的最高记录","Tus mejores marcas","Seus melhores recordes"],
 "겪어 본 종교 {a} / {b}":["{a} of {b} religions lived","経験した宗教 {a} / {b}","经历过的宗教 {a} / {b}","{a} de {b} religiones vividas","{a} de {b} religiões vividas"],
@@ -238,6 +245,18 @@ const STR={
 "확률 {p}":["Odds {p}","確率 {p}","概率 {p}","Probabilidad {p}","Probabilidade {p}"],
 "약 {n}번 중 1번":["≈ 1 in {n}","約{n}回に1回","约{n}次中的1次","≈1 entre {n}","≈1 em {n}"],
 "당신의 다음 생은 어디에서 시작될까요?":["Where will your next life begin?","あなたの来世はどこから始まるでしょう?","你的下一世会从哪里开始?","¿Dónde empezará tu próxima vida?","Onde vai começar sua próxima vida?"],
+/* ── 영혼 프로필 공유(profile.js) ── */
+"내 프로필 공유하기":["Share my profile","私のプロフィールをシェア","分享我的档案","Compartir mi perfil","Compartilhar meu perfil"],
+"📤 프로필 공유":["📤 Share profile","📤 プロフィールをシェア","📤 分享档案","📤 Compartir perfil","📤 Compartilhar perfil"],
+"🌏 나의 환생 프로필":["🌏 My rebirth profile","🌏 私の転生プロフィール","🌏 我的转世档案","🌏 Mi perfil de reencarnación","🌏 Meu perfil de reencarnação"],
+"나의 영혼 프로필":["My Soul Profile","私の魂のプロフィール","我的灵魂档案","Mi perfil del alma","Meu perfil da alma"],
+"환생 {n}번":["{n} rebirths","転生 {n}回","转世 {n} 次","{n} reencarnaciones","{n} reencarnações"],
+"도감 {a}/{b} ({p}%)":["Dex {a}/{b} ({p}%)","図鑑 {a}/{b} ({p}%)","图鉴 {a}/{b} ({p}%)","Dex {a}/{b} ({p}%)","Dex {a}/{b} ({p}%)"],
+"최고 희귀 기록 1/{n}":["Rarest 1/{n}","最高レア記録 1/{n}","最高稀有记录 1/{n}","Récord más raro 1/{n}","Recorde mais raro 1/{n}"],
+"보유 칭호 {n}개":["{n} titles held","称号 {n}個","持有称号 {n} 个","{n} títulos","{n} títulos"],
+"최고 희귀 기록":["Rarest roll","最高レア記録","最高稀有记录","Más raro","Mais raro"],
+"보유 칭호":["Titles held","保有称号","持有称号","Títulos","Títulos"],
+"먼저 환생 버튼을 눌러 프로필을 만들어 주세요":["Roll a life first to build your profile","まず転生ボタンを押してプロフィールを作ってください","请先点击转世按钮,建立你的档案","Primero saca una vida para crear tu perfil","Primeiro sorteie uma vida para criar seu perfil"],
 /* ── 도감(dex.js) · 확률 표(odds.js) · 제안(suggest.js) ── */
 "수집한 나라 {a} / {b} ({p}%) · 밝은 칸이 태어나 본 나라입니다":["Collected {a} / {b} countries ({p}%) · bright tiles are countries you've been born in","収集した国 {a} / {b} ({p}%) · 明るいマスは生まれたことのある国です","已收集国家 {a} / {b} ({p}%) · 亮色格子是你出生过的国家","Países coleccionados {a} / {b} ({p}%) · las casillas iluminadas son donde has nacido","Países coletados {a} / {b} ({p}%) · as casas iluminadas são onde você nasceu"],
 "중국과 인도만 합쳐도 약 {p}%. 환생 3번 중 1번은 두 나라 중 하나에서 시작됩니다. 반대로 투발루(인구 1.1만 명)가 나올 확률은 약 {n}번 중 1번입니다.":["China and India alone add up to about {p}%. One rebirth in three starts in one of those two countries. Tuvalu (pop. 11,000), on the other hand, is roughly a 1-in-{n} roll.","中国とインドだけで約{p}%。転生3回に1回はこの2か国のどちらかで始まります。逆にツバル(人口1.1万人)が出る確率は約{n}回に1回です。","仅中国和印度加起来就约占{p}%,每3次转世就有1次从这两国之一开始。相反,抽中图瓦卢(人口1.1万)的概率约为{n}分之一。","China e India juntos suman ≈{p}%. Una de cada tres reencarnaciones empieza en uno de esos dos países. En cambio, Tuvalu (pob. 11.000) es aproximadamente 1 entre {n}.","China e Índia juntos somam ≈{p}%. Uma em cada três reencarnações começa em um desses dois países. Já Tuvalu (pop. 11.000) é cerca de 1 em {n}."],
@@ -347,6 +366,9 @@ function applyStatic(){
  q("#achModal h3").textContent=t("🏅 업적 · 칭호");
  q("#achModal .modal").setAttribute("aria-label",t("칭호"));
  id("achBtn").title=t("업적·칭호 열기");
+ id("achShare").setAttribute("aria-label",t("내 프로필 공유하기"));
+ id("dexShare").setAttribute("aria-label",t("내 프로필 공유하기"));
+ id("achClose").setAttribute("aria-label",t("닫기"));
  id("dexClose").setAttribute("aria-label",t("닫기"));
  q("#shareModal h3").textContent=t("📤 공유하기");
  q("#shareModal .modal").setAttribute("aria-label",t("공유하기"));

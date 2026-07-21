@@ -25,18 +25,36 @@ function collectionHTML(all,got){
   (got.has(n)?"":"🔒 ")+term(n)+"</span></div>").join("")+"</div>";
 }
 
+/* 기록·희귀도 칭호의 hover 보충. 상시 줄(sub)은 조건만 보여준다 — 기록형은 "≥130",
+   희귀도는 "1/10,000". 딴 뒤엔 hover로 내 실제 기록(143 · 1/737,104)까지 보탠다.
+   tier·대륙 정복은 상시 줄이 "now / goal"이라 내 값이 이미 들어 있어 여기서 다루지 않는다.
+   note/cur 문자열은 엔진이 언어중립으로 빚어 준다(단위가 cm·kg·1/N로 제각각이라). */
+function howHTML(i){
+ /* 조건(note)은 sub가 이미 상시 보여준다 — 반복하면 "≥130"이 두 번 뜬다.
+    hover는 sub가 못 담는 것, 내 실제 기록만 보탠다. */
+ if(!i.ok||!i.note||i.cur==null||i.cur===i.note)return "";
+ return '<span class="ach-how">'+t("내 기록 {b}",{b:i.cur})+"</span>";
+}
+
 function body(){
  if(active==="title"){
   return catalog().map(g=>
    '<div class="ach-group"><h4>'+g.icon+" "+t(g.k)+
     ' <span class="ach-count">'+g.items.filter(i=>i.ok).length+"/"+g.items.length+"</span></h4>"+
    g.items.map(i=>{
+    /* 달성 조건은 딴 뒤에도 늘 보이게 둔다(seojinnlee) — goal이면 진행도 now/goal,
+       아니면 note(≥130·1/10,000). 예전엔 딴 마일스톤이 조건을 통째로 감춰
+       "몇 회짜리였는지"가 사라졌다. 진행 막대만 아직 못 딴 것에 남긴다. */
+    const sub=i.goal!=null
+     ? '<span class="ach-sub">'+i.now+" / "+i.goal+"</span>"
+     : (i.note?'<span class="ach-sub">'+i.note+"</span>":"");
     const bar=(i.goal!=null&&!i.ok)
      ? '<div class="ach-bar"><i style="width:'+Math.round(i.now/i.goal*100)+'%"></i></div>'
-       +'<span class="ach-sub">'+i.now+" / "+i.goal+"</span>"
-     : (i.note?'<span class="ach-sub">'+i.note+"</span>":"");
-    return '<div class="ach-item'+(i.ok?" ok":"")+'"><span class="ach-name">'+
-     (i.ok?"":"🔒 ")+tname(i)+"</span>"+bar+"</div>";
+     : "";
+    /* 기록·희귀도는 딴 뒤 hover로 내 실제 기록을 보탠다(howHTML 참조) */
+    const how=howHTML(i);
+    return '<div class="ach-item'+(i.ok?" ok":"")+'"'+(how?' tabindex="0"':"")+
+     '><span class="ach-name">'+(i.ok?"":"🔒 ")+tname(i)+"</span>"+bar+sub+how+"</div>";
    }).join("")+"</div>").join("");
  }
  if(active==="rec"){
