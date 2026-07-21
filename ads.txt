@@ -4,4 +4,4 @@
 #
 # life-reroll.com 은 루트 도메인이라 이 파일이 곧 정본이다 —
 # 서브도메인 시절(madcamp-kaist.org) 필요했던 루트 위임 한 줄은 더 이상 필요 없다.
-google.com, pub-0000000000000000, DIRECT, f08c47fec0942fa0
+google.com, pub-4305537197392945, DIRECT, f08c47fec0942fa0
