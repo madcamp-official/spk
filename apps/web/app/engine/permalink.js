@@ -1,6 +1,7 @@
 import {DATA,REL,TOTAL,P_MALE} from "../../core/data.js";
 import {isoCode} from "../core/util.js";
 import {incomeTopPct,rollCause} from "../../core/roll.js";
+import {rollName} from "../../core/names.js";
 
 /* ===== 생을 링크에 담기 =====
    링크만 받은 사람도 공유한 사람이 뽑은 생을 그대로 본다. 없으면 링크를 눌러도
@@ -101,7 +102,9 @@ export function decodeLife(s, shared) {
     prob: pC * pG * pU,
     shared: !!shared,   /* true면 남이 뽑은 것 — 내 도감·최고기록·환생 횟수에 넣으면 안 된다 */
   };
-  /* 사인은 링크에 없다 — 이 생의 고정값에서 rollLife와 똑같은 방식으로 되살린다 */
+  /* 사인·이름은 링크에 없다 — 이 생의 고정값에서 rollLife와 똑같은 방식으로 되살린다.
+     그래서 링크 형식을 안 바꿔도 되고, 이 기능 이전에 뿌린 옛 링크도 이름을 얻는다. */
   l.cause = rollCause(l);
+  l.name = rollName(l);
   return l;
 }

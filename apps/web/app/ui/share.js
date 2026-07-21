@@ -1,6 +1,7 @@
 import {TOTAL} from "../../core/data.js";
 import {$,fmtPct,fmtUSD,isoCode,probPct} from "../core/util.js";
-import {t,term,countryName,contName,bigNum} from "../i18n/i18n.js";
+import {t,term,countryName,contName,bigNum,cur} from "../i18n/i18n.js";
+import {formatLifeName,altLifeName} from "../../core/names.js";
 import {titleLine} from "./titlechip.js";
 import {CHIP_DEFS,lifeBadges} from "./render.js";
 import {ST,session} from "../core/state.js";
@@ -41,8 +42,10 @@ export function shareURL(via,code){
    한쪽에만 항목을 추가해 둘이 어긋나는 일을 막는다. 화면 칩(CHIP_DEFS)과 순서를 맞췄다. */
 export function lifeStatLines(l){
  return [
+  /* 이름이 1번, 성별이 2번 — 화면 칩(CHIP_DEFS)과 같은 순서.
+     도시/농촌 줄은 빠졌다(스토리형 머리줄이 이미 "도시에서 태어났다"를 말한다). */
+  "👤 "+formatLifeName(l.name,cur)+(altLifeName(l.name,cur)?" ("+altLifeName(l.name,cur)+")":""),
   "🚻 "+t(l.male?"남자":"여자"),
-  "🏙 "+t(l.urban?"도시":"농촌"),
   "🗣 "+term(l.c.lang),
   "🧬 "+term(l.eth[0]),
   "🙏 "+term(l.rel[0]),

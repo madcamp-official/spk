@@ -145,6 +145,7 @@ const STR={
 "상위 {v}%":["top {v}%","上位{v}%","前{v}%","{v}% superior","{v}% superior"],
 "{title}까지 {n}":["{n} to {title}","{title}まであと{n}","距{title}还差{n}","{n} para {title}","{n} para {title}"],
 /* ── 결과 렌더링(render.js) ── */
+"이름":["Name","名前","名字","Nombre","Nome"],
 "성별":["Gender","性別","性别","Sexo","Sexo"],
 "태어난 곳":["Birthplace","生まれた場所","出生地","Lugar de nacimiento","Local de nascimento"],
 "모국어":["Native language","母語","母语","Lengua materna","Língua materna"],

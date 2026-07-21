@@ -12,13 +12,17 @@
  *   성별·태어난 곳·모국어·민족·종교·키·몸무게·IQ·사인·탈모·기대수명·연 소득
  * 봇은 여기에 희귀도·특성을 더한다(웹은 공유 카드에서 따로 보여준다). */
 import type { APIEmbedField } from "discord.js";
-import { countryByCode, type Life } from "@life-reroll/core";
+import { altLifeName, countryByCode, formatLifeName, rollName, type Life } from "@life-reroll/core";
 import type { LifeRow } from "../db/queries.js";
 import { contKo, fmtPop, fmtTopPct, fmtUSD, traitText } from "./text.js";
 
 export interface LifeView {
   birthNo: number;
+  /** 유저가 /명명으로 붙인 별명 */
   name: string | null;
+  /** 태어날 때 받은 생성 이름 (ko 표기 · 반대 표기) */
+  genName: string;
+  genNameAlt: string | null;
   flag: string;
   countryName: string;
   cont: string;
@@ -50,6 +54,8 @@ export function viewFromLife(
 ): LifeView {
   return {
     birthNo, name: null,
+    genName: formatLifeName(life.name, "ko"),
+    genNameAlt: altLifeName(life.name, "ko"),
     flag: life.c.flag, countryName: life.c.name, cont: contKo(life.c.cont),
     pop: life.c.pop, urban: life.urban,
     male: life.male, lifeExp: life.lifeExp, lang: life.c.lang,
@@ -64,8 +70,18 @@ export function viewFromLife(
 /** DB에서 되살린 기록 (/여권 · /덱) */
 export function viewFromRow(row: LifeRow): LifeView {
   const c = countryByCode(row.country_code);
+  /* 003 이전 기록에는 스냅샷이 없다. 이름 파생에 쓰는 고정값이 전부 저장돼 있으므로
+     core로 그대로 되살린다 — rollLife와 같은 시드라 뽑던 날의 이름과 일치한다. */
+  let genName = row.gen_name, genNameAlt = row.gen_name_alt;
+  if (!genName && c) {
+    const nm = rollName({ c, male: row.gender === "male", lifeExp: Number(row.lifespan),
+      income: Number(row.income_usd), iq: row.iq, height: row.height_cm, weight: Number(row.weight_kg) });
+    genName = formatLifeName(nm, "ko");
+    genNameAlt = altLifeName(nm, "ko");
+  }
   return {
     birthNo: row.id, name: row.name,
+    genName: genName ?? "—", genNameAlt: genNameAlt ?? null,
     flag: c?.flag ?? "", countryName: row.country_name,
     cont: c ? contKo(c.cont) : "—", pop: c?.pop ?? null,
     urban: row.urban,
@@ -79,18 +95,24 @@ export function viewFromRow(row: LifeRow): LifeView {
   };
 }
 
-/** 웹의 12개 항목 + 희귀도·특성. inline 3개씩 = 정확히 3줄. */
+/** 웹의 12개 항목 + 희귀도·특성. inline 3개씩 = 정확히 3줄.
+ *  이름이 1번, 성별(삶)이 2번 — 웹 칩과 같은 순서다. "태어난 곳" 항목은 이름에 자리를
+ *  내주고 빠졌고, 도시/농촌·대륙은 삶 필드로 접혔다(정보 유실 없음). */
 export function statFields(v: LifeView): APIEmbedField[] {
   return [
     {
-      name: "태어난 곳",
-      value: `${v.cont} · ${v.urban ? "도시" : "농촌"}` +
-        (v.pop !== null ? `\n인구 ${fmtPop(v.pop)}` : ""),
+      name: "이름",
+      /* 유저 별명(/명명)이 있으면 그것이 주인공, 생성 이름은 괄호로.
+         없으면 태어날 때 받은 이름 + 반대 표기(김희서 밑에 Heeseo Kim). */
+      value: v.name
+        ? `**${v.name}**\n(${v.genName})`
+        : v.genName + (v.genNameAlt ? `\n${v.genNameAlt}` : ""),
       inline: true,
     },
     {
       name: "삶",
-      value: `${v.male ? "남성" : "여성"} · ${v.lifeExp}세` + (v.lang ? `\n${v.lang}` : ""),
+      value: `${v.male ? "남성" : "여성"} · ${v.lifeExp}세 · ${v.urban ? "도시" : "농촌"}` +
+        `\n${v.cont}${v.lang ? " · " + v.lang : ""}`,
       inline: true,
     },
     {

@@ -21,9 +21,10 @@ export function rowCountry(row: LifeRow) {
 export function rowLine(row: LifeRow): string {
   const c = rowCountry(row);
   const flag = c ? c.flag + " " : "";
-  const name = row.name ? `**${row.name}** · ` : "";
+  /* 별명이 있으면 굵게, 없으면 태어날 때 받은 이름 — 목록에서도 생마다 얼굴이 있다 */
+  const label = row.name ? `**${row.name}**` : viewFromRow(row).genName;
   const rec = row.wins + row.losses > 0 ? ` · ${row.wins}승 ${row.losses}패` : "";
-  return `\`#${row.id}\` ${flag}${name}${row.country_name} · ${row.lifespan}세 · ` +
+  return `\`#${row.id}\` ${flag}${label} · ${row.country_name} · ${row.lifespan}세 · ` +
     `${fmtTopPct(Number(row.rarity_score))}${rec}`;
 }
 
@@ -31,19 +32,17 @@ export function rowLine(row: LifeRow): string {
 export function passportEmbed(row: LifeRow, ownerLabel: string): EmbedBuilder {
   const c = rowCountry(row);
   const flag = c ? c.flag + " " : "";
-  const title = row.name
-    ? `${flag}${row.name}`
-    : `${flag}${row.country_name} · 제 ${row.id.toLocaleString()}번 생`;
+  const view = viewFromRow(row);
+  /* 별명(/명명)이 있으면 별명, 없으면 태어날 때 받은 이름 — 이름 없는 여권은 없다 */
+  const title = `${flag}${row.name ?? view.genName} · ${row.country_name} · 제 ${row.id.toLocaleString()}번 생`;
 
   const e = new EmbedBuilder()
     .setColor(Number.parseInt(rarityColor(c?.pop ?? 1000).slice(1), 16))
     .setTitle(title)
     .setFooter({ text: `${BOT_FOOTER} · ${SOURCE_NOTE}` });
 
-  if (row.name) e.setDescription(`${row.country_name} · 제 ${row.id.toLocaleString()}번 생`);
-
   e.addFields(
-    ...statFields(viewFromRow(row)),
+    ...statFields(view),
     {
       name: "전적",
       /* 배틀은 4단계라 갓 뽑은 생은 0승 0패다. 자리를 미리 잡아 두면 전적이 붙어도 안 흔들린다. */

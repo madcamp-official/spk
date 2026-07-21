@@ -17,6 +17,7 @@ import {
   countBattlesToday, ensureUser, getBattleDeck, getLife, recordBattle, type LifeRow,
 } from "../db/queries.js";
 import { BOT_FOOTER } from "../lib/render.js";
+import { viewFromRow } from "../lib/view.js";
 import { axisDisplay, axisText } from "../lib/text.js";
 
 export const data = new SlashCommandBuilder()
@@ -63,7 +64,7 @@ function relay(opts: {
 
 function lifeLabel(row: LifeRow): string {
   const c = countryByCode(row.country_code);
-  return `${c ? c.flag + " " : ""}${row.name ?? row.country_name} \`#${row.id}\``;
+  return `${c ? c.flag + " " : ""}${row.name ?? viewFromRow(row).genName} \`#${row.id}\``;
 }
 
 export async function execute(interaction: ChatInputCommandInteraction): Promise<void> {
@@ -163,8 +164,8 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
     .setColor(Number.parseInt(rarityColor(c?.pop ?? 1000).slice(1), 16))
     .setTitle(`⚔️ ${result.scoreA}–${result.scoreB}  ${iWon ? me.displayName : opponent.displayName} 승`)
     .setDescription(relay({
-      winnerName: winnerRow.name ?? winnerRow.country_name,
-      loserName: loserRow.name ?? loserRow.country_name,
+      winnerName: winnerRow.name ?? viewFromRow(winnerRow).genName,
+      loserName: loserRow.name ?? viewFromRow(loserRow).genName,
       upset: result.upset, close: result.close, flippedAxis: flipped,
     }))
     .addFields(

@@ -5,7 +5,7 @@
  *   · 공덕 차감은 조건부 UPDATE ... WHERE merit >= cost + 반환 행 수로 성공을 판정한다.
  *     (읽고→검사하고→쓰면 두 요청이 같은 잔액을 읽어 마이너스가 된다.) */
 import type { Life } from "@life-reroll/core";
-import { deriveTraits, rarityScore, isoCode } from "@life-reroll/core";
+import { altLifeName, deriveTraits, formatLifeName, rarityScore, isoCode } from "@life-reroll/core";
 import { db } from "./pool.js";
 import { env } from "../env.js";
 
@@ -74,13 +74,15 @@ export async function saveLife(opts: {
          user_id, guild_id, country_code, country_name, gender, lifespan,
          income_usd, income_mult, income_top_pct, urban,
          iq, height_cm, weight_kg, religion, ethnicity, balding,
-         cause_key, cause_emoji, traits, rarity_score, inherited_trait)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21)
+         cause_key, cause_emoji, gen_name, gen_name_alt, traits, rarity_score, inherited_trait)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23)
        RETURNING id`,                                   /* 출생 번호는 SEQUENCE가 준다 (§A.5) */
       [discordId, guildId, code, life.c.name, life.male ? "male" : "female", life.lifeExp,
         Math.round(life.income), life.income / life.c.gdp, life.top, life.urban,
         life.iq, life.height, life.weight, life.rel[0], life.eth[0], life.balding,
-        life.cause.key, life.cause.emoji, traits, score, opts.inheritedTrait]);
+        life.cause.key, life.cause.emoji,
+        formatLifeName(life.name, "ko"), altLifeName(life.name, "ko"),
+        traits, score, opts.inheritedTrait]);
     const id = ins.rows[0]!.id;
 
     /* 서버 첫 발견 판정. ON CONFLICT DO NOTHING 이므로 먼저 넣은 쪽만 행을 받는다 —
@@ -122,6 +124,9 @@ export interface LifeRow {
   balding: boolean;
   cause_key: string | null;
   cause_emoji: string | null;
+  /** 태어날 때 받은 생성 이름(ko 표기). 003 이전 기록에는 없다 — view가 파생으로 복원한다 */
+  gen_name: string | null;
+  gen_name_alt: string | null;
   traits: string[];
   rarity_score: number;
   inherited_trait: string | null;
