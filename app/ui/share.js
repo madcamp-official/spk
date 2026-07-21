@@ -9,6 +9,9 @@ import {rarityColor} from "../engine/roll.js";
 import {track} from "../analytics/track.js";
 import {toast} from "./effects.js";
 import {encodeLife} from "../engine/permalink.js";
+/* 운세는 같은 시트·같은 흐름을 쓰되, 결과 카드가 아니라 미끼형 운세 카드·문구로 나간다.
+   isFortune으로 갈라 카드·문구·등록(결과별 OG 업로드)만 바꾼다 — 공유 시트 DOM은 그대로. */
+import {isFortune,drawFortuneCard,downloadFortuneCard,fortuneTeaseText,registerFortuneShare} from "./fortunecard.js";
 
 /* ===== 공유 =====
    문구 A/B 테스트: 기기별로 스토리형(a)/성과형(b)이 고정 배정되고,
@@ -122,7 +125,8 @@ export async function kakaoShare(l,code){
 export async function nativeShare(l,txt){
  let payload={text:txt};
  try{
-  const blob=await new Promise(res=>drawCard(l).toBlob(res,"image/png"));
+  const cv=isFortune(l)?drawFortuneCard(l,"story"):drawCard(l);
+  const blob=await new Promise(res=>cv.toBlob(res,"image/png"));
   if(blob){
    const file=new File([blob],"rebirth.png",{type:"image/png"});
    if(navigator.canShare&&navigator.canShare({files:[file],text:txt}))payload={files:[file],text:txt};
@@ -150,11 +154,14 @@ export async function shareVia(ch){
  const l=session.currentLife;if(!l)return;
  closeShare();
  session.lifeShared=true;
+ const fort=isFortune(l);   /* 운세면 미끼형 카드·문구·결과별 OG로 갈아탄다 */
  const props={country:l.c.name,prob:probPct(l.prob)};
  /* 생을 서버에 등록해 짧은 코드를 받는다(채널마다 한 번). 실패하면 code=null이라
-    생 없는 링크로 나간다. 공유 시트를 이미 닫은 뒤라 이 await가 UI를 막지 않는다. */
- const code=await registerShare(l);
- const txt=shareText(l,ch,code);   /* 링크에 이 채널을 각인해서 내보낸다 */
+    생 없는 링크로 나간다. 공유 시트를 이미 닫은 뒤라 이 await가 UI를 막지 않는다.
+    운세는 결과별 OG 이미지까지 함께 올린다(registerFortuneShare) — 카톡·링크 미리보기가
+    이 생의 운세 카드로 뜨게. 이미지가 무거워 첫 채널에서 한 번만 올리고 코드는 캐시된다. */
+ const code=fort?await registerFortuneShare(l):await registerShare(l);
+ const txt=fort?fortuneTeaseText(l,ch,code):shareText(l,ch,code);   /* 링크에 이 채널을 각인해서 내보낸다 */
  if(ch==="clip"){
   track("share_text",props);
   toast(await copyText(txt)?t("공유 문구를 복사했어요 ✅"):t("복사에 실패했어요 😢"));
@@ -174,7 +181,7 @@ export async function shareVia(ch){
   }
  }else if(ch==="insta"){
   track("share_insta",props);
-  downloadCard(l);
+  fort?downloadFortuneCard(l):downloadCard(l);
   /* 인스타는 텍스트 공유 API가 없다. 카드 이미지와 별개로 12개 항목 문구를 클립보드에
      넣어 두면, 스토리 스티커나 캡션에 바로 붙여넣을 수 있다. */
   const copied=await copyText(txt);
@@ -406,8 +413,8 @@ export function downloadCard(l){
  },"image/png");
 }
 $("shareImg").addEventListener("click",()=>{
- if(!session.currentLife)return;
+ const l=session.currentLife;if(!l)return;
  session.lifeShared=true;
- track("share_card",{country:session.currentLife.c.name,prob:probPct(session.currentLife.prob)});
- downloadCard(session.currentLife);
+ track("share_card",{country:l.c.name,prob:probPct(l.prob)});
+ isFortune(l)?downloadFortuneCard(l):downloadCard(l);   /* 운세면 스토리 규격 운세 카드로 저장 */
 });

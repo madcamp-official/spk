@@ -39,7 +39,12 @@ $("fortuneBtn").addEventListener("click",async()=>{
   try{life=rollLife();}finally{setRNG(Math.random);}
  }
  /* 문구 인덱스는 시드가 정하고(언어와 무관하게 같은 운세), 표시할 때만 번역한다 */
- life.fortune=t("오늘의 운세: ")+t(fortuneMsg(key));
+ const msg=t(fortuneMsg(key));
+ life.fortune=t("오늘의 운세: ")+msg;
+ /* 운세 공유 카드·미끼 문구가 쓰는 값. fortune(접두어 포함 표시줄)과 달리
+    fortuneMsg는 순수 문장, fortuneKey는 카드에 박히는 날짜다. isFortune 판정도 이걸 본다. */
+ life.fortuneMsg=msg;
+ life.fortuneKey=key;
  const first=ST.fortuneDay!==key;
  if(first){ST.fortuneDay=key;recordLife(life);}
  renderLife(life);
