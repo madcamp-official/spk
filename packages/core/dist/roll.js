@@ -6,6 +6,7 @@
 import { DATA, TOTAL, CUM, REL, RARITY } from "./data.js";
 import { SAMPLING, RARITY_SCORE, TRAITS, KARMA } from "./config.js";
 import { rand, gauss, phi, clamp, pickWeighted, strHash, mulberry32, isoCode } from "./util.js";
+import { rollName } from "./names.js";
 /** 인구 가중 국가 추첨. CUM(누적 인구)에 이분 탐색. */
 export function pickCountryIdx() {
     const r = rand() * TOTAL;
@@ -113,9 +114,11 @@ export function rollLife(fCi, fMale) {
     const iq = rollIQ();
     const pC = c.pop / TOTAL, pG = male ? SAMPLING.pMale : 1 - SAMPLING.pMale, pU = urban ? c.urban / 100 : 1 - c.urban / 100;
     const l = { ci, c, male, urban, rel, eth, balding, lifeExp, income, top, iq, ...body,
-        prob: pC * pG * pU, cause: { key: "", emoji: "" } };
-    /* 사인은 나머지 값이 다 정해진 뒤에 그 값들로부터 결정된다 */
+        prob: pC * pG * pU, cause: { key: "", emoji: "" },
+        name: { given: { n: "", l: "" }, family: null, family2: null, culture: "", male } };
+    /* 사인·이름은 나머지 값이 다 정해진 뒤에 그 값들로부터 결정된다 */
     l.cause = rollCause(l);
+    l.name = rollName(l);
     return l;
 }
 /* ===================================================================

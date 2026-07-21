@@ -1,6 +1,7 @@
 import {DATA,TOTAL} from "../../core/data.js";
 import {$,reduceMotion,fmtPct,fmtTop,fmtUSD} from "../core/util.js";
-import {t,term,countryName,contName,bigNum} from "../i18n/i18n.js";
+import {t,term,countryName,contName,bigNum,cur} from "../i18n/i18n.js";
+import {formatLifeName,altLifeName} from "../../core/names.js";
 import {paintTitle,paintProgress,paintAch} from "./titlechip.js";
 import {noteLife} from "../engine/titles.js";
 import {ST,seenSet,persist,session} from "../core/state.js";
@@ -22,8 +23,12 @@ export function updateStats(){
 
 /* ===== 렌더링 ===== */
 export const CHIP_DEFS=[
+ /* 이름: UI 언어에 맞는 표기(김희서 / Heeseo Kim), 설명줄에 반대 표기.
+    ko·ja·zh 원문자 문화권 외에는 반대 표기가 없어 설명줄이 빈다(사인 칩과 같은 취급).
+    "태어난 곳"(도시/농촌) 칩은 이름에 자리를 내주고 빠졌다 — 그 정보는 히어로 서브라인
+    ("도시에서 남자로 태어났습니다")에 이미 있어 잃는 것이 없다. */
+ {k:"이름",f:l=>({v:formatLifeName(l.name,cur),s:altLifeName(l.name,cur)||""})},
  {k:"성별",f:l=>({v:t(l.male?"남자 ♂":"여자 ♀"),s:t("출생 성비 기준 {p}",{p:l.male?"51.2%":"48.8%"})})},
- {k:"태어난 곳",f:l=>({v:t(l.urban?"도시 🏙️":"농촌 🌾"),s:t("이 나라 도시화율 {p}%",{p:l.c.urban})})},
  {k:"모국어",f:l=>({v:term(l.c.lang),s:t("국가 대표 언어")})},
  {k:"민족",f:l=>({v:term(l.eth[0]),s:t("국가 내 약 {p}%",{p:l.eth[1]})})},
  {k:"종교",f:l=>({v:term(l.rel[0]),s:t("국가 내 약 {p}%",{p:l.rel[1]})})},

@@ -48,7 +48,8 @@ export function lifeEmbed(opts: {
   const e = new EmbedBuilder()
     /* 희귀도 색은 웹과 같은 척도를 쓴다(core.rarityColor) — 두 화면이 같은 뜻을 갖는다 */
     .setColor(Number.parseInt(rarityColor(life.c.pop).slice(1), 16))
-    .setTitle(`${life.c.flag} ${life.c.name} · 제 ${birthNo.toLocaleString()}번 생`)
+    /* 태어나는 순간 이름이 주인공이다 — "🇰🇷 김희서 · 대한민국 · 제 N번 생" */
+    .setTitle(`${life.c.flag} ${view.genName} · ${life.c.name} · 제 ${birthNo.toLocaleString()}번 생`)
     .setDescription(opts.summary)
     .addFields(
       ...statFields(view),

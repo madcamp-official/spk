@@ -65,6 +65,8 @@ export interface Life {
   balding: boolean;
   /** 사망 원인. 이 생의 고정값에서 결정적으로 정해진다(roll.ts rollCause 참고) */
   cause: Cause;
+  /** 이 나라에서 그럴듯한 생성 이름. 사인과 같은 방식으로 결정적이다(names.ts) */
+  name: LifeName;
   /** 기대수명(년) — §G lifespan */
   lifeExp: number;
   /** 연 소득(USD) — §G income_mult 는 이 값과 국가 중위의 비로 산출한다(2단계) */
@@ -112,6 +114,21 @@ export type LifeAxis = "lifeExp" | "income" | "siblings" | "pop" | "rarity";
 export interface Cause {
   key: string;
   emoji: string;
+}
+
+/** 이름 조각. n=원문자, l=로마자. 원문자가 따로 없는 문화권은 n===l. */
+export interface NamePart {
+  n: string;
+  l: string;
+}
+/** 생성된 이름. 표기(formatLifeName)·반대 표기(altLifeName)는 names.ts가 담당한다.
+ *  male을 함께 드는 이유: bin/binti·-son/-dóttir 같은 형식이 성별을 알아야 한다. */
+export interface LifeName {
+  given: NamePart;
+  family: NamePart | null;
+  family2: NamePart | null;
+  culture: string;
+  male: boolean;
 }
 
 /** rollCause가 필요로 하는 최소 필드. Life 전체를 요구하지 않아

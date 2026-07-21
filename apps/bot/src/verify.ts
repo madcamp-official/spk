@@ -196,12 +196,14 @@ async function main(): Promise<void> {
        값이 있어야 실제로 사용자에게 보인다는 뜻이다.
        이 검사가 없어서 /환생에만 민족·종교·몸·사인이 빠진 걸 한참 몰랐다. */
     const { viewFromLife, statFields } = await import("./lib/view.js");
+    const { formatLifeName } = await import("@life-reroll/core");
     const l = rollLife();
     const fields = statFields(viewFromLife(l, 1, ["longevity"], 0.001));
     const text = JSON.stringify(fields);
     const want: [string, string][] = [
+      /* "태어난 곳"은 이름에 자리를 내주고 빠졌다(도시/농촌은 삶 필드로 접힘) */
+      ["이름", formatLifeName(l.name, "ko")],
       ["성별", l.male ? "남성" : "여성"],
-      ["태어난 곳", l.urban ? "도시" : "농촌"],
       ["모국어", l.c.lang],
       ["민족", l.eth[0]],
       ["종교", l.rel[0]],
@@ -224,6 +226,70 @@ async function main(): Promise<void> {
     const nA = statFields(viewFromLife(l, 1, [], 0.001)).map(f => f.name).join(",");
     const nB = statFields(viewFromRow(rowNow!)).map(f => f.name).join(",");
     ok("/환생과 /여권의 스탯 필드가 동일", nA === nB, nA);
+  }
+
+  console.log("\n[8-2] 이름 (문화권 풀 · 결정성 · 표기)");
+  {
+    const { DATA, rollName, formatLifeName, altLifeName, nameCultureOf } =
+      await import("@life-reroll/core");
+    ok("198개국 전부 문화권 매핑", DATA.every(c => nameCultureOf(c.name)));
+    /* 결정성 — 같은 생은 언제 파생해도 같은 이름. 공유 링크·DB 폴백이 이걸 믿는다 */
+    const l2 = rollLife();
+    ok("이름 결정적", formatLifeName(rollName(l2), "en") === formatLifeName(l2.name, "en"),
+      formatLifeName(l2.name, "en"));
+    /* 표기 규칙 — 한국: ko 원문자·en 이름-성 / 중국: 로마자도 성-이름 / 러시아 여성형 */
+    const at = (country: string, male: boolean) =>
+      rollLife(DATA.findIndex(c => c.name === country), male);
+    const kr = at("대한민국", false);
+    ok("한국 생 ko는 한글 성+이름", /^[가-힣]{2,4}$/.test(formatLifeName(kr.name, "ko")),
+      formatLifeName(kr.name, "ko"));
+    ok("한국 생 en은 이름-성 로마자",
+      formatLifeName(kr.name, "en") === `${kr.name.given.l} ${kr.name.family!.l}`,
+      formatLifeName(kr.name, "en"));
+    ok("반대 표기 제공(ko→로마자)", altLifeName(kr.name, "ko") === formatLifeName(kr.name, "en"));
+    const cn = at("중국", true);
+    ok("중국 생은 로마자도 성-이름",
+      formatLifeName(cn.name, "en").startsWith(cn.name.family!.l + " "),
+      formatLifeName(cn.name, "en"));
+    const ru = at("러시아", false);
+    ok("러시아 여성 성은 여성형(-a)", /(ova|eva|ina)$/.test(formatLifeName(ru.name, "en")),
+      formatLifeName(ru.name, "en"));
+    const is = at("아이슬란드", false);
+    ok("아이슬란드 여성은 -dóttir", formatLifeName(is.name, "en").endsWith("dóttir"),
+      formatLifeName(is.name, "en"));
+    /* 민족별 세분화 — 같은 나라라도 민족이 다르면 그 민족의 이름 전통을 따른다 */
+    {
+      const ng = DATA.find(c => c.name === "나이지리아")!;
+      const base = { c: ng, male: true, lifeExp: 70, income: 5000, iq: 100, height: 170, weight: 65 };
+      const yoruba = rollName({ ...base, eth: ["요루바", 15] as const });
+      const hausa = rollName({ ...base, eth: ["하우사", 30] as const });
+      ok("민족별 풀 분리 (요루바≠하우사)",
+        yoruba.culture === "yoruba" && hausa.culture === "hausa",
+        `${formatLifeName(yoruba, "en")} vs ${formatLifeName(hausa, "en")}`);
+      const my = DATA.find(c => c.name === "말레이시아")!;
+      const cn = rollName({ ...base, c: my, eth: ["중국계", 23] as const });
+      ok("말레이시아 중국계는 중국식(성-이름·한자 원문자)",
+        cn.culture === "china" && formatLifeName(cn, "zh") !== formatLifeName(cn, "en"),
+        `${formatLifeName(cn, "en")} / zh: ${formatLifeName(cn, "zh")}`);
+      const other = rollName({ ...base, eth: ["기타", 33] as const });
+      ok("표에 없는 민족은 국가 기본 풀", other.culture === "nigeria");
+      /* 전 국가 × 전 민족 조합이 예외 없이 생성되는가 */
+      let err = 0, combos = 0;
+      for (const co of DATA) for (const e of co.eth) {
+        combos++;
+        try { rollName({ ...base, c: co, eth: e }); } catch { err++; }
+      }
+      ok(`전 국가×민족 ${combos}개 조합 예외 없음`, err === 0);
+    }
+    /* DB 스냅샷 왕복 + 003 이전 기록 폴백(스냅샷을 지워도 같은 이름이 복원된다) */
+    const { viewFromRow } = await import("./lib/view.js");
+    const sN = await saveLife({ discordId: U, guildId: G, life: l2, inheritedTrait: null });
+    const rowN = (await (await import("./db/queries.js")).getLife(sN.id))!;
+    ok("생성 이름이 DB에 저장됨", rowN.gen_name === formatLifeName(l2.name, "ko"), rowN.gen_name ?? "");
+    await pg.query("UPDATE lives SET gen_name=NULL, gen_name_alt=NULL WHERE id=$1", [sN.id]);
+    const rowOld = (await (await import("./db/queries.js")).getLife(sN.id))!;
+    ok("스냅샷 없는 옛 기록도 같은 이름 복원",
+      viewFromRow(rowOld).genName === formatLifeName(l2.name, "ko"));
   }
 
   console.log("\n[9] 희귀도 점수 (§D)");
