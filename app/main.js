@@ -13,6 +13,7 @@ import {decodeLife,encodeLife} from "./engine/permalink.js";
 import {takeLife,verifyLife,takeSharedByCode} from "./engine/lifepool.js";
 import {t} from "./i18n/i18n.js";
 import "./ui/odds.js";
+import "./ui/profile.js";
 import "./ui/fortune.js";
 import "./ui/suggest.js";
 import "./ui/effects.js";
