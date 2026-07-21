@@ -1,13 +1,14 @@
 /* 저장된 기록(LifeRow)을 화면 문구로 바꾸는 계층.
  *
- * /환생은 방금 뽑은 core의 Life를 그리지만, /여권·/덱은 **DB에서 되살린 기록**을 그린다.
- * 둘의 필드명이 달라서(§G 컬럼명 vs core 이름) 변환을 여기 한곳에 모은다 —
- * 화면마다 제각기 변환하면 같은 생이 화면마다 다르게 보이기 시작한다. */
+ * 스탯 필드 자체는 여기서 만들지 않는다 — lib/view.ts 의 statFields() 한 곳에서만 만든다.
+ * /환생(core Life)과 /여권(DB 기록)이 각자 필드를 만들다가 조용히 어긋난 적이 있어서,
+ * 두 입력을 LifeView로 정규화한 뒤 같은 함수를 태운다. */
 import { EmbedBuilder } from "discord.js";
 import { countryByCode, rarityColor } from "@life-reroll/core";
 import type { LifeRow } from "../db/queries.js";
 import { BOT_FOOTER } from "./render.js";
-import { contKo, fmtPop, fmtTopPct, fmtUSD, traitText } from "./text.js";
+import { fmtTopPct, traitText } from "./text.js";
+import { statFields, viewFromRow } from "./view.js";
 
 const SOURCE_NOTE = "UN WPP 2024 · World Bank 기반 추정";
 
@@ -42,53 +43,10 @@ export function passportEmbed(row: LifeRow, ownerLabel: string): EmbedBuilder {
   if (row.name) e.setDescription(`${row.country_name} · 제 ${row.id.toLocaleString()}번 생`);
 
   e.addFields(
-    {
-      name: "태어난 곳",
-      value: `${c ? contKo(c.cont) : "—"} · ${row.urban ? "도시" : "농촌"}` +
-        (c ? `\n인구 ${fmtPop(c.pop)}` : ""),
-      inline: true,
-    },
-    {
-      name: "삶",
-      value: `${row.gender === "male" ? "남성" : "여성"} · ${row.lifespan}세` +
-        (c ? `\n${c.lang}` : ""),
-      inline: true,
-    },
-    {
-      name: "소득",
-      value: `${fmtUSD(Number(row.income_usd))}/년\n국가 중위의 ${Number(row.income_mult).toFixed(2)}배`,
-      inline: true,
-    },
-    {
-      name: "몸",
-      value: `${row.height_cm}cm · ${row.weight_kg}kg\nIQ ${row.iq}`,
-      inline: true,
-    },
-    {
-      name: "뿌리",
-      value: `${row.ethnicity}\n${row.religion}`,
-      inline: true,
-    },
-    {
-      name: "사인",
-      /* 옛 기록에는 사인이 없다(002_cause 이전). 그때 뽑힌 생은 —로 둔다 */
-      value: row.cause_key ? `${row.cause_emoji ?? ""} ${row.cause_key}`.trim() : "—",
-      inline: true,
-    },
-    {
-      name: "희귀도",
-      value: fmtTopPct(Number(row.rarity_score)),
-      inline: true,
-    },
-    {
-      name: "특성",
-      /* 특성이 없어도 결핍처럼 보이지 않게 (§F 톤 가이드) */
-      value: row.traits.length ? row.traits.map(traitText).join("\n") : "—",
-      inline: true,
-    },
+    ...statFields(viewFromRow(row)),
     {
       name: "전적",
-      /* 배틀은 4단계라 지금은 항상 0승 0패다. 미리 자리를 잡아 두면 그때 화면이 안 흔들린다. */
+      /* 배틀은 4단계라 갓 뽑은 생은 0승 0패다. 자리를 미리 잡아 두면 전적이 붙어도 안 흔들린다. */
       value: `${row.wins}승 ${row.losses}패`,
       inline: true,
     },

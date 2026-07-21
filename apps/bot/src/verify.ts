@@ -189,6 +189,43 @@ async function main(): Promise<void> {
   ok("스탯 출처 명시 (§F)", /UN WPP|World Bank/.test(embed.footer?.text ?? ""));
   ok("희귀도 '상위 n%' 표기 (§D)", asText.includes("상위"));
 
+  console.log("\n[8-1] 웹↔봇 표시 항목 대조");
+  {
+    /* 웹의 CHIP_DEFS 12개가 봇 임베드에도 전부 있는지 값으로 확인한다.
+       라벨이 아니라 **값**을 찾는 이유: 라벨은 묶음 이름(몸·뿌리)이라 안 맞고,
+       값이 있어야 실제로 사용자에게 보인다는 뜻이다.
+       이 검사가 없어서 /환생에만 민족·종교·몸·사인이 빠진 걸 한참 몰랐다. */
+    const { viewFromLife, statFields } = await import("./lib/view.js");
+    const l = rollLife();
+    const fields = statFields(viewFromLife(l, 1, ["longevity"], 0.001));
+    const text = JSON.stringify(fields);
+    const want: [string, string][] = [
+      ["성별", l.male ? "남성" : "여성"],
+      ["태어난 곳", l.urban ? "도시" : "농촌"],
+      ["모국어", l.c.lang],
+      ["민족", l.eth[0]],
+      ["종교", l.rel[0]],
+      ["키", `${l.height}cm`],
+      ["몸무게", `${l.weight}kg`],
+      ["IQ", `IQ ${l.iq}`],
+      ["사인", l.cause.key],
+      ["탈모", l.balding ? "탈모 예정" : "숱 유지"],
+      ["기대수명", `${l.lifeExp}세`],
+      ["연 소득", "/년"],
+    ];
+    const missing = want.filter(([, v]) => !text.includes(v)).map(([k]) => k);
+    ok("웹 12항목이 봇에도 전부 있다", missing.length === 0,
+      missing.length ? "누락: " + missing.join(", ") : `${want.length}개 확인`);
+
+    /* /환생과 /여권이 같은 항목을 보여주는가 — 두 화면이 갈라지는 것을 막는다 */
+    const { viewFromRow } = await import("./lib/view.js");
+    const { getLife: fetchLife } = await import("./db/queries.js");
+    const rowNow = await fetchLife(s1.id);
+    const nA = statFields(viewFromLife(l, 1, [], 0.001)).map(f => f.name).join(",");
+    const nB = statFields(viewFromRow(rowNow!)).map(f => f.name).join(",");
+    ok("/환생과 /여권의 스탯 필드가 동일", nA === nB, nA);
+  }
+
   console.log("\n[9] 희귀도 점수 (§D)");
   const scores = Array.from({ length: 5000 }, () => rarityScore(rollLife()));
   ok("전부 (0,1] 범위", scores.every(s => s > 0 && s <= 1));
