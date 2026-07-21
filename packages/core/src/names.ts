@@ -22,8 +22,10 @@
 import { strHash, mulberry32, isoCode } from "./util.js";
 import type { CauseInput, LifeName, NamePart } from "./types.js";
 
-/** rollName 입력 — 사인과 같은 고정값 집합이라 타입을 공유한다 */
-export type NameInput = CauseInput;
+/** rollName 입력 — 사인과 같은 고정값 집합 + 민족(문화권 세분화용).
+ *  eth는 시드에 들어가지 않는다 — 풀 선택에만 쓴다. 민족은 생의 고정값이라
+ *  (링크·DB에 보존됨) 결정성은 그대로 유지된다. */
+export type NameInput = CauseInput & { eth?: readonly [string, number] };
 export type UiLang = "ko" | "en" | "ja" | "zh" | "es" | "pt";
 
 type Entry = string | [native: string, latin: string];
@@ -235,10 +237,28 @@ iceland: { style: "patronym_is",
  f: ["Guðrún","Anna","Kristín","Margrét","Sigríður","Helga","Katrín","Elín"],
  /* 성 자리에는 아버지 이름의 속격형을 둔다 — +son / +dóttir 로 붙는다 */
  s: ["Jóns","Sigurðar","Guðmunds","Ólafs","Einars","Magnús","Björns","Kristjáns"] },
+/* 나이지리아 기본 풀 — 3대 민족이 섞인 폴백이다. 요루바·이그보·하우사·풀라니로 뽑힌
+   생은 ETHNIC_CULTURE 가 아래 전용 풀로 보낸다("기타" 33%만 여기로 온다). */
 nigeria: {
  m: ["Chinedu","Emeka","Oluwaseun","Tunde","Ibrahim","Musa","Chukwuemeka","Ade","Ifeanyi","Sani"],
  f: ["Chioma","Ngozi","Aisha","Funmilayo","Amaka","Yetunde","Halima","Adaeze","Bisi","Zainab"],
  s: ["Okafor","Adeyemi","Balogun","Okonkwo","Abubakar","Eze","Adebayo","Nwosu","Mohammed","Olawale"] },
+yoruba: {
+ m: ["Ayodele","Olumide","Babatunde","Adewale","Kehinde","Taiwo","Segun","Femi"],
+ f: ["Yetunde","Funmilayo","Bisi","Titilayo","Folake","Ronke","Bunmi","Kemi"],
+ s: ["Adeyemi","Balogun","Olawale","Adebayo","Ogunleye","Afolabi","Akintola","Oyebanjo"] },
+igbo: {
+ m: ["Chinedu","Emeka","Ifeanyi","Chukwuemeka","Obinna","Nnamdi","Kelechi","Uche"],
+ f: ["Chioma","Ngozi","Amaka","Adaeze","Chiamaka","Nneka","Ifeoma","Uju"],
+ s: ["Okafor","Okonkwo","Eze","Nwosu","Okoro","Anyanwu","Obi","Nwachukwu"] },
+hausa: {
+ m: ["Ibrahim","Musa","Sani","Abubakar","Aliyu","Usman","Bello","Yusuf"],
+ f: ["Aisha","Halima","Zainab","Fatima","Amina","Hadiza","Maryam","Safiya"],
+ s: ["Abubakar","Mohammed","Bello","Garba","Danjuma","Yakubu","Suleiman","Idris"] },
+south_india: {
+ m: ["Arun","Karthik","Suresh","Ramesh","Vijay","Ganesh","Hari","Senthil"],
+ f: ["Priya","Lakshmi","Divya","Kavitha","Meena","Anitha","Deepa","Revathi"],
+ s: ["Krishnan","Iyer","Nair","Menon","Subramaniam","Pillai","Naidu","Raman"] },
 ghana: {
  m: ["Kwame","Kofi","Kwesi","Yaw","Kojo","Kwabena","Fiifi","Kweku"],
  f: ["Ama","Akosua","Efua","Abena","Adwoa","Yaa","Esi","Afia"],
@@ -291,6 +311,64 @@ const CULTURE_OF: Record<string, string> = {
  호주:"english",파푸아뉴기니:"pacific",뉴질랜드:"english",피지:"pacific",솔로몬제도:"pacific",바누아투:"pacific",사모아:"pacific",키리바시:"pacific",미크로네시아:"pacific",통가:"pacific",마셜제도:"pacific",팔라우:"pacific",나우루:"pacific",투발루:"pacific",
 };
 
+/* ===== 민족별 세분화 =====
+   같은 나라라도 민족에 따라 이름 전통이 완전히 다르다 — 나이지리아의 요루바와 하우사,
+   말레이시아의 말레이계와 중국계, 미국의 히스패닉처럼. 생에는 이미 민족이 뽑혀 있으므로
+   (BODY 데이터), 그 민족이 아래 표에 있으면 국가 기본 풀 대신 그 문화권 풀을 쓴다.
+
+   ⚠ 표는 **국가별**이다. "백인"·"아시아계" 같은 라벨은 나라마다 뜻이 다르기 때문이다
+   (남아공 백인=아프리칸스, 미국 백인=english / 영국 아시아계=남아시아, 미국 아시아계=혼합).
+   전역 라벨 매핑을 만들면 조용히 엉뚱한 풀로 간다.
+   민족 이름은 i18n-terms 사전의 한국어 키 그대로다(BODY와 같은 규약).
+
+   표에 없는 민족("기타"·"혼혈"·다수 민족 등)은 국가 기본 풀로 간다 — 오버라이드는
+   "이름 전통이 뚜렷이 다른" 소수집단에만 건다. 너무 촘촘히 걸면 데이터만 늘고,
+   기본 풀이 이미 그 나라 다수의 이름이다. */
+const ETHNIC_CULTURE: Record<string, Record<string, string>> = {
+ 나이지리아: { 하우사: "hausa", 요루바: "yoruba", 이그보: "igbo", 풀라니: "hausa" },
+ 인도: { 드라비다계: "south_india" },
+ 스리랑카: { "스리랑카 타밀": "south_india", 무어: "arabic" },
+ 말레이시아: { 중국계: "china", 인도계: "india" },
+ 싱가포르: { 말레이계: "malay", 인도계: "india" },
+ 홍콩: { 필리핀계: "philippines", 인도네시아계: "indonesia" },
+ 미국: { 히스패닉: "hispanic" },
+ 영국: { 아시아계: "india" },            /* 영국 통계의 Asian은 남아시아계다 */
+ 프랑스: { 북아프리카계: "arabic" },
+ 독일: { 튀르키예계: "turkey" },
+ 스위스: { 이탈리아계: "italy" },
+ 이스라엘: { 아랍계: "arabic" },
+ 세르비아: { 헝가리계: "hungary" },
+ 슬로바키아: { 헝가리계: "hungary" },
+ 루마니아: { 헝가리계: "hungary" },
+ 불가리아: { 튀르키예계: "turkey" },
+ 북마케도니아: { 알바니아계: "albania", 튀르키예계: "turkey" },
+ 코소보: { 세르비아계: "balkan" },
+ 벨라루스: { 폴란드계: "poland" },
+ 우크라이나: { 러시아계: "russia" },
+ 몰도바: { 우크라이나계: "ukraine" },
+ 리투아니아: { 폴란드계: "poland", 러시아계: "russia" },
+ 라트비아: { 러시아계: "russia" },
+ 에스토니아: { 러시아계: "russia" },
+ 카자흐스탄: { 러시아계: "russia" },
+ 키르기스스탄: { 러시아계: "russia" },
+ 에티오피아: { 소말리: "somali" },
+ 차드: { 사라: "central_africa" },       /* 남부 사라족은 프랑스식 이름 전통이다 */
+ 카메룬: { 풀라니: "west_africa" },
+ 남아프리카공화국: { 백인: "dutch", "인도·아시아계": "india" },  /* 백인 다수가 아프리칸스계 */
+ 모리셔스: { 크리올: "french", 중국계: "china", 프랑스계: "french" },
+ 아랍에미리트: { 남아시아계: "india" },
+ 오만: { 남아시아계: "india" },
+ 쿠웨이트: { 남아시아계: "india" },
+ 카타르: { 남아시아계: "india" },
+ 바레인: { 남아시아계: "india" },
+ 피지: { 인도계: "india" },
+ "트리니다드 토바고": { 동인도계: "india" },
+ 가이아나: { 동인도계: "india" },
+ 수리남: { 힌두스탄계: "india", 자바계: "indonesia" },
+ 뉴질랜드: { 마오리: "pacific", 태평양계: "pacific" },
+ 팔라우: { 필리핀계: "philippines" },
+};
+
 function part(e: Entry): NamePart {
   return typeof e === "string" ? { n: e, l: e } : { n: e[0], l: e[1] };
 }
@@ -311,7 +389,10 @@ function femForm(rule: Culture["fem"], p: NamePart): NamePart {
 
 /** 이 생의 이름. 사인처럼 고정값에서 결정적으로 정해진다 — 같은 생은 언제나 같은 이름. */
 export function rollName(l: NameInput): LifeName {
-  const cultureKey = CULTURE_OF[l.c.name];
+  /* 민족 오버라이드가 국가 기본을 이긴다 — 표에 있는 민족만(위 ETHNIC_CULTURE 주석 참고) */
+  const ethName = l.eth?.[0];
+  const cultureKey =
+    (ethName ? ETHNIC_CULTURE[l.c.name]?.[ethName] : undefined) ?? CULTURE_OF[l.c.name];
   if (!cultureKey || !POOLS[cultureKey]) {
     throw new Error(`rollName: '${l.c.name}' 의 이름 문화권 매핑이 없습니다 (names.ts CULTURE_OF)`);
   }

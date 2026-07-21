@@ -257,6 +257,30 @@ async function main(): Promise<void> {
     const is = at("아이슬란드", false);
     ok("아이슬란드 여성은 -dóttir", formatLifeName(is.name, "en").endsWith("dóttir"),
       formatLifeName(is.name, "en"));
+    /* 민족별 세분화 — 같은 나라라도 민족이 다르면 그 민족의 이름 전통을 따른다 */
+    {
+      const ng = DATA.find(c => c.name === "나이지리아")!;
+      const base = { c: ng, male: true, lifeExp: 70, income: 5000, iq: 100, height: 170, weight: 65 };
+      const yoruba = rollName({ ...base, eth: ["요루바", 15] as const });
+      const hausa = rollName({ ...base, eth: ["하우사", 30] as const });
+      ok("민족별 풀 분리 (요루바≠하우사)",
+        yoruba.culture === "yoruba" && hausa.culture === "hausa",
+        `${formatLifeName(yoruba, "en")} vs ${formatLifeName(hausa, "en")}`);
+      const my = DATA.find(c => c.name === "말레이시아")!;
+      const cn = rollName({ ...base, c: my, eth: ["중국계", 23] as const });
+      ok("말레이시아 중국계는 중국식(성-이름·한자 원문자)",
+        cn.culture === "china" && formatLifeName(cn, "zh") !== formatLifeName(cn, "en"),
+        `${formatLifeName(cn, "en")} / zh: ${formatLifeName(cn, "zh")}`);
+      const other = rollName({ ...base, eth: ["기타", 33] as const });
+      ok("표에 없는 민족은 국가 기본 풀", other.culture === "nigeria");
+      /* 전 국가 × 전 민족 조합이 예외 없이 생성되는가 */
+      let err = 0, combos = 0;
+      for (const co of DATA) for (const e of co.eth) {
+        combos++;
+        try { rollName({ ...base, c: co, eth: e }); } catch { err++; }
+      }
+      ok(`전 국가×민족 ${combos}개 조합 예외 없음`, err === 0);
+    }
     /* DB 스냅샷 왕복 + 003 이전 기록 폴백(스냅샷을 지워도 같은 이름이 복원된다) */
     const { viewFromRow } = await import("./lib/view.js");
     const sN = await saveLife({ discordId: U, guildId: G, life: l2, inheritedTrait: null });

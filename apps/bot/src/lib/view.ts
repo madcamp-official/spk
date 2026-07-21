@@ -74,8 +74,10 @@ export function viewFromRow(row: LifeRow): LifeView {
      core로 그대로 되살린다 — rollLife와 같은 시드라 뽑던 날의 이름과 일치한다. */
   let genName = row.gen_name, genNameAlt = row.gen_name_alt;
   if (!genName && c) {
+    /* eth를 넘겨야 민족 오버라이드(말레이시아 중국계 → 중국식 이름 등)까지 재현된다 */
     const nm = rollName({ c, male: row.gender === "male", lifeExp: Number(row.lifespan),
-      income: Number(row.income_usd), iq: row.iq, height: row.height_cm, weight: Number(row.weight_kg) });
+      income: Number(row.income_usd), iq: row.iq, height: row.height_cm, weight: Number(row.weight_kg),
+      eth: [row.ethnicity, 0] });
     genName = formatLifeName(nm, "ko");
     genNameAlt = altLifeName(nm, "ko");
   }
