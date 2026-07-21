@@ -9,7 +9,8 @@ import {
 } from "discord.js";
 import type { Life } from "@life-reroll/core";
 import { rarityColor } from "@life-reroll/core";
-import { contKo, fmtIncomeMult, fmtPop, fmtTopPct, fmtUSD, traitText } from "./text.js";
+import { traitText } from "./text.js";
+import { statFields, viewFromLife } from "./view.js";
 
 export const BOT_FOOTER = "환생 시뮬레이터";
 /** 스탯 출처 명시는 톤 가이드(§F) 요구사항이다 — 빼지 말 것. */
@@ -41,38 +42,16 @@ export function lifeEmbed(opts: {
   rollsLeft: number;
 }): EmbedBuilder {
   const { life, birthNo, traits } = opts;
+  /* 스탯 필드는 /여권과 **같은 정의**를 쓴다(lib/view.ts). 여기서 따로 만들면
+     두 화면이 조용히 어긋난다 — 실제로 그래서 /환생에만 민족·종교·몸·사인이 없었다. */
+  const view = viewFromLife(life, birthNo, traits, opts.rarityScore);
   const e = new EmbedBuilder()
     /* 희귀도 색은 웹과 같은 척도를 쓴다(core.rarityColor) — 두 화면이 같은 뜻을 갖는다 */
     .setColor(Number.parseInt(rarityColor(life.c.pop).slice(1), 16))
     .setTitle(`${life.c.flag} ${life.c.name} · 제 ${birthNo.toLocaleString()}번 생`)
     .setDescription(opts.summary)
     .addFields(
-      {
-        name: "태어난 곳",
-        value: `${contKo(life.c.cont)} · ${life.urban ? "도시" : "농촌"}\n인구 ${fmtPop(life.c.pop)}`,
-        inline: true,
-      },
-      {
-        name: "삶",
-        value: `${life.male ? "남성" : "여성"} · ${life.lifeExp}세\n${life.c.lang}`,
-        inline: true,
-      },
-      {
-        name: "소득",
-        value: `${fmtUSD(life.income)}/년\n${fmtIncomeMult(life)}`,
-        inline: true,
-      },
-      {
-        name: "희귀도",
-        value: `${fmtTopPct(opts.rarityScore)}`,
-        inline: true,
-      },
-      {
-        name: "특성",
-        /* 태그가 없어도 결핍처럼 보이지 않게 쓴다(§F 톤 가이드) */
-        value: traits.length ? traits.map(traitText).join("\n") : "—",
-        inline: true,
-      },
+      ...statFields(view),
       {
         name: "남은 뽑기",
         value: opts.meritLeft === null
