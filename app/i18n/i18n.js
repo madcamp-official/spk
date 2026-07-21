@@ -254,6 +254,18 @@ const STR={
 "확률 {p}":["Odds {p}","確率 {p}","概率 {p}","Probabilidad {p}","Probabilidade {p}"],
 "약 {n}번 중 1번":["≈ 1 in {n}","約{n}回に1回","约{n}次中的1次","≈1 entre {n}","≈1 em {n}"],
 "당신의 다음 생은 어디에서 시작될까요?":["Where will your next life begin?","あなたの来世はどこから始まるでしょう?","你的下一世会从哪里开始?","¿Dónde empezará tu próxima vida?","Onde vai começar sua próxima vida?"],
+/* ── 영혼 프로필 공유(profile.js) ── */
+"내 프로필 공유하기":["Share my profile","私のプロフィールをシェア","分享我的档案","Compartir mi perfil","Compartilhar meu perfil"],
+"📤 프로필 공유":["📤 Share profile","📤 プロフィールをシェア","📤 分享档案","📤 Compartir perfil","📤 Compartilhar perfil"],
+"🌏 나의 환생 프로필":["🌏 My rebirth profile","🌏 私の転生プロフィール","🌏 我的转世档案","🌏 Mi perfil de reencarnación","🌏 Meu perfil de reencarnação"],
+"나의 영혼 프로필":["My Soul Profile","私の魂のプロフィール","我的灵魂档案","Mi perfil del alma","Meu perfil da alma"],
+"환생 {n}번":["{n} rebirths","転生 {n}回","转世 {n} 次","{n} reencarnaciones","{n} reencarnações"],
+"도감 {a}/{b} ({p}%)":["Dex {a}/{b} ({p}%)","図鑑 {a}/{b} ({p}%)","图鉴 {a}/{b} ({p}%)","Dex {a}/{b} ({p}%)","Dex {a}/{b} ({p}%)"],
+"최고 희귀 기록 1/{n}":["Rarest 1/{n}","最高レア記録 1/{n}","最高稀有记录 1/{n}","Récord más raro 1/{n}","Recorde mais raro 1/{n}"],
+"보유 칭호 {n}개":["{n} titles held","称号 {n}個","持有称号 {n} 个","{n} títulos","{n} títulos"],
+"최고 희귀 기록":["Rarest roll","最高レア記録","最高稀有记录","Más raro","Mais raro"],
+"보유 칭호":["Titles held","保有称号","持有称号","Títulos","Títulos"],
+"먼저 환생 버튼을 눌러 프로필을 만들어 주세요":["Roll a life first to build your profile","まず転生ボタンを押してプロフィールを作ってください","请先点击转世按钮,建立你的档案","Primero saca una vida para crear tu perfil","Primeiro sorteie uma vida para criar seu perfil"],
 /* ── 도감(dex.js) · 확률 표(odds.js) · 제안(suggest.js) ── */
 "수집한 나라 {a} / {b} ({p}%) · 밝은 칸이 태어나 본 나라입니다":["Collected {a} / {b} countries ({p}%) · bright tiles are countries you've been born in","収集した国 {a} / {b} ({p}%) · 明るいマスは生まれたことのある国です","已收集国家 {a} / {b} ({p}%) · 亮色格子是你出生过的国家","Países coleccionados {a} / {b} ({p}%) · las casillas iluminadas son donde has nacido","Países coletados {a} / {b} ({p}%) · as casas iluminadas são onde você nasceu"],
 "중국과 인도만 합쳐도 약 {p}%. 환생 3번 중 1번은 두 나라 중 하나에서 시작됩니다. 반대로 투발루(인구 1.1만 명)가 나올 확률은 약 {n}번 중 1번입니다.":["China and India alone add up to about {p}%. One rebirth in three starts in one of those two countries. Tuvalu (pop. 11,000), on the other hand, is roughly a 1-in-{n} roll.","中国とインドだけで約{p}%。転生3回に1回はこの2か国のどちらかで始まります。逆にツバル(人口1.1万人)が出る確率は約{n}回に1回です。","仅中国和印度加起来就约占{p}%,每3次转世就有1次从这两国之一开始。相反,抽中图瓦卢(人口1.1万)的概率约为{n}分之一。","China e India juntos suman ≈{p}%. Una de cada tres reencarnaciones empieza en uno de esos dos países. En cambio, Tuvalu (pob. 11.000) es aproximadamente 1 entre {n}.","China e Índia juntos somam ≈{p}%. Uma em cada três reencarnações começa em um desses dois países. Já Tuvalu (pop. 11.000) é cerca de 1 em {n}."],
@@ -363,6 +375,9 @@ function applyStatic(){
  q("#achModal h3").textContent=t("🏅 업적 · 칭호");
  q("#achModal .modal").setAttribute("aria-label",t("칭호"));
  id("achBtn").title=t("업적·칭호 열기");
+ id("achShare").setAttribute("aria-label",t("내 프로필 공유하기"));
+ id("dexShare").setAttribute("aria-label",t("내 프로필 공유하기"));
+ id("achClose").setAttribute("aria-label",t("닫기"));
  id("dexClose").setAttribute("aria-label",t("닫기"));
  q("#shareModal h3").textContent=t("📤 공유하기");
  q("#shareModal .modal").setAttribute("aria-label",t("공유하기"));
