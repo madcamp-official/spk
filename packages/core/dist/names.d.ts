@@ -8,10 +8,15 @@ export type NameInput = CauseInput & {
 export type UiLang = "ko" | "en" | "ja" | "zh" | "es" | "pt";
 /** 이 생의 이름. 사인처럼 고정값에서 결정적으로 정해진다 — 같은 생은 언제나 같은 이름. */
 export declare function rollName(l: NameInput): LifeName;
-/** UI 언어에 맞는 주 표기. 예: 한국 생 → ko에서 "김희서", en에서 "Heeseo Kim". */
+/** UI 언어에 맞는 주 표기.
+ *  한국 생: ko 김희서 · en Heeseo Kim / 미국 생: ko 피터 밀러 · ja ピーター・ミラー.
+ *  한자 문화권끼리는 원문자를 공유한다(중국 이름은 ja에서, 일본 이름은 zh에서 한자 그대로).
+ *  en·es·pt는 라틴 문자 언어라 음역하지 않는다 — 로마자가 그 언어의 표준 표기다. */
 export declare function formatLifeName(name: LifeName, lang: UiLang): string;
-/** 반대 표기(설명줄용). 원문자가 따로 없는 문화권은 null. */
+/** 반대 표기(설명줄용). 주 표기가 음역·원문자면 로마자를, 로마자면 원문자를 준다. */
 export declare function altLifeName(name: LifeName, lang: UiLang): string | null;
+/** 검증용: 사전에 없는(로마자로 폴백하는) 조각 목록. 비어 있어야 한다. */
+export declare function missingTransliterations(): string[];
 /** 검증용: 어떤 문화권이 존재하고 몇 개국이 매핑됐는지 */
 export declare const NAME_CULTURES: string[];
 export declare function nameCultureOf(countryName: string): string | undefined;

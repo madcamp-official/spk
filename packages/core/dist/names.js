@@ -20,6 +20,7 @@
    생성 규칙(음절 조합 등)은 쓰지 않는다. 정치인·유명인 고유 성명 조합은 피했다.
    ⚠ 이름은 i18n 사전(TERMS)을 타지 않는다 — 번역이 아니라 표기 변환이다. */
 import { strHash, mulberry32, isoCode } from "./util.js";
+import { TR, TR_CULTURE } from "./names-tr.js";
 const POOLS = {
     korea: { native: "ko",
         m: [["민준", "Minjun"], ["서준", "Seojun"], ["도윤", "Doyun"], ["시우", "Siwoo"], ["지호", "Jiho"], ["준우", "Junwoo"], ["현우", "Hyunwoo"], ["지훈", "Jihoon"], ["우진", "Woojin"], ["성민", "Seongmin"], ["재현", "Jaehyun"], ["태윤", "Taeyun"]],
@@ -400,6 +401,9 @@ function femForm(rule, p) {
             out = l.slice(0, -1) + "á";
         else if (l.endsWith("a"))
             out = l.slice(0, -1) + "ová";
+        /* -ek 은 e가 탈락한다: Sedláček → Sedláčková (Sedláčeková 가 아니다) */
+        else if (l.endsWith("ek"))
+            out = l.slice(0, -2) + "ková";
         else
             out = l + "ová";
     }
@@ -470,19 +474,127 @@ function nativeForm(name) {
         return `${name.family.n} ${name.given.n}`;
     return `${name.family.n}${name.given.n}`; /* ko·zh: 성이름 붙여쓰기 */
 }
-/** UI 언어에 맞는 주 표기. 예: 한국 생 → ko에서 "김희서", en에서 "Heeseo Kim". */
+/* ── 음역 (ko·ja) ──
+   외국 이름을 보는 사람의 문자로: Peter Miller → 피터 밀러 / ピーター・ミラー.
+   사전(names-tr.ts) 기반이고, 미등재는 로마자로 폴백한다(조용히 깨지지 않는다).
+   슬라브 여성형 성은 기본형에서 규칙 변환한다: -ova(프→바·フ→ワ), -ska(키→카·キ→カ). */
+function tr(latin, culture, idx) {
+    const e = TR_CULTURE[culture]?.[latin] ?? TR[latin];
+    if (e)
+        return e[idx];
+    /* 여성형 합성 성 — 사전에는 기본형만 있다 */
+    if (/(ov|ev|in)a$/.test(latin)) {
+        const base = TR_CULTURE[culture]?.[latin.slice(0, -1)] ?? TR[latin.slice(0, -1)];
+        if (base) {
+            const b = base[idx];
+            if (idx === 0 && b.endsWith("프"))
+                return b.slice(0, -1) + "바";
+            if (idx === 1 && b.endsWith("フ"))
+                return b.slice(0, -1) + "ワ";
+        }
+    }
+    if (latin.endsWith("ska")) {
+        const base = TR[latin.slice(0, -1) + "i"];
+        if (base) {
+            const b = base[idx];
+            if (idx === 0 && b.endsWith("키"))
+                return b.slice(0, -1) + "카";
+            if (idx === 1 && b.endsWith("キ"))
+                return b.slice(0, -1) + "カ";
+        }
+    }
+    return latin;
+}
+/** 한글/가타카나 음역 전체 이름. ko는 띄어쓰기(중국계 성이름은 붙임), ja는 ・ 구분. */
+function transliterated(name, lang) {
+    const cult = POOLS[name.culture];
+    const idx = lang === "ko" ? 0 : 1;
+    const sep = lang === "ko" ? " " : "・";
+    const g = tr(name.given.l, name.culture, idx);
+    const famRaw = name.family?.l ?? "";
+    switch (cult.style ?? "family") {
+        case "mononym": return g;
+        case "double_given":
+        case "father_given": return g + sep + tr(famRaw, name.culture, idx);
+        case "bin": {
+            const link = name.male ? (lang === "ko" ? "빈" : "ビン") : (lang === "ko" ? "빈티" : "ビンティ");
+            return g + sep + link + sep + tr(famRaw, name.culture, idx);
+        }
+        case "patronym_is":
+            return g + sep + tr(famRaw + (name.male ? "son" : "dóttir"), name.culture, idx);
+        case "double_family":
+            return g + sep + tr(famRaw, name.culture, idx) + sep + tr(name.family2.l, name.culture, idx);
+        default: {
+            const f = tr(famRaw, name.culture, idx);
+            /* 동아시아 이름은 한글·가타카나 음역에서도 성-이름 순서를 유지한다 —
+               한국어의 "무라카미 하루키", 일본어의 "キム・ジウ"처럼. 로마자(latinForm)만
+               서구식으로 뒤집는다. 중국계는 한국어 관행상 붙여 쓴다(왕웨이). */
+            if (cult.romanFamilyFirst || cult.native) {
+                return name.culture === "china" && lang === "ko" ? f + g : f + sep + g;
+            }
+            return g + sep + f;
+        }
+    }
+}
+/** UI 언어에 맞는 주 표기.
+ *  한국 생: ko 김희서 · en Heeseo Kim / 미국 생: ko 피터 밀러 · ja ピーター・ミラー.
+ *  한자 문화권끼리는 원문자를 공유한다(중국 이름은 ja에서, 일본 이름은 zh에서 한자 그대로).
+ *  en·es·pt는 라틴 문자 언어라 음역하지 않는다 — 로마자가 그 언어의 표준 표기다. */
 export function formatLifeName(name, lang) {
     const cult = POOLS[name.culture];
     if (cult.native && cult.native === lang)
         return nativeForm(name) ?? latinForm(name);
+    if (lang === "ko")
+        return transliterated(name, "ko");
+    if (lang === "ja") {
+        if (cult.native === "zh")
+            return nativeForm(name) ?? latinForm(name);
+        return transliterated(name, "ja");
+    }
+    if (lang === "zh" && cult.native === "ja" && name.family) {
+        return name.family.n + name.given.n; /* 일본 이름은 중국어 관행상 한자 붙여쓰기 */
+    }
     return latinForm(name);
 }
-/** 반대 표기(설명줄용). 원문자가 따로 없는 문화권은 null. */
+/** 반대 표기(설명줄용). 주 표기가 음역·원문자면 로마자를, 로마자면 원문자를 준다. */
 export function altLifeName(name, lang) {
-    const cult = POOLS[name.culture];
-    if (!cult.native)
-        return null;
-    return cult.native === lang ? latinForm(name) : nativeForm(name);
+    const main = formatLifeName(name, lang);
+    const latin = latinForm(name);
+    if (main !== latin)
+        return latin;
+    const native = nativeForm(name);
+    return native && native !== main ? native : null;
+}
+/** 검증용: 사전에 없는(로마자로 폴백하는) 조각 목록. 비어 있어야 한다. */
+export function missingTransliterations() {
+    const miss = new Set();
+    const probe = (latin, culture) => {
+        for (const idx of [0, 1]) {
+            const out = tr(latin, culture, idx);
+            if (out === latin)
+                miss.add(latin);
+        }
+    };
+    for (const [key, cult] of Object.entries(POOLS)) {
+        for (const e of [...cult.m, ...cult.f])
+            probe(part(e).l, key);
+        const style = cult.style ?? "family";
+        if (style === "patronym_is") {
+            for (const e of cult.s) {
+                probe(part(e).l + "son", key);
+                probe(part(e).l + "dóttir", key);
+            }
+        }
+        else if (cult.s) {
+            for (const e of cult.s) {
+                const p = part(e);
+                probe(p.l, key);
+                if (style === "family" && cult.fem)
+                    probe(femForm(cult.fem, p).l, key);
+            }
+        }
+    }
+    return [...miss];
 }
 /** 검증용: 어떤 문화권이 존재하고 몇 개국이 매핑됐는지 */
 export const NAME_CULTURES = Object.keys(POOLS);
