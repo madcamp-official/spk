@@ -47,7 +47,7 @@ const STR={
 "아직 태어나기 전입니다":["You haven't been born yet","まだ生まれる前です","你还没有出生","Aún no has nacido","Você ainda não nasceu"],
 "아래 버튼을 누르면 새로운 생을 받습니다":["Press the button below to receive a new life","下のボタンを押すと新しい人生を授かります","按下方按钮,获得新的人生","Pulsa el botón de abajo para recibir una nueva vida","Aperte o botão abaixo para receber uma nova vida"],
 "환생 시작하기":["Start Reincarnation","転生を始める","开始转世","Empezar la Reencarnación","Começar a Reencarnação"],
-"🔮 오늘의 환생 운세":["🔮 Today's Rebirth Fortune","🔮 今日の転生占い","🔮 今日转世运势","🔮 Fortuna de Reencarnación de Hoy","🔮 Sorte de Reencarnação de Hoje"],
+"🥠 오늘의 환생 운세":["🥠 Today's Rebirth Fortune","🥠 今日の転生占い","🥠 今日转世运势","🥠 Fortuna de Reencarnación de Hoy","🥠 Sorte de Reencarnação de Hoje"],
 "🖼️ 결과 카드 저장":["🖼️ Save Result Card","🖼️ 結果カードを保存","🖼️ 保存结果卡片","🖼️ Guardar Tarjeta de Resultado","🖼️ Salvar Cartão de Resultado"],
 "📤 공유하기":["📤 Share","📤 シェア","📤 分享","📤 Compartir","📤 Compartilhar"],
 "나의 환생 횟수":["My rebirths","私の転生回数","我的转世次数","Mis reencarnaciones","Minhas reencarnações"],
@@ -254,8 +254,9 @@ const STR={
 "수집한 나라 {a} / {b} ({p}%) · 밝은 칸이 태어나 본 나라입니다":["Collected {a} / {b} countries ({p}%) · bright tiles are countries you've been born in","収集した国 {a} / {b} ({p}%) · 明るいマスは生まれたことのある国です","已收集国家 {a} / {b} ({p}%) · 亮色格子是你出生过的国家","Países coleccionados {a} / {b} ({p}%) · las casillas iluminadas son donde has nacido","Países coletados {a} / {b} ({p}%) · as casas iluminadas são onde você nasceu"],
 "중국과 인도만 합쳐도 약 {p}%. 환생 3번 중 1번은 두 나라 중 하나에서 시작됩니다. 반대로 투발루(인구 1.1만 명)가 나올 확률은 약 {n}번 중 1번입니다.":["China and India alone add up to about {p}%. One rebirth in three starts in one of those two countries. Tuvalu (pop. 11,000), on the other hand, is roughly a 1-in-{n} roll.","中国とインドだけで約{p}%。転生3回に1回はこの2か国のどちらかで始まります。逆にツバル(人口1.1万人)が出る確率は約{n}回に1回です。","仅中国和印度加起来就约占{p}%,每3次转世就有1次从这两国之一开始。相反,抽中图瓦卢(人口1.1万)的概率约为{n}分之一。","China e India juntos suman ≈{p}%. Una de cada tres reencarnaciones empieza en uno de esos dos países. En cambio, Tuvalu (pob. 11.000) es aproximadamente 1 entre {n}.","China e Índia juntos somam ≈{p}%. Uma em cada três reencarnações começa em um desses dois países. Já Tuvalu (pop. 11.000) é cerca de 1 em {n}."],
 "제안 고마워요! 다음 개선 후보로 담아 둘게요 📝":["Thanks for the idea! It's on the improvement list 📝","提案ありがとう!次の改善候補に入れておきます 📝","谢谢你的建议!我们会列入下一步改进候选 📝","¡Gracias por la sugerencia! La guardamos como próxima mejora 📝","Obrigado pela sugestão! Vamos guardá-la como próxima melhoria 📝"],
-/* ── 오늘의 운세 공유(결과 카드 헤더·OG 제목에 박히는 날짜) ── */
+/* ── 오늘의 운세 공유(결과 카드 헤더·OG 제목에 박히는 날짜, 공유 문구의 운세 배너) ── */
 "{date}의 환생 운세":["Rebirth Fortune for {date}","{date}の転生占い","{date} 转世运势","Fortuna de Reencarnación del {date}","Sorte de Reencarnação de {date}"],
+"🥠 {date}의 환생 운세 — {msg}":["🥠 Rebirth Fortune for {date} — {msg}","🥠 {date}の転生占い — {msg}","🥠 {date} 转世运势 — {msg}","🥠 Fortuna de Reencarnación del {date} — {msg}","🥠 Sorte de Reencarnação de {date} — {msg}"],
 };
 
 /* 대륙: data.js의 CONT_NAME(한국어)을 언어별로 대체 */
@@ -341,7 +342,7 @@ function applyStatic(){
  id("country").textContent=t("아직 태어나기 전입니다");
  id("subline").textContent=t("아래 버튼을 누르면 새로운 생을 받습니다");
  id("rollBtn").textContent=t("환생 시작하기");
- id("fortuneBtn").textContent=t("🔮 오늘의 환생 운세");
+ id("fortuneBtn").textContent=t("🥠 오늘의 환생 운세");
  id("shareImg").textContent=t("🖼️ 결과 카드 저장");
  id("shareBtn").textContent=t("📤 공유하기");
  id("stTotal").nextElementSibling.textContent=t("나의 환생 횟수");

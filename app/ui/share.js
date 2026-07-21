@@ -55,7 +55,7 @@ export async function registerFortuneShare(l){
  if(!l||!l.sig){l._fcode=null;return null;}
  let og="";
  try{og=drawCard(l).toDataURL("image/jpeg",0.82);}catch(e){}
- const title="🔮 "+t("{date}의 환생 운세",{date:fmtFortuneDate(l.fortuneKey)})
+ const title="🥠 "+t("{date}의 환생 운세",{date:fmtFortuneDate(l.fortuneKey)})
   +" · "+(flagOK?l.c.flag+" ":"")+countryName(l.c);
  const desc=lifeStatLines(l).join(" · ");   /* 미리보기 설명도 결과와 같은 12개 항목 */
  try{
@@ -86,22 +86,25 @@ export function lifeStatLines(l){
   t("💰 연 {v}",{v:fmtUSD(l.income)}),
  ];
 }
-export function shareText(l,via,code,landing){
+export function shareText(l,via,code,fort){
  const flag=flagOK?l.c.flag+" ":"";
  const head=ST.ab==="a"
   ?t("🌏 나는 {flag}{country} {urban}에서 {gender}로 태어났다",
     {flag,country:countryName(l.c),urban:t(l.urban?"도시":"농촌"),gender:t(l.male?"남자":"여자")})
   :t("🎰 확률 {p}의 환생 뽑기 성공! {flag}{country}",{p:fmtPct(l.prob),flag,country:countryName(l.c)});
  const lines=[
-  head,
-  /* b(성과형)는 머리줄에서 이미 확률을 말했으므로 되풀이하지 않는다 */
-  (ST.ab==="a"?t("이 생을 받을 확률 {p} · ",{p:fmtPct(l.prob)}):"")+t("나의 {n}번째 생",{n:ST.total.toLocaleString()}),
+  /* 운세는 "뽑기 성공/태어났다" 머리줄을 빼고(하루 고정이라 '뽑기'가 아니다) 오늘의 운세 문구로 연다.
+     b(성과형)는 머리줄에서 이미 확률을 말했으므로 확률을 되풀이하지 않는다 */
+  ...(fort?[]:[head]),
+  fort
+   ?t("🥠 {date}의 환생 운세 — {msg}",{date:fmtFortuneDate(l.fortuneKey),msg:l.fortuneMsg||""})
+   :(ST.ab==="a"?t("이 생을 받을 확률 {p} · ",{p:fmtPct(l.prob)}):"")+t("나의 {n}번째 생",{n:ST.total.toLocaleString()}),
   /* 칭호 줄. 카드에 박힌 것과 같은 문구를 텍스트에도 실어 둘이 어긋나지 않게 한다 */
   ...(titleLine()?[titleLine()]:[]),
   "",
   ...lifeStatLines(l),   /* 12개 항목 전부 */
   "",
-  t("나도 환생해 보기 👉 {url}",{url:shareURL(via,code,landing)}),
+  t("나도 환생해 보기 👉 {url}",{url:shareURL(via,code,fort)}),
  ];
  return lines.join("\n");
 }
@@ -353,7 +356,7 @@ export function drawCard(l){
  cy+=46;
  /* 운세 (있을 때만 — 사이트 .fortune-line) */
  if(l.fortune){
-  const fl="🔮 "+l.fortune;
+  const fl="🥠 "+l.fortune;
   x.fillStyle="#b78ef0";
   fitFont(fl,26,"",SANS,hw-80,17);
   x.fillText(fl,W/2,cy+28);

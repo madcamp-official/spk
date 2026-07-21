@@ -384,7 +384,7 @@ function handleShareLanding(req, res, code, q) {
     res.writeHead(302, { location: 'https://' + CANON_HOST + '/' }); return res.end();
   }
   const meta = ogMeta.get(code) || {};
-  const title = meta.t || '🔮 오늘의 환생 운세';
+  const title = meta.t || '🥠 오늘의 환생 운세';
   const desc = meta.d || '네 운세는? 카드를 열어 확인해 보세요.';
   const img = 'https://' + CANON_HOST + '/api/og?s=' + code;
   const landing = 'https://' + CANON_HOST + '/s/' + code;
@@ -421,7 +421,7 @@ function handleShareLanding(req, res, code, q) {
 a.enter{color:#0a0d1c;background:#f3c95c;text-decoration:none;font-weight:700;padding:12px 26px;border-radius:999px}
 p{color:#9a98b5;margin:0}</style>
 </head>
-<body><div class="wrap"><p>🔮 ${esc(title)}</p><a class="enter" href="${esc(app)}">확인하러 가기 &rarr;</a></div></body>
+<body><div class="wrap"><p>${esc(title)}</p><a class="enter" href="${esc(app)}">확인하러 가기 &rarr;</a></div></body>
 </html>`;
   const b = Buffer.from(html);
   res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'content-length': b.length, 'cache-control': 'public, max-age=300' });
