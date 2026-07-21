@@ -1,5 +1,5 @@
-import {clamp,fmtTop,isoCode} from "../core/util.js";
-import {DATA,TOTAL} from "../core/data.js";
+import {isoCode} from "../core/util.js";
+import {TOTAL} from "../core/data.js";
 import {t,countryName} from "../i18n/i18n.js";
 import {ST} from "../core/state.js";
 import {flagOK,FLAG_FONT} from "./flags.js";
@@ -26,12 +26,13 @@ const TIERS=[
 ];
 export function rarityTier(pop){for(const x of TIERS)if(pop>=x.min)return x;return TIERS[TIERS.length-1];}
 
-/* 오늘의 '럭' = 이 나라만큼(또는 더) 드물게 태어날 확률. 인구가 곧 태어날 확률이라
-   나보다 인구가 작거나 같은 나라들의 인구 합 ÷ 전체다. 모나코면 ~0%(상위 0.1% 이내),
-   인도면 ~99%(흔하다). 소득·IQ의 '세계 상위 X%'와 같은 척도라 사람들이 바로 읽는다. */
-export function fortuneLuckPct(l){
- let a=0;for(const c of DATA)if(c.pop<=l.c.pop)a+=c.pop;
- return clamp(a/TOTAL*100,0.01,99.9);
+/* 오늘 뽑힌 나라에 태어날 확률의 역수 = "N명 중 1명꼴". 결과 그 자체의 희귀도라
+   양극단이 다 시끄럽다(인도는 몇 명 중 1명, 모나코는 20만 명 중 1명). 결과 화면의
+   '걸릴 확률'과 같은 값을, 사람이 바로 읽는 꼴로 뒤집은 것이다.
+   (예전의 '상위 X%'는 흔한 나라에서 57%처럼 애매하게 읽혀 자랑도 웃음도 안 됐다.) */
+export function fortuneOdds(l){
+ const n=Math.max(1,Math.round(TOTAL/l.c.pop));
+ return t("{n}명 중 1명꼴",{n:n.toLocaleString()});
 }
 
 /* key("2026-7-21") → "2026.07.21". 날짜를 카드에 크게 박아 "오늘만의 것"으로 만든다. */
@@ -145,9 +146,9 @@ export function drawFortuneCard(l,size){
  x.fillText(countryName(l.c),cx,y);
  y+=hCountry+gap*0.5;
 
- /* 오늘의 럭 — 상위 X% */
+ /* 결과의 희귀도 — N명 중 1명꼴 (등급 이름은 바로 위 배지에 있으므로 여기선 숫자만) */
  x.fillStyle=MUTED;
- const luck=t("오늘의 환생 럭")+" · "+t("상위 {p}",{p:fmtTop(fortuneLuckPct(l))});
+ const luck=fortuneOdds(l);
  fitFont(luck,Math.round(30*S),"",SANS,maxW,Math.round(20*S));
  x.fillText(luck,cx,y);
  y+=hLuck+(flines.length?gap:0);
@@ -183,7 +184,7 @@ export function fortuneTeaseText(l,via,code){
  const tier=rarityTier(l.c.pop);
  const lines=[
   "🔮 "+t("{date}의 환생 운세",{date:fmtDate(l.fortuneKey)}),
-  tier.tier+" · "+t("오늘의 환생 럭")+" "+t("상위 {p}",{p:fmtTop(fortuneLuckPct(l))}),
+  tier.tier+" · "+fortuneOdds(l)+" · "+t(tier.name),
   ...(l.fortuneMsg?["“"+l.fortuneMsg+"”"]:[]),
   "",
   t("네 운세는? 👉 {url}",{url:fortuneShareURL(via,code)}),
@@ -201,7 +202,7 @@ export async function registerFortuneShare(l){
  try{og=drawFortuneCard(l,"square").toDataURL("image/jpeg",0.82);}catch(e){}
  const tier=rarityTier(l.c.pop);
  const title="🔮 "+t("{date}의 환생 운세",{date:fmtDate(l.fortuneKey)})+" · "+tier.tier;
- const desc=t("오늘의 환생 럭")+" "+t("상위 {p}",{p:fmtTop(fortuneLuckPct(l))})
+ const desc=fortuneOdds(l)+" · "+t(tier.name)
   +(l.fortuneMsg?(" · “"+l.fortuneMsg+"”"):"");
  try{
   const r=await fetch("/api/fortune-share",{method:"POST",cache:"no-store",

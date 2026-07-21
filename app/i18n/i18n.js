@@ -257,8 +257,7 @@ const STR={
 /* ── 오늘의 운세 공유 카드·미끼 문구(fortunecard.js) ── */
 "환생 운세":["Rebirth Fortune","転生占い","转世运势","Fortuna de Reencarnación","Sorte de Reencarnação"],
 "{date}의 환생 운세":["Rebirth Fortune for {date}","{date}の転生占い","{date} 转世运势","Fortuna de Reencarnación del {date}","Sorte de Reencarnação de {date}"],
-"오늘의 환생 럭":["Today's Rebirth Luck","今日の転生ラック","今日转世幸运","Suerte de Reencarnación de Hoy","Sorte de Reencarnação de Hoje"],
-"상위 {p}":["Top {p}","上位 {p}","前 {p}","Top {p}","Top {p}"],
+"{n}명 중 1명꼴":["1 in {n}","{n}人に1人","{n}人中1人","1 de cada {n}","1 em {n}"],
 "네 운세는?":["What's your fortune?","あなたの運勢は?","你的运势呢?","¿Y tu fortuna?","E a sua sorte?"],
 "네 운세는? 👉 {url}":["What's your fortune? 👉 {url}","あなたの運勢は? 👉 {url}","你的运势呢? 👉 {url}","¿Y tu fortuna? 👉 {url}","E a sua sorte? 👉 {url}"],
 "흔한 생":["Common","ありふれた生","平凡之生","Común","Comum"],
