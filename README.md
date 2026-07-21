@@ -5,9 +5,11 @@
 
 - **라이브**: https://life-reroll.com/ (구주소 life-reroll.madcamp-kaist.org 는 리다이렉트)
 - **레포**: https://github.com/madcamp-official/spk (몰입캠프 26s-w3-c1-03)
-- **스택**: 정적 HTML + CSS + ES 모듈. 프레임워크·번들러·빌드 단계 없음 — 파일을 그대로 서빙한다.
+- **스택**: 정적 HTML + CSS + ES 모듈. 웹에는 프레임워크·번들러가 없다 — 파일을 그대로 서빙한다.
   "모두의 환생 횟수"와 이벤트 수집 때문에 의존성 없는 Node 서버([server/counter.js](server/counter.js))가 붙는다 —
   이것만 서버가 필요하고, 없으면 해당 타일만 숨겨진 채 나머지는 그대로 동작한다.
+- **구조**: pnpm workspace 모노레포. 국가 데이터·확률 로직은 [packages/core](packages/core)(TypeScript)에 있고
+  웹·카운터 서버·Discord 봇([DiscordBot.md](DiscordBot.md))이 같은 소스를 쓴다. 빌드가 필요한 건 core뿐이다.
 
 ## 핵심 아이디어
 
@@ -37,57 +39,95 @@
 
 ## 파일 구조
 
-한 파일에 1,469줄이 쌓여 손대기 어려워져서 기능별로 쪼갰고, 모듈이 20개를 넘어가며
-`app/` 한 폴더가 다시 평평해지자 **역할별 폴더로 묶었다.** 빌드는 여전히 없다 —
-브라우저의 ES 모듈을 그대로 쓰고, 폴더가 갈리며 import 경로가 `../core/util.js`처럼 바뀌었을 뿐이다.
+한 파일에 1,469줄이 쌓여 기능별로 쪼갰고, 모듈이 20개를 넘어가며 역할별 폴더로 묶었다.
+그리고 Discord 봇([DiscordBot.md](DiscordBot.md))이 국가 데이터·확률 로직을 웹과 공유해야 해서
+**pnpm workspace 모노레포**가 됐다. 웹은 여전히 빌드가 없다 — 브라우저의 ES 모듈을 그대로 쓴다.
+빌드가 붙은 것은 `packages/core`(TypeScript) 하나뿐이다.
 
 ```
-index.html          마크업만 (117줄). <link>로 CSS, <script type="module">로 app/main.js
-css/style.css       전체 스타일
-TwemojiCountryFlags.woff2   국기 웹폰트 (css에서 ../ 로 참조)
-app/                (예전 이름은 js/ 였다 — CDN이 옛 파일을 4시간 물고 있어 한 번 옮겼다)
-  main.js     조립 + 리롤 버튼 + 전역 단축키 (진입점, 폴더 밖 루트)
-  core/       토대 — UI 없음, 로컬 import 없음
-    data.js     198개국 데이터 (RAW·REL·BODY) — 전체의 절반을 차지하던 덩어리
-    util.js     DOM 단축, 난수원(RNG 교체 가능), 숫자 포맷
-    state.js    localStorage 상태(ST) + 지금 보고 있는 생(session)
-  i18n/       표시 언어·번역 사전 (아래 "언어 규칙" 참고)
-    i18n.js       표시 언어(ko/en/ja/zh/es/pt)·UI 문구 사전·전환 위젯
-    i18n-terms.js data.js의 언어·종교·민족 값 번역 사전
-  engine/     생 뽑기 모델 — 서버(server/counter.js)도 이 폴더를 그대로 import한다
-    roll.js       환생 뽑기 — 국가·성별·민족·체격·IQ·소득
-    permalink.js  생 ↔ 공유 URL 인코딩·디코딩
-    lifepool.js   서버가 서명해 둔 생 버퍼 (없으면 로컬 뽑기로 폴백)
-  ui/         화면·상호작용
-    render.js   결과 화면(칩·배지) 렌더
-    share.js    공유 시트·결과 카드(canvas)
-    dex.js      환생 도감
-    fortune.js  오늘의 환생 운세
-    odds.js     확률 표
-    suggest.js  한 줄 제안
-    effects.js  별 배경·컨페티·토스트
-    flags.js    국기 이모지 지원 감지 (웹폰트 로드 후 재판정)
-    counter.js  모두의 환생 횟수 (/api/counter)
-    ads.js      광고 슬롯 (게시자 ID 없으면 통째로 제거)
-  analytics/  행동 계측
-    track.js    이벤트 큐 → /api/track, 체류시간(idle 감지)·리롤 리듬·이탈 계측
-    reach.js    스크롤 깊이 계측 (확률표·제안함·푸터까지 내려봤나)
-server/counter.js   카운터·이벤트 수집 (VM에서만 동작)
-og-image.png        링크 미리보기 배너 (한국어) — og-image-<lang>.png 로 en/ja/zh/es/pt 도 있다
-en.html … pt.html   언어별 공유 랜딩 (Reddit 등 해외 배포용). tools/make_share.py 가 생성
-deploy.sh           배포
+pnpm-workspace.yaml   워크스페이스 선언 (apps/*, packages/*)
+package.json          루트 스크립트 (dev · build:core)  ⚠ type:module 넣지 말 것 (server가 CJS)
+
+packages/core/        국가 데이터 · 생 샘플링 · 확률 — 플랫폼 무관 순수 로직
+  src/*.ts              TypeScript 소스 (정본)
+    types.ts    Country · Life · Trait  (DiscordBot.md §D·§G)
+    config.ts   밸런스 수치 전부 (§A.8) — 여기 밖에 하드코딩 금지
+    util.ts     난수원(RNG 싱글턴) · 분포 · clamp · isoCode
+    data.ts     198개국 데이터 (RAW·REL·BODY)
+    roll.ts     환생 뽑기 — 국가·성별·민족·체격·IQ·소득
+  dist/*.js             빌드 산출물. **커밋한다** (VM은 node 없이 배포하므로)
+  package.json          dependencies 비어 있음 ← "core는 어디에도 의존하지 않는다"의 증명
+
+apps/web/             정적 웹 (프레임워크·번들러 없음)
+  index.html          마크업만. <script type="module">로 app/main.js
+  css/style.css       전체 스타일
+  TwemojiCountryFlags.woff2   국기 웹폰트
+  core/               ← packages/core/dist 복사본 (빌드가 생성, .gitignore)
+  app/
+    main.js     조립 + 리롤 버튼 + 전역 단축키 (진입점)
+    core/       웹 토대
+      util.js     DOM 단축 · 표시 포맷 + core의 난수원을 재수출
+      state.js    localStorage 상태(ST) + 지금 보고 있는 생(session)
+    i18n/       표시 언어·번역 사전 (아래 "언어 규칙" 참고)
+      i18n.js       표시 언어(ko/en/ja/zh/es/pt)·UI 문구 사전·전환 위젯
+      i18n-terms.js core 데이터의 언어·종교·민족 값 번역 사전
+    engine/     웹 전용 생 로직
+      permalink.js  생 ↔ 공유 URL 인코딩·디코딩
+      lifepool.js   서버가 서명해 둔 생 버퍼 (없으면 로컬 뽑기로 폴백)
+      titles.js     칭호·마일스톤 (ST 의존)
+    ui/         화면·상호작용 (render · share · dex · fortune · odds · suggest · effects · flags · counter · ads · titlechip · achievements)
+    analytics/  행동 계측 (track · reach)
+  og-image.png        링크 미리보기 배너 — og-image-<lang>.png 로 en/ja/zh/es/pt 도 있다
+  en.html … pt.html   언어별 공유 랜딩. tools/make_share.py 가 생성
+
+apps/bot/             Discord 봇 (독립 프로세스). 기준 문서는 DiscordBot.md
+  src/commands/       /환생 · /여권 · /덱 · /명명 · /도감 · /배틀
+  src/db/             pg + 마이그레이션 (§G 스키마)
+  src/lib/            인생 요약(템플릿+LLM) · 임베드 · 표시 문구
+  src/verify.ts       WASM Postgres로 도는 자체 검증 (비밀값 불필요)
+
+server/counter.js   카운터·이벤트 수집 (VM에서만 동작). CommonJS 고정.
+tools/              dev-server.mjs · sync-core.mjs · make_og.py · make_share.py · analyze.py
+deploy.sh           웹·카운터 배포
+deploy-bot.sh       Discord 봇 배포 (systemd 상주)
 lab.sh              실험판(lab) — 배포 전에 띄워 보고 채택/폐기
 ```
 
-의존 방향은 한쪽으로만 흐른다: `core`는 아무것도 import하지 않고, `main.js`가 맨 위에서
-조립한다. 대략 `core → i18n/engine → ui/analytics → main` 순이며 폴더가 이 층을 드러낸다.
-**순환 참조가 생기면 되돌릴 것.**
+### core를 브라우저가 어떻게 찾는가 (중요)
+
+웹에는 번들러가 없어서 브라우저가 import를 **URL**로 푼다. pnpm의 `node_modules` 심볼릭
+링크는 브라우저에 보이지 않으므로, core는 **웹 트리 안의 경로**로 존재해야 한다.
+
+```
+빌드:  packages/core/dist  →  apps/web/core        (tools/sync-core.mjs)
+배포:  packages/core/dist  →  /var/www/life-reroll/core   (deploy.sh)
+웹:    app/ui/render.js 의 `../../core/roll.js`  →  /core/roll.js
+```
+
+- 상대 경로(`../../core/`)를 쓰는 이유: `lab.sh`가 실험판을 `/lab/` 하위에 통째로 얹는다.
+  절대 경로 `/core/`를 쓰면 실험판이 **프로덕션 core**를 물어 격리가 깨진다.
+- `apps/web/core`는 산출물이라 `.gitignore`에 있다. 커밋되는 정본은 `packages/core/dist`다.
+- **core 소스를 고치면 `npm run build:core`를 반드시 다시 돌린다.** 안 그러면 웹은 옛 core를 본다.
+
+의존 방향은 한쪽으로만 흐른다: `packages/core`는 아무것도 import하지 않고(웹·Discord 모두 모름),
+웹은 `core → i18n/engine → ui/analytics → main` 순으로 쌓인다. **순환 참조가 생기면 되돌릴 것.**
+
+## 로컬 실행
+
+```bash
+pnpm install          # 최초 1회
+pnpm dev              # core 빌드 + 정적 서버 → http://127.0.0.1:8791
+```
+
+`/api/*`는 붙지 않으므로 "모두의 환생 횟수" 타일은 숨겨지고 생은 로컬에서 뽑힌다(서명 없음).
+예전에 `python -m http.server`로 띄우던 것과 같은 상태다. 카운터까지 보려면 별도로
+`node server/counter.js`를 띄우고 nginx처럼 `/api/`를 프록시해야 한다.
 
 ## 언어(i18n) 규칙
 
 우상단 전환 위젯으로 표시 언어를 고른다. 현재 지원: **한국어(원문) · English · 日本語 · 中文(간체) · Español · Português**.
-한국어 문장이 원문이자 사전의 키다 — [app/i18n/i18n.js](app/i18n/i18n.js)의 `STR`(UI 문구)과
-[app/i18n/i18n-terms.js](app/i18n/i18n-terms.js)의 `TERMS`(data.js의 언어·종교·민족 값)에
+한국어 문장이 원문이자 사전의 키다 — [apps/web/app/i18n/i18n.js](apps/web/app/i18n/i18n.js)의 `STR`(UI 문구)과
+[apps/web/app/i18n/i18n-terms.js](apps/web/app/i18n/i18n-terms.js)의 `TERMS`(data.js의 언어·종교·민족 값)에
 `[영어, 일본어, 중국어, 스페인어, 포르투갈어]` 순서로 번역이 붙는다. 나라 이름만 사전이 없다 — 국기 이모지에서 ISO
 코드를 뽑아 `Intl.DisplayNames`가 만든다. 선택은 `localStorage`(`rebirth_lang`)에 남고,
 전환은 저장 후 새로고침이다.
@@ -130,7 +170,7 @@ i18n.js가 첫 렌더 전에 **동기적으로** 읽는다 — 서버 왕복도,
 
 홍보 채널마다 URL에 `?ref=` 파라미터를 붙여 배포한다. **표준 태그는 아래 하나로 고정한다** —
 같은 채널을 `kakao`/`Kakao`처럼 다르게 쓰면 [analyze.py](tools/analyze.py)에서 두 줄로 갈려
-합계를 손으로 더해야 한다. 값 규칙은 소문자·`[a-z0-9_-]` 1~24자 ([app/analytics/track.js](app/analytics/track.js)의 `REF` 검증).
+합계를 손으로 더해야 한다. 값 규칙은 소문자·`[a-z0-9_-]` 1~24자 ([apps/web/app/analytics/track.js](apps/web/app/analytics/track.js)의 `REF` 검증).
 
 | 채널 | 링크 |
 |---|---|
@@ -329,7 +369,7 @@ python3 tools/analyze.py events.jsonl
 
 #### GA4 (붙어 있음, G-168CKEDWJR)
 
-GA4로 가는 복사본은 [app/analytics/track.js](app/analytics/track.js)의 `toGA4()`가 이름을 고쳐 보낸다.
+GA4로 가는 복사본은 [apps/web/app/analytics/track.js](apps/web/app/analytics/track.js)의 `toGA4()`가 이름을 고쳐 보낸다.
 **events.jsonl·analyze.py의 내부 이름은 그대로다** — 여기를 바꿀 때 둘이 어긋나면
 안 되는 게 아니라, 애초에 서로 독립이다:
 
@@ -352,19 +392,19 @@ GA4로 가는 복사본은 [app/analytics/track.js](app/analytics/track.js)의 `
 - 키 이벤트 지정: `activate`(진짜 Activation 문턱), `share`(Referral의 분자)
 
 `ref`·`vin`·`v`·`via`는 이벤트 파라미터일 뿐 아니라 track.js 로드 시 **user_property로도** 심는다
-([app/analytics/track.js](app/analytics/track.js)의 `gtag("set","user_properties",…)`). 이벤트 범위
+([apps/web/app/analytics/track.js](apps/web/app/analytics/track.js)의 `gtag("set","user_properties",…)`). 이벤트 범위
 값은 activate 이후 이벤트에만 붙어 "버튼도 안 누르고 떠난 방문"의 채널이 GA에서 비지만,
 user_property는 자동 `page_view`까지 세션 전체에 붙어 그 이탈까지 채널로 잡힌다. 그래서 이 넷은
 **맞춤 정의에 '사용자 범위'로도 한 번 더 등록**한다 (위 이벤트 범위 등록과 별개 슬롯이다). 배포
 링크에 utm을 붙이지 않고도 GA가 유입 채널을 세션 단위로 가르게 하는 통로다.
 
-## 로컬 실행 · 배포
+## 빌드 · 배포 명령
 
 ```bash
-# 로컬 실행 (아무 정적 서버)
-python -m http.server 8791
-# → http://localhost:8791/index.html
-#   카운터 서버가 없으므로 "모두의 환생 횟수" 타일만 안 보이고 나머지는 정상 동작한다.
+# 로컬 실행 (위 "로컬 실행" 참고). core를 빌드한 뒤 apps/web 을 서빙한다.
+pnpm dev                            # → http://127.0.0.1:8791
+pnpm run build:core                 # core만 다시 빌드 (dist + apps/web/core 동기화)
+pnpm run check                      # core 타입 검사만 (산출물 없음)
 
 # 카운터까지 같이 띄우려면 (선택)
 COUNTER_FILE=./counter.json node server/counter.js   # → 127.0.0.1:1558

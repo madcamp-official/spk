@@ -15,7 +15,7 @@
 #    전부 "위조된 링크"로 찍힌다. 한 번 만들어 고정하고 레포에는 넣지 않는다.
 Environment=LIFE_SECRET=<openssl rand -hex 32 결과>
 # ② 서버가 생을 뽑을 때 쓰는 클라이언트 소스 위치.
-#    기본값은 counter.js 옆의 ../app 인데, 배포하면 counter.js만 /opt/life-reroll/로
+#    기본값은 counter.js 옆의 ../apps/web/app 인데, 배포하면 counter.js만 /opt/life-reroll/로
 #    가므로(deploy.sh) 그 기본값은 VM에서 존재하지 않는다. 반드시 명시한다.
 Environment=APP_JS_DIR=/var/www/life-reroll/app
 Environment=ROLL_RATE_PER_MIN=600
@@ -24,6 +24,11 @@ Environment=ROLL_RATE_PER_MIN=600
 `APP_JS_DIR`이 `/var/www/life-reroll/app`인 건 우연이 아니다 — **브라우저가 받는 바로 그
 파일을 서버도 읽어야** 뽑기 로직이 갈라지지 않는다. 서버만 옛 `data.js`를 들고 있으면
 서명은 통과하는데 확률 분포가 다른, 아무도 못 잡는 버그가 된다.
+
+> **모노레포 전환 후:** 뽑기·난수는 `packages/core`로 빠져 `/var/www/life-reroll/core`에
+> 배포되고, 공유 링크 인코딩(`permalink.js`)만 `app/`에 남았다. 서버는 두 곳을 다 읽지만
+> **`APP_JS_DIR` 한 줄은 그대로 두면 된다** — core 경로는 그 형제(`../core`)로 자동 계산한다
+> (필요하면 `CORE_JS_DIR`로 덮어쓸 수 있다). 즉 이 systemd 유닛은 수정할 필요가 없다.
 
 키를 만들고 유닛에 넣기:
 

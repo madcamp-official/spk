@@ -109,7 +109,8 @@ TEMPLATE = """<!doctype html>
 
 
 def main():
-    root = Path(__file__).resolve().parent.parent
+    # 모노레포 전환 후 웹 산출물은 apps/web 에 있다(레포 루트가 아니다)
+    root = Path(__file__).resolve().parent.parent / "apps" / "web"
     for lang, spec in PAGES.items():
         html = TEMPLATE.format(canon=CANON, lang=lang, **spec)
         out = root / f"{lang}.html"

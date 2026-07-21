@@ -46,11 +46,17 @@ build() {
   local tmp="$LAB_WWW.tmp"
   rm -rf "$tmp"; install -d "$tmp"
 
-  ( cd "$LAB_SRC"
+  # 모노레포 전환: 웹 트리는 apps/web, 공용 로직은 packages/core/dist 다.
+  # core는 웹 트리 안 core/ 로 복사해 넣는다 — 웹 모듈이 ../../core/… 로 부르기 때문이고,
+  # 상대 경로라 /lab/ 하위에 얹혀도 실험판 core를 문다(격리 유지).
+  local web="$LAB_SRC/apps/web"
+  rm -rf "$web/core"
+  cp -r "$LAB_SRC/packages/core/dist" "$web/core"
+  ( cd "$web"
     # shellcheck disable=SC2046
     cp --parents index.html TwemojiCountryFlags.woff2 \
        en.html ja.html zh.html es.html pt.html \
-       $(find css app -type f \( -name '*.css' -o -name '*.js' \)) "$tmp/" )
+       $(find css app core -type f \( -name '*.css' -o -name '*.js' \)) "$tmp/" )
 
   # 1) 자산 기준 경로를 실험판 안으로
   sed -i 's|<base href="/">|<base href="/lab/">|' "$tmp/index.html"
@@ -83,15 +89,16 @@ build() {
   # 투발루 같은 초소국이 섞여 희귀도 칭호가 헛되이 터지고, 평가가 왜곡된다.
   # 종교·민족 이름도 뽑아 둔다 — 시드가 "그만큼 환생한 사람"의 수집 기록까지 만들어야
   # 업적 화면을 평가할 수 있다(나라만 채우면 새 업적이 전부 잠긴 채로 보인다).
+  # 국가 데이터는 packages/core로 옮겨졌다. 예전처럼 소스를 정규식+eval로 파싱하지 않고
+  # 빌드 산출물을 import한다 — TS 소스는 `const RAW:RawRow[]=` 라 옛 정규식이 안 맞고,
+  # 무엇보다 실제로 앱이 쓰는 값과 시드가 갈라질 수 없게 하려는 것이다.
   local pop_order seed_names
-  pop_order=$(cd "$LAB_SRC" && node -e '
-    const fs=require("fs");
-    const m=fs.readFileSync("app/core/data.js","utf8").match(/const RAW=(\[[\s\S]*?\]);/);
-    const RAW=eval(m[1]);
-    console.log(RAW.map((r,i)=>[i,r[2]]).sort((a,b)=>b[1]-a[1]).map(x=>x[0]).join(","));
+  pop_order=$(cd "$LAB_SRC" && node --input-type=module -e '
+    const {DATA}=await import("./packages/core/dist/data.js");
+    console.log(DATA.map((c,i)=>[i,c.pop]).sort((a,b)=>b[1]-a[1]).map(x=>x[0]).join(","));
   ')
   seed_names=$(cd "$LAB_SRC" && node --input-type=module -e '
-    const {DATA,REL}=await import("./app/core/data.js");
+    const {DATA,REL}=await import("./packages/core/dist/data.js");
     const rel=new Set(); for(const k in REL)REL[k].forEach(p=>rel.add(p[0]));
     const eth=new Set(); DATA.forEach(c=>(c.eth||[]).forEach(p=>eth.add(p[0])));
     console.log(JSON.stringify({rel:[...rel],eth:[...eth].slice(0,120)}));
@@ -166,7 +173,7 @@ verify() {
 
   # 모듈이 하나라도 빠지면 앱이 통째로 죽는다 — 전부 확인
   local miss="" n=0 ct
-  for f in $(cd "$LAB_WWW" && find css app -type f \( -name '*.css' -o -name '*.js' \) | sort); do
+  for f in $(cd "$LAB_WWW" && find css app core -type f \( -name '*.css' -o -name '*.js' \) | sort); do
     n=$((n+1))
     ct=$(curl -s -o /dev/null -w '%{content_type}' -H "Host: life-reroll.com" "http://127.0.0.1:1557/lab/$f" || echo '?')
     case "$f:$ct" in *.css:text/css*|*.js:*javascript*) ;; *) miss="$miss $f($ct)" ;; esac

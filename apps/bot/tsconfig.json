@@ -1,0 +1,20 @@
+{
+  /* 봇은 node에서만 돈다 — 브라우저 제약(웹의 무번들러 규약)이 여기엔 없다.
+     core는 workspace 심볼릭 링크로 들어오므로 dist/index.d.ts 를 타입으로 읽는다. */
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "lib": ["ES2022"],
+    "types": ["node"],
+    "strict": true,
+    "declaration": false,
+    "sourceMap": true,
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "resolveJsonModule": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true
+  },
+  "include": ["src/**/*.ts"]
+}

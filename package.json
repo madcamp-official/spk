@@ -1,0 +1,22 @@
+{
+  "name": "life-reroll",
+  "version": "0.1.0",
+  "private": true,
+  "description": "환생 시뮬레이터 모노레포 — apps/web(정적 웹) · packages/core(공용 로직) · server(카운터)",
+  "//type": "루트에 \"type\":\"module\"을 넣지 말 것 — server/counter.js가 CommonJS(require)라 즉시 죽는다. ESM이 필요한 파일은 .mjs를 쓰거나(tools/dev-server.mjs) 자기 package.json에 선언한다(packages/core).",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm run build:core && node tools/dev-server.mjs",
+    "build": "npm run build:core",
+    "build:core": "tsc -p packages/core/tsconfig.json && node tools/sync-core.mjs",
+    "watch:core": "tsc -p packages/core/tsconfig.json --watch",
+    "check": "tsc -p packages/core/tsconfig.json --noEmit",
+    "serve": "node tools/dev-server.mjs"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3"
+  }
+}

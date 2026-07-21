@@ -49,9 +49,18 @@ const MAX_N = 20;
 /* 서명 키. 비어 있으면 서명 기능 전체를 끈다(로컬에서 index.html만 띄우는 경우).
    재시작마다 바뀌면 어제 뿌린 링크가 전부 '위조'로 찍히므로 반드시 고정값을 준다. */
 const SECRET = process.env.LIFE_SECRET || '';
-/* 클라이언트 소스를 그대로 import한다 — 뽑기 로직이 서버와 브라우저에서 갈라지면
-   서명은 통과하는데 확률 분포가 다른, 아무도 못 잡는 버그가 된다. */
-const APP_JS_DIR = process.env.APP_JS_DIR || path.join(__dirname, '..', 'app');
+/* 클라이언트가 받는 것과 **같은 파일**을 import한다 — 뽑기 로직이 서버와 브라우저에서
+   갈라지면 서명은 통과하는데 확률 분포가 다른, 아무도 못 잡는 버그가 된다.
+   뽑기·난수는 packages/core로 빠졌고(웹·봇 공용), 공유 링크 인코딩은 웹에 남아 있어
+   디렉터리가 둘이다.
+     APP_JS_DIR  = 웹 모듈(permalink.js)     예: /var/www/life-reroll/app
+     CORE_JS_DIR = core 빌드 산출물(roll·util) 예: /var/www/life-reroll/core
+   CORE는 기본적으로 APP_JS_DIR의 형제 core/ 로 잡는다 — 배포 트리가 그 모양이라
+   systemd에 이미 있는 APP_JS_DIR 한 줄만으로 둘 다 풀린다(설정 변경 불필요). */
+const APP_JS_DIR = process.env.APP_JS_DIR || path.join(__dirname, '..', 'apps', 'web', 'app');
+const CORE_JS_DIR = process.env.CORE_JS_DIR || (process.env.APP_JS_DIR
+  ? path.join(process.env.APP_JS_DIR, '..', 'core')
+  : path.join(__dirname, '..', 'packages', 'core', 'dist'));
 
 let total = 0;
 try {
@@ -167,10 +176,12 @@ function rollLimited(key, cost) {
 let APP = null;
 (async () => {
   const u = n => pathToFileURL(path.join(APP_JS_DIR, n)).href;
-  /* app/을 역할별 폴더로 나눈 뒤 경로가 바뀌었다: 뽑기 로직은 engine/, 공용 유틸은 core/.
-     이 파일들의 내부 import(../core/…)는 각자 새 위치 기준으로 알아서 풀린다. */
+  const c = n => pathToFileURL(path.join(CORE_JS_DIR, n)).href;
+  /* 뽑기·난수는 core(패키지), 공유 링크 인코딩은 웹에 있다. permalink.js가 내부에서
+     ../../core/ 를 다시 import하는데, 그 상대 경로는 배포 트리에서 CORE_JS_DIR과 같은
+     곳으로 풀린다 — 즉 util 모듈 인스턴스가 하나다(setRNG가 갈라지지 않는다). */
   const [roll, perma, util] = await Promise.all([
-    import(u('engine/roll.js')), import(u('engine/permalink.js')), import(u('core/util.js')),
+    import(c('roll.js')), import(u('engine/permalink.js')), import(c('util.js')),
   ]);
   APP = { rollLife: roll.rollLife, encodeLife: perma.encodeLife,
           setRNG: util.setRNG, mulberry32: util.mulberry32, strHash: util.strHash };
@@ -403,6 +414,6 @@ http.createServer((req, res) => {
 }).listen(PORT, HOST, () => {
   console.log(`[counter] ${HOST}:${PORT} 에서 시작. 현재 값 ${total}, 저장 위치 ${FILE}`);
   console.log(`[counter] 이벤트 기록: ${EVENTS_FILE} (IP당 분당 ${RATE_PER_MIN}개)`);
-  console.log(`[counter] 뽑기: ${APP_JS_DIR} (IP당 분당 ${ROLL_RATE_PER_MIN}생)`);
+  console.log(`[counter] 뽑기: ${CORE_JS_DIR} + ${APP_JS_DIR} (IP당 분당 ${ROLL_RATE_PER_MIN}생)`);
   if (!SECRET) console.warn('[counter] ⚠ LIFE_SECRET 없음 — 위조 방지가 꺼진 상태로 뜬다');
 });
