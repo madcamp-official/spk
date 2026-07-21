@@ -158,6 +158,20 @@ button:disabled{opacity:.45;cursor:not-allowed}
 .btn-primary:hover{transform:translateY(-2px)}
 .btn-primary:active{transform:translateY(1px)}
 .share-row{display:flex;gap:10px;justify-content:center;margin-top:14px;flex-wrap:wrap}
+/* iOS식 공유 아이콘(상자 + 위로 나가는 화살표)을 마스크로 넣는다 — 유니코드엔 표준 공유
+   글리프가 없어 SVG를 쓴다. 마스크라 currentColor를 물어 버튼·헤더 글자색을 그대로 따른다.
+   텍스트는 textContent로 갱신되고 아이콘은 ::before라, i18n이 문구를 바꿔도 아이콘이 안 지워진다. */
+.has-share-ic::before{
+  content:"";display:inline-block;width:1em;height:1em;vertical-align:-.14em;
+  background:currentColor;
+  -webkit-mask:var(--share-ic) center/contain no-repeat;
+          mask:var(--share-ic) center/contain no-repeat;
+}
+:root{--share-ic:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 15V3'/%3E%3Cpath d='M8 7l4-4 4 4'/%3E%3Cpath d='M20 13v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-6'/%3E%3C/svg%3E")}
+button.has-share-ic{display:inline-flex;align-items:center;gap:.4em}
+h3.has-share-ic{display:flex;align-items:center;gap:.4em}
+/* 아이콘 전용 버튼(프로필 공유)은 텍스트가 없어 gap이 필요 없고, 아이콘을 조금 키운다 */
+.mh-share.has-share-ic::before{width:1.1em;height:1.1em;vertical-align:-.18em}
 
 .card{
   background:var(--surface);

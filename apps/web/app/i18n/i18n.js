@@ -54,7 +54,6 @@ const STR={
 "환생 시작하기":["Start Reincarnation","転生を始める","开始转世","Empezar la Reencarnación","Começar a Reencarnação"],
 "🔮 오늘의 환생 운세":["🔮 Today's Rebirth Fortune","🔮 今日の転生占い","🔮 今日转世运势","🔮 Fortuna de Reencarnación de Hoy","🔮 Sorte de Reencarnação de Hoje"],
 "🖼️ 결과 카드 저장":["🖼️ Save Result Card","🖼️ 結果カードを保存","🖼️ 保存结果卡片","🖼️ Guardar Tarjeta de Resultado","🖼️ Salvar Cartão de Resultado"],
-"📤 공유하기":["📤 Share","📤 シェア","📤 分享","📤 Compartir","📤 Compartilhar"],
 "나의 환생 횟수":["My rebirths","私の転生回数","我的转世次数","Mis reencarnaciones","Minhas reencarnações"],
 "모두의 환생 횟수 🌏":["Everyone's rebirths 🌏","みんなの転生回数 🌏","大家的转世次数 🌏","Reencarnaciones de todos 🌏","Reencarnações de todos 🌏"],
 "태어나 본 나라 · 도감 📖":["Countries lived · Dex 📖","生まれた国 · 図鑑 📖","出生过的国家 · 图鉴 📖","Países vividos · Dex 📖","Países vividos · Dex 📖"],
@@ -251,7 +250,7 @@ const STR={
 "당신의 다음 생은 어디에서 시작될까요?":["Where will your next life begin?","あなたの来世はどこから始まるでしょう?","你的下一世会从哪里开始?","¿Dónde empezará tu próxima vida?","Onde vai começar sua próxima vida?"],
 /* ── 영혼 프로필 공유(profile.js) ── */
 "내 프로필 공유하기":["Share my profile","私のプロフィールをシェア","分享我的档案","Compartir mi perfil","Compartilhar meu perfil"],
-"📤 프로필 공유":["📤 Share profile","📤 プロフィールをシェア","📤 分享档案","📤 Compartir perfil","📤 Compartilhar perfil"],
+"프로필 공유":["Share profile","プロフィールをシェア","分享档案","Compartir perfil","Compartilhar perfil"],
 "🌏 나의 환생 프로필":["🌏 My rebirth profile","🌏 私の転生プロフィール","🌏 我的转世档案","🌏 Mi perfil de reencarnación","🌏 Meu perfil de reencarnação"],
 "나의 영혼 프로필":["My Soul Profile","私の魂のプロフィール","我的灵魂档案","Mi perfil del alma","Meu perfil da alma"],
 "환생 {n}번":["{n} rebirths","転生 {n}回","转世 {n} 次","{n} reencarnaciones","{n} reencarnações"],
@@ -352,7 +351,7 @@ function applyStatic(){
  id("rollBtn").textContent=t("환생 시작하기");
  id("fortuneBtn").textContent=t("🔮 오늘의 환생 운세");
  id("shareImg").textContent=t("🖼️ 결과 카드 저장");
- id("shareBtn").textContent=t("📤 공유하기");
+ id("shareBtn").textContent=t("공유하기");
  id("stTotal").nextElementSibling.textContent=t("나의 환생 횟수");
  id("stGlobal").nextElementSibling.textContent=t("모두의 환생 횟수 🌏");
  id("stSeen").nextElementSibling.textContent=t("태어나 본 나라 · 도감 📖");
@@ -374,7 +373,7 @@ function applyStatic(){
  id("dexShare").setAttribute("aria-label",t("내 프로필 공유하기"));
  id("achClose").setAttribute("aria-label",t("닫기"));
  id("dexClose").setAttribute("aria-label",t("닫기"));
- q("#shareModal h3").textContent=t("📤 공유하기");
+ q("#shareModal h3").textContent=t("공유하기");
  q("#shareModal .modal").setAttribute("aria-label",t("공유하기"));
  id("shareClose").setAttribute("aria-label",t("닫기"));
  const OPTS={clip:["📋","클립보드 복사"],kakao:["💬","카카오톡"],insta:["📸","인스타 스토리"],x:["🐦","X (트위터)"],native:["📱","다른 앱으로…"]};

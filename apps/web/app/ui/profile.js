@@ -226,7 +226,7 @@ const IS_MOBILE=/Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 export function openProfileShare(){
  if(ST.total<=0){toast(t("먼저 환생 버튼을 눌러 프로필을 만들어 주세요"));return;}
  session.shareMode="profile";
- document.querySelector("#shareModal h3").textContent=t("📤 프로필 공유");
+ document.querySelector("#shareModal h3").textContent=t("프로필 공유");
  $("shareModal").hidden=false;document.body.style.overflow="hidden";
  track("profile_share_open",{rolls:ST.total,owned:dexProgress().owned,titles:earned().length});
 }
