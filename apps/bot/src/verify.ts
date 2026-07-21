@@ -257,6 +257,32 @@ async function main(): Promise<void> {
     const is = at("아이슬란드", false);
     ok("아이슬란드 여성은 -dóttir", formatLifeName(is.name, "en").endsWith("dóttir"),
       formatLifeName(is.name, "en"));
+    /* 음역(ko·ja) — 외국 이름이 보는 사람의 문자로 나온다 */
+    {
+      const { missingTransliterations } = await import("@life-reroll/core");
+      const miss = missingTransliterations();
+      ok("음역 사전 커버리지 100% (미등재 0)", miss.length === 0,
+        miss.length ? "누락: " + miss.slice(0, 5).join(", ") : "");
+      const us = at("미국", true);
+      ok("미국 생 ko는 한글 음역", /^[가-힣]+( [가-힣]+)*$/.test(formatLifeName(us.name, "ko")),
+        formatLifeName(us.name, "ko"));
+      ok("미국 생 ja는 가타카나", /^[゠-ヿ・ー]+$/.test(formatLifeName(us.name, "ja")),
+        formatLifeName(us.name, "ja"));
+      ok("음역 시 반대 표기는 로마자",
+        altLifeName(us.name, "ko") === formatLifeName(us.name, "en"));
+      const jp = at("일본", true);
+      ok("일본 생 ko는 한글 음역", /^[가-힣]+( [가-힣]+)*$/.test(formatLifeName(jp.name, "ko")),
+        formatLifeName(jp.name, "ko"));
+      const cn2 = at("중국", false);
+      ok("중국 생 ja는 한자 그대로", formatLifeName(cn2.name, "ja") === formatLifeName(cn2.name, "zh"),
+        formatLifeName(cn2.name, "ja"));
+      ok("en·es·pt는 로마자 동일(라틴 문자 언어)",
+        formatLifeName(us.name, "en") === formatLifeName(us.name, "es")
+        && formatLifeName(us.name, "es") === formatLifeName(us.name, "pt"));
+      const ru2 = at("러시아", false);
+      ok("러시아 여성형 성 음역(-바)", formatLifeName(ru2.name, "ko").endsWith("바"),
+        formatLifeName(ru2.name, "ko"));
+    }
     /* 민족별 세분화 — 같은 나라라도 민족이 다르면 그 민족의 이름 전통을 따른다 */
     {
       const ng = DATA.find(c => c.name === "나이지리아")!;
