@@ -1,8 +1,8 @@
 import {$} from "../core/util.js";
 import {t,term,countryName} from "../i18n/i18n.js";
-import {catalog,earned,records,REL_ALL,ETH_ALL} from "../engine/titles.js";
-import {tname} from "./titlechip.js";
-import {relSet,ethSet} from "../core/state.js";
+import {catalog,earned,records,REL_ALL,ETH_ALL,topTitle,isPinned,setPin} from "../engine/titles.js";
+import {tname,paintTitle} from "./titlechip.js";
+import {relSet,ethSet,persist} from "../core/state.js";
 import {track} from "../analytics/track.js";
 
 /* ===== 업적 · 수집 =====
@@ -38,7 +38,11 @@ function howHTML(i){
 
 function body(){
  if(active==="title"){
-  return catalog().map(g=>
+  /* 지금 대표로 걸린 칭호 — 딴 칭호를 눌러 여기로 바꿀 수 있다. */
+  const top=topTitle();
+  const isTop=i=>!!(top&&i.k===top.k&&(i.cont||null)===(top.cont||null));
+  return '<p class="pin-hint">'+t("딴 칭호를 눌러 상단 대표로 설정")+"</p>"+
+   catalog().map(g=>
    '<div class="ach-group"><h4>'+g.icon+" "+t(g.k)+
     ' <span class="ach-count">'+g.items.filter(i=>i.ok).length+"/"+g.items.length+"</span></h4>"+
    g.items.map(i=>{
@@ -53,8 +57,13 @@ function body(){
      : "";
     /* 기록·희귀도는 딴 뒤 hover로 내 실제 기록을 보탠다(howHTML 참조) */
     const how=howHTML(i);
-    return '<div class="ach-item'+(i.ok?" ok":"")+'"'+(how?' tabindex="0"':"")+
-     '><span class="ach-name">'+(i.ok?"":"🔒 ")+tname(i)+"</span>"+bar+sub+how+"</div>";
+    const cur=i.ok&&isTop(i);
+    /* 딴 칭호만 대표로 지정 가능 — 클릭·키보드로 pin 토글(achGrid 위임 참조) */
+    const pick=i.ok?' data-k="'+i.k+'"'+(i.cont?' data-cont="'+i.cont+'"':"")+' role="button" tabindex="0"'
+                   :(how?' tabindex="0"':"");
+    return '<div class="ach-item'+(i.ok?" ok pickable":"")+(cur?" current":"")+'"'+pick+
+     '><span class="ach-name">'+(i.ok?"":"🔒 ")+tname(i)+
+     (cur?' <span class="ach-star">★ '+t("대표")+"</span>":"")+"</span>"+bar+sub+how+"</div>";
    }).join("")+"</div>").join("");
  }
  if(active==="rec"){
@@ -106,6 +115,22 @@ $("achModal").addEventListener("click",e=>{if(e.target.id==="achModal")closeAch(
 $("achTabs").addEventListener("click",e=>{
  const b=e.target.closest("[data-tab]");if(!b)return;
  active=b.dataset.tab;paint();track("achievements_tab",{tab:active});
+});
+/* 칭호 탭에서 딴 칭호를 눌러 상단 대표로 지정(토글). 목록·상단칭호를 즉시 다시 그린다. */
+function pinFrom(el){
+ if(active!=="title"||!el)return;
+ const k=el.dataset.k; if(!k)return;
+ setPin({k,cont:el.dataset.cont||null});
+ persist();
+ paint();       /* 모달 목록의 ★ 이동 */
+ paintTitle();  /* 헤더 상단 칭호 갱신 */
+ track("title_pin",{k});
+}
+$("achGrid").addEventListener("click",e=>pinFrom(e.target.closest(".ach-item.pickable")));
+$("achGrid").addEventListener("keydown",e=>{
+ if(e.key!=="Enter"&&e.key!==" ")return;
+ const el=e.target.closest(".ach-item.pickable"); if(!el)return;
+ e.preventDefault(); pinFrom(el);
 });
 /* 칭호 자체가 목록으로 들어가는 문이다 — 따로 버튼을 만들면 첫 화면이 더 복잡해진다 */
 $("titleTag").addEventListener("click",()=>openAch("title"));

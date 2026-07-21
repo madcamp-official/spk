@@ -69,6 +69,9 @@ const STR={
 "환생 도감":["Rebirth dex","転生図鑑","转世图鉴","Dex de reencarnación","Dex de reencarnação"],
 "닫기":["Close","閉じる","关闭","Cerrar","Fechar"],
 "공유하기":["Share","シェア","分享","Compartir","Compartilhar"],
+/* 칭호 대표 지정 (achievements.js) */
+"딴 칭호를 눌러 상단 대표로 설정":["Tap an earned title to feature it up top","獲得した称号をタップして上部に表示","点击已获得的称号设为顶部代表","Toca un título obtenido para destacarlo arriba","Toque um título obtido para destacá-lo no topo"],
+"대표":["Featured","代表","代表","Destacado","Destaque"],
 "클립보드 복사":["Copy to clipboard","クリップボードにコピー","复制到剪贴板","Copiar al portapapeles","Copiar para a área de transferência"],
 "카카오톡":["KakaoTalk","カカオトーク","KakaoTalk","KakaoTalk","KakaoTalk"],
 "인스타 스토리":["Instagram Story","インスタストーリー","Instagram 快拍","Historia de Instagram","Story do Instagram"],
