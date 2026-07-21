@@ -45,6 +45,20 @@ const RATE_PER_MIN = Number(process.env.TRACK_RATE_PER_MIN || 240); /* IP당 분
    200,000분의 1인 모나코를 갈아서 낚으려면 이 리밋으로 5시간이 넘는다. */
 const ROLL_RATE_PER_MIN = Number(process.env.ROLL_RATE_PER_MIN || 600);
 const MAX_N = 20;
+/* ===== 결과별 OG 이미지(오늘의 운세 공유 카드) =====
+   크롤러(카톡·트위터 등)는 JS를 실행하지 않으므로, 공유 링크가 이 생의 운세 카드를 미리보기로
+   보여주려면 서버가 결과별 og:image를 서빙해야 한다. 서버는 이 카드를 그릴 수 없다(canvas 없음,
+   의존성 무). 그래서 클라이언트가 그려 올린 PNG/JPEG를 코드별 파일로 저장하고, /api/og로 되돌려준다.
+   /s/<code> 는 크롤러용 미끼 랜딩이다 — og만 박고 사람은 JS로 /?s=code 앱으로 넘긴다. */
+const OG_DIR = process.env.OG_DIR || path.join(path.dirname(process.env.SHARES_FILE || '/var/lib/life-reroll/shares.jsonl'), 'og');
+const MAX_OG_BYTES = Number(process.env.MAX_OG_BYTES || 1500000);   /* 디코드된 이미지 상한(1.5MB) */
+/* 본문 상한: og가 base64라 디코드본보다 ~33% 크다(+ JSON 여백). 디코드 상한으로 본문을 자르면
+   상한에 가까운 정상 이미지가 통째로 413난다. nginx client_max_body_size도 이보다 커야 한다(2m). */
+const MAX_OG_BODY = Math.ceil(MAX_OG_BYTES * 4 / 3) + 16384;
+const MAX_OG_FILES = Number(process.env.MAX_OG_FILES || 20000);     /* 디스크 상한 — 넘으면 오래된 것부터 지운다 */
+/* 절대 URL(og:image, og:url)에 쓸 정본 호스트. Host 헤더를 믿지 않는다 — CF 터널·프록시를
+   지나며 바뀔 수 있고, 크롤러가 엉뚱한 호스트의 이미지를 물면 미리보기가 깨진다. */
+const CANON_HOST = process.env.CANON_HOST || 'life-reroll.com';
 /* 서명 키. 비어 있으면 서명 기능 전체를 끈다(로컬에서 index.html만 띄우는 경우).
    재시작마다 바뀌면 어제 뿌린 링크가 전부 '위조'로 찍히므로 반드시 고정값을 준다. */
 const SECRET = process.env.LIFE_SECRET || '';
@@ -85,12 +99,21 @@ setInterval(save, 2000);
    저장하는 값은 서명을 통과한 생뿐이라(handleShare 참조) 남이 아무 문자열이나 넣어 채울 수 없다. */
 const SHARES_FILE = process.env.SHARES_FILE || '/var/lib/life-reroll/shares.jsonl';
 const shares = new Map();   /* code -> encoded life string */
+/* 운세 공유만의 곁들이 데이터: 랜딩(/s/code)에 박을 og 제목·설명·이미지 확장자.
+   결과 카드 공유(og 없음)는 이 맵에 없다 — 그때 랜딩은 일반 문구로 떨어진다. */
+const ogMeta = new Map();   /* code -> {t, d, x}  (title, desc, ext) */
 try {
   for (const line of fs.readFileSync(SHARES_FILE, 'utf8').split('\n')) {
     if (!line) continue;
-    try { const r = JSON.parse(line); if (r && r.c && r.l) shares.set(r.c, r.l); } catch (_) {}
+    try {
+      const r = JSON.parse(line);
+      if (r && r.c && r.l) {
+        shares.set(r.c, r.l);
+        if (r.t || r.d || r.x) ogMeta.set(r.c, { t: r.t || '', d: r.d || '', x: r.x || '' });
+      }
+    } catch (_) {}
   }
-  console.log(`[counter] 공유 링크 ${shares.size}건 로드`);
+  console.log(`[counter] 공유 링크 ${shares.size}건 로드 (운세 og ${ogMeta.size}건)`);
 } catch (e) {
   if (e.code !== 'ENOENT') console.error('[counter] 공유 링크 읽기 실패:', e.message);
 }
@@ -261,6 +284,150 @@ function handleShared(req, res, q) {
   json(res, 200, { l, sig: SECRET ? sign(l) : '' });
 }
 
+/* ===== 결과별 OG (오늘의 운세 공유 카드) ===== */
+const isCode = c => /^[A-Za-z0-9]{7}$/.test(c);
+/* HTML 속성값 이스케이프. 랜딩의 og 제목·설명은 클라이언트가 보낸 문자열이라 그대로 박으면
+   메타 태그를 깨거나 스크립트를 심을 수 있다. 속성 경계(" < > &)만 막으면 충분하다. */
+function esc(s) {
+  return String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+}
+
+/* 파일 수가 상한을 넘으면 오래된 것부터 지운다. 쓰기마다 하면 무거우니 드문드문(2%)만 돈다 —
+   운세는 날짜가 지나면 가치가 없어 오래된 것부터 버려도 잃을 게 없다. */
+function pruneOg() {
+  if (Math.random() > 0.02) return;
+  fs.readdir(OG_DIR, (e, files) => {
+    if (e || !files) return;
+    const imgs = files.filter(f => /\.(png|jpg)$/.test(f));
+    if (imgs.length <= MAX_OG_FILES) return;
+    const stats = [];
+    let pending = imgs.length;
+    imgs.forEach(f => fs.stat(path.join(OG_DIR, f), (er, st) => {
+      if (!er) stats.push({ f, m: st.mtimeMs });
+      if (--pending === 0) {
+        stats.sort((a, b) => a.m - b.m);
+        stats.slice(0, stats.length - MAX_OG_FILES).forEach(s => fs.unlink(path.join(OG_DIR, s.f), () => {}));
+      }
+    }));
+  });
+}
+
+/* POST /api/fortune-share  body {l, sig, og, t, d} -> {code}
+   결과 카드 공유(/api/share)와 같되, 운세 카드 이미지(og: data URL)와 랜딩 메타(t/d)를 함께 받는다.
+   서명이 유효한 생만 저장한다(그래서 코드로 꺼낸 생은 재검증이 필요 없다). 본문에 이미지가 실려
+   /api/share보다 크므로 별도 상한을 쓴다. */
+function handleFortuneShare(req, res) {
+  if (!SECRET) return json(res, 503, { error: 'unavailable' });
+  if (rollLimited(ipHash(clientIp(req)), 3)) return json(res, 429, { error: 'slow down' });
+  let body = '', killed = false;
+  req.on('data', c => {
+    body += c;
+    if (body.length > MAX_OG_BODY) { killed = true; res.writeHead(413); res.end(); req.destroy(); }
+  });
+  req.on('end', () => {
+    if (killed) return;
+    let j; try { j = JSON.parse(body); } catch (_) { return json(res, 400, { error: 'bad json' }); }
+    const l = String(j.l || ''), sig = String(j.sig || '');
+    if (l.length > 64 || !sigOK(l, sig)) return json(res, 400, { error: 'bad life' });
+    /* og 는 data:image/(png|jpeg);base64,… 만 받는다. 디코드해 크기·매직바이트를 확인한다 —
+       엉뚱한 바이트가 /api/og로 이미지인 척 나가지 않게. 없거나 이상하면 이미지 없이 코드만 발급한다. */
+    let buf = null, ext = '';
+    const m = /^data:image\/(png|jpeg);base64,([A-Za-z0-9+/=]+)$/.exec(String(j.og || ''));
+    if (m) {
+      ext = m[1] === 'jpeg' ? 'jpg' : 'png';
+      try { buf = Buffer.from(m[2], 'base64'); } catch (_) { buf = null; }
+      if (buf) {
+        const magic = ext === 'png' ? (buf[0] === 0x89 && buf[1] === 0x50) : (buf[0] === 0xFF && buf[1] === 0xD8);
+        if (buf.length > MAX_OG_BYTES || buf.length < 100 || !magic) { buf = null; ext = ''; }
+      }
+    }
+    const title = String(j.t || '').slice(0, 120);
+    const desc = String(j.d || '').slice(0, 200);
+    const code = newCode();
+    shares.set(code, l);
+    if (title || desc || ext) ogMeta.set(code, { t: title, d: desc, x: ext });
+    fs.appendFile(SHARES_FILE, JSON.stringify({ c: code, l, t: title, d: desc, x: ext }) + '\n', () => {});
+    if (buf) fs.mkdir(OG_DIR, { recursive: true }, () => {
+      fs.writeFile(path.join(OG_DIR, code + '.' + ext), buf, () => pruneOg());
+    });
+    json(res, 200, { code });
+  });
+  req.on('error', () => {});
+}
+
+/* GET /api/og?s=code -> 저장된 카드 이미지. 없으면 일반 og-image.png로 302(미리보기가 깨지지 않게). */
+function ogFallback(res) { res.writeHead(302, { location: 'https://' + CANON_HOST + '/og-image.png' }); res.end(); }
+function handleOg(req, res, q) {
+  const code = String(q.get('s') || '');
+  if (!isCode(code)) return ogFallback(res);
+  const meta = ogMeta.get(code);
+  const exts = meta && meta.x ? [meta.x] : ['jpg', 'png'];
+  (function next(i) {
+    if (i >= exts.length) return ogFallback(res);
+    fs.readFile(path.join(OG_DIR, code + '.' + exts[i]), (e, buf) => {
+      if (e) return next(i + 1);
+      res.writeHead(200, {
+        'content-type': exts[i] === 'jpg' ? 'image/jpeg' : 'image/png',
+        'content-length': buf.length,
+        'cache-control': 'public, max-age=31536000, immutable',   /* 코드별 내용은 고정이라 영구 캐시 */
+      });
+      res.end(buf);
+    });
+  })(0);
+}
+
+/* GET /s/<code> — 크롤러용 미끼 랜딩. 결과별 og만 박고, 사람은 JS로 /?s=code 앱으로 넘긴다
+   (크롤러는 JS를 실행하지 않아 og만 읽고 멈춘다 — en.html 같은 언어 랜딩과 같은 수법).
+   ref·v·via는 앱으로 그대로 넘겨 채널 각인을 잇는다(화이트리스트만, 임의 파라미터 주입 차단). */
+function handleShareLanding(req, res, code, q) {
+  if (!isCode(code) || !shares.has(code)) {
+    res.writeHead(302, { location: 'https://' + CANON_HOST + '/' }); return res.end();
+  }
+  const meta = ogMeta.get(code) || {};
+  const title = meta.t || '🔮 오늘의 환생 운세';
+  const desc = meta.d || '네 운세는? 카드를 열어 확인해 보세요.';
+  const img = 'https://' + CANON_HOST + '/api/og?s=' + code;
+  const landing = 'https://' + CANON_HOST + '/s/' + code;
+  let extra = '';
+  for (const k of ['ref', 'v', 'via']) {
+    const val = String(q.get(k) || '');
+    if (/^[A-Za-z0-9_-]{1,32}$/.test(val)) extra += '&' + k + '=' + val;
+  }
+  const app = '/?s=' + code + extra;
+  const html = `<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>${esc(title)}</title>
+<meta name="description" content="${esc(desc)}">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="환생 시뮬레이터">
+<meta property="og:title" content="${esc(title)}">
+<meta property="og:description" content="${esc(desc)}">
+<meta property="og:image" content="${esc(img)}">
+<meta property="og:image:width" content="1080">
+<meta property="og:image:height" content="1080">
+<meta property="og:url" content="${esc(landing)}">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="${esc(title)}">
+<meta name="twitter:description" content="${esc(desc)}">
+<meta name="twitter:image" content="${esc(img)}">
+<link rel="canonical" href="https://${CANON_HOST}/">
+<script>location.replace(${JSON.stringify(app)});</script>
+<style>html,body{margin:0;height:100%;background:#0a0d1c;color:#ece9f5;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.wrap{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;text-align:center;padding:24px}
+a.enter{color:#0a0d1c;background:#f3c95c;text-decoration:none;font-weight:700;padding:12px 26px;border-radius:999px}
+p{color:#9a98b5;margin:0}</style>
+</head>
+<body><div class="wrap"><p>🔮 ${esc(title)}</p><a class="enter" href="${esc(app)}">확인하러 가기 &rarr;</a></div></body>
+</html>`;
+  const b = Buffer.from(html);
+  res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'content-length': b.length, 'cache-control': 'public, max-age=300' });
+  res.end(b);
+}
+
 /* ===== 이벤트 append =====
    한 줄 = 이벤트 하나(JSONL). 쓰기는 fire-and-forget이라 클라이언트를 절대 기다리게 하지
    않는다. 클라이언트는 응답을 보지 않으므로(sendBeacon) 실패해도 조용히 버린다. */
@@ -315,7 +482,11 @@ http.createServer((req, res) => {
   }
   if (req.method === 'POST' && url === '/api/track') return handleTrack(req, res);
   if (req.method === 'POST' && url === '/api/share') return handleShare(req, res);
+  if (req.method === 'POST' && url === '/api/fortune-share') return handleFortuneShare(req, res);
+  if (req.method === 'GET' && url === '/api/og') return handleOg(req, res, u.searchParams);
   if (req.method === 'GET' && url === '/api/shared') return handleShared(req, res, u.searchParams);
+  /* 결과별 OG 미끼 랜딩: /s/<code>. (nginx가 이 경로를 이 프로세스로 프록시해야 산다 — DEPLOY.md 참고) */
+  if (req.method === 'GET' && url.startsWith('/s/')) return handleShareLanding(req, res, url.slice(3), u.searchParams);
   if (req.method === 'GET' && url === '/api/roll') return handleRoll(req, res, u.searchParams);
   if (req.method === 'GET' && url === '/api/fortune') return handleFortune(req, res, u.searchParams);
   if (req.method === 'GET' && url === '/api/verify') return handleVerify(req, res, u.searchParams);
