@@ -5,12 +5,12 @@
  *
  * ── 프롬프트 설계 원칙 (근거는 research: Rest of World 3,000장 분석, Bianchi et al. 2023) ──
  * 사진풍 + 국가명 인물 프롬프트는 고정관념을 사실상 100% 재생산한다("인도인"=노인+터번 99/100).
- * 그래서:
- *   1) 스타일을 수채화 동화 일러스트로 고정 — 사실성 자체를 낮춘다 (프롬프트 수정만으론 부족하다는 게 연구 결론)
- *   2) 민족(eth)·종교(rel)는 프롬프트에 넣지 않는다 — 나라·도시/농촌·풍경 등 환경만 쓴다
- *   3) 인물은 뒷모습·원경으로만 — 얼굴 캐리커처화를 구조적으로 회피
- *   4) 기대수명 18세 미만은 인물 자체를 그리지 않는다(풍경 컷) — 미성년 생성 필터 리스크와
- *      정서적 부담(§F: 죽음을 조롱하지 않는다)을 동시에 피한다
+ * 그래서 치비(SD) 라인업 컨셉으로 리스크를 구조적으로 줄인다:
+ *   1) 사진풍 금지 — 치비 카툰으로 사실성 자체를 낮춘다 (프롬프트 수정만으론 부족하다는 게 연구 결론)
+ *   2) 의상은 전원 흰 티셔츠+청바지 통일 — 문화 의상 캐리커처가 나올 자리가 없다
+ *   3) 민족(eth)·종교(rel)는 프롬프트에 넣지 않는다 — 외모는 국가로, 국적 표식은 실제 국기 배지로
+ *   4) 신체 특성(키·체형·탈모·성별)은 생 데이터에서 그대로 — 이 생의 "그 사람"이 그려진다
+ *   5) 항상 성인상으로 그린다 — 미성년 묘사를 만들지 않는 것이 §F 톤과 필터 리스크 양쪽에 안전
  *
  * ── 재현성 ──
  * seed는 출생 번호. 하지만 시드 재현은 "같은 모델 버전" 조건부라(프로바이더/체크포인트 교체 시 깨짐),
@@ -29,22 +29,42 @@ function countryEn(code: string): string {
   try { return EN.of(code) ?? code; } catch { return code; }
 }
 
-const STYLE =
-  "soft watercolor storybook illustration, muted warm palette, gentle brush strokes, " +
-  "children's book art style, serene, dignified";
+/* SD(치비) 캐릭터 라인업 컨셉: 전원 흰 티셔츠+청바지, 키 측정선 벽 앞. 의상이 통일이라
+   문화 의상 캐리커처가 원천 차단되고, 국적은 서버가 합성하는 **실제 국기 배지**가 말한다.
+   "국기를 손에 든" 구도는 실험 결과 포기했다 — SDXL이 태극기 등 대부분의 국기를
+   창작해 버려서(성조기풍 짝퉁), 틀린 국기를 들려주느니 정확한 배지가 낫다. */
+const STYLE = "chibi, super deformed, big head small body, two heads tall, full body";
+const TAIL =
+  "wearing a simple crew neck white cotton t-shirt and blue denim jeans, bare neck, standing straight facing viewer, cheerful smile, " +
+  "one hand raised in a friendly wave, plain light gray wall with horizontal height measurement lines, " +
+  "simple cel-shaded illustration, soft colors";
+/* ⚠ Lightning은 guidance_scale=0이라 negative prompt가 **무효**다(CFG가 꺼지면 계산 자체가 생략).
+   그래서 의상·소품 통제는 전부 positive 서술로 한다. NEGATIVE는 나중에 CFG 있는 모델로
+   갈아탈 때를 위해 계속 보낸다 — 지금은 관성 비용 0인 보험이다. */
+const NEGATIVE =
+  "photorealistic, photo, realistic proportions, text, letters, numbers, watermark, " +
+  "extra limbs, multiple people, brick wall, furniture, props, flag, banner, stars and stripes, " +
+  "necktie, tie, collared shirt, suit, jacket";
+
+/* 키·체형 말은 프롬프트 **맨 앞**에 둬야 반영된다(SDXL은 앞 토큰에 가중).
+   구간은 절대값 기준 — 라인업에서 눈으로 비교되는 건 상대키가 아니라 절대 인상이다. */
+function bodyDesc(life: Life): string {
+  const bmi = life.weight / (life.height / 100) ** 2;
+  const build = bmi < 18.5 ? "skinny" : bmi < 23 ? "slim" : bmi < 27 ? "average build"
+    : bmi < 32 ? "chubby" : "very fat round-bellied";
+  const h = life.height;
+  const height = h < 155 ? "very short" : h < 165 ? "short" : h < 178 ? "average height"
+    : h < 190 ? "tall" : "very tall";
+  return `${height}, ${build}`;
+}
 
 export function portraitPrompt(life: Life, countryCode: string): string {
-  const country = countryEn(countryCode);
-  const place = life.urban
-    ? `a lively everyday street scene in ${country}, local architecture, market stalls, morning light`
-    : `a quiet countryside village in ${country}, fields and traditional houses, morning mist`;
-  /* 유아·아동기 사망 생: 인물 없는 풍경으로. 새 떼는 떠남의 은유다 — 빈 요람 같은
-     직설적 상징은 §F 톤(존엄)을 해친다. */
-  if (life.lifeExp < 18) {
-    return `${STYLE}, ${place}, an empty winding path, birds flying into a wide open sky, no people`;
-  }
-  const figure = life.male ? "an adult man" : "an adult woman";
-  return `${STYLE}, ${place}, ${figure} seen from behind at a distance, walking along the street, small in frame`;
+  /* 항상 "adult" — 치비는 어차피 동안이고, 미성년 묘사 자체를 만들지 않는 게
+     §F 톤과 필터 리스크 양쪽에서 안전하다. 수명이 짧은 생도 '그 생의 사람'을 성인상으로 그린다. */
+  const figure = `a ${bodyDesc(life)}${life.balding ? ", bald" : ""} adult ` +
+    `${life.male ? "man" : "woman"} from ${countryEn(countryCode)}`;
+  const baldHint = life.balding ? " shiny bald head, no hair," : "";
+  return `${STYLE} — ${figure},${baldHint} ${TAIL}`;
 }
 
 /** 초상을 가져온다 — 캐시 우선, 없으면 생성. 어떤 실패에도 null(이미지 없는 임베드로). */
@@ -62,7 +82,13 @@ export async function buildPortrait(
       method: "POST",
       signal: ctl.signal,
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ prompt: portraitPrompt(life, countryCode), seed: birthNo }),
+      body: JSON.stringify({
+        prompt: portraitPrompt(life, countryCode),
+        negative: NEGATIVE,
+        seed: birthNo,
+        width: 832, height: 1216,                    /* 전신 세로 컷 (SDXL 표준 버킷) */
+        flag: countryCode.toLowerCase(),             /* 서버가 실제 국기 배지를 합성 */
+      }),
     });
     if (!r.ok) return null;
     const buf = Buffer.from(await r.arrayBuffer());
