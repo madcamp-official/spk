@@ -50,6 +50,16 @@ export const env = {
     rarityTopPct: num("LLM_RARITY_TOP_PCT", 0.1),
     timeoutMs: num("LLM_TIMEOUT_MS", 8000),
   },
+  /** 환생 초상 이미지 — 전부 선택. baseUrl이 비면 이미지 없이 동작한다(LLM과 같은 규약).
+   *  IMG_BASE_URL 예: http://172.10.5.111:8501 (camp-4 GPU의 SDXL-Lightning 서버) */
+  img: {
+    baseUrl: optional("IMG_BASE_URL"),
+    timeoutMs: num("IMG_TIMEOUT_MS", 8000),
+    /** 생성물 디스크 캐시. 시드 재현은 모델 버전에 묶이므로 진짜 "같은 생=같은 그림" 보장은 이 캐시다.
+     *  ⚠ optional()은 미설정 시 빈 문자열을 주므로 ??가 아니라 fallback 인자를 써야 한다. */
+    dir: optional("IMG_DIR", "/var/lib/life-reroll-bot/portraits"),
+  },
 } as const;
 
 export const llmEnabled = Boolean(env.llm.baseUrl && env.llm.model);
+export const imgEnabled = Boolean(env.img.baseUrl);

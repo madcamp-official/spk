@@ -9,13 +9,14 @@
  *   둘 다 "뽑기"라서 일일 횟수를 똑같이 차감한다 — 버튼이 무한 리롤 구멍이 되면 안 된다.
  */
 import {
-  MessageFlags, SlashCommandBuilder,
+  AttachmentBuilder, MessageFlags, SlashCommandBuilder,
   type ButtonInteraction, type ChatInputCommandInteraction,
 } from "discord.js";
-import { MERIT, rollLife, rollLifeWithTrait } from "@life-reroll/core";
+import { MERIT, isoCode, rollLife, rollLifeWithTrait } from "@life-reroll/core";
 import { env } from "../env.js";
 import { countRollsToday, ensureUser, getMerit, saveLife, spendMerit } from "../db/queries.js";
 import { buildSummary } from "../lib/summary.js";
+import { buildPortrait } from "../lib/portrait.js";
 import { karmaRow, lifeEmbed, parseKarmaCustomId } from "../lib/render.js";
 import { traitText } from "../lib/text.js";
 
@@ -85,23 +86,34 @@ async function doReroll(
     inheritedTrait: rolled.inherited ? inheritTrait : null,
   });
 
-  const summary = await buildSummary(life, saved.id, saved.traits, saved.rarityScore * 100);
+  /* 요약(LLM/템플릿)과 초상(GPU)을 병렬로 — 지연은 합이 아니라 둘 중 큰 쪽.
+     초상은 실패하면 null이고, 그러면 이미지 없는 임베드로 나간다(기능 저하일 뿐 실패 아님). */
+  const [summary, portrait] = await Promise.all([
+    buildSummary(life, saved.id, saved.traits, saved.rarityScore * 100),
+    buildPortrait(life, saved.id, isoCode(life.c.flag)),
+  ]);
+
+  const embed = lifeEmbed({
+    life,
+    birthNo: saved.id,
+    traits: saved.traits,
+    rarityScore: saved.rarityScore,
+    summary: summary.text,
+    ownerTag: interaction.user.username,
+    firstInGuild: saved.firstInGuild,
+    inheritedTrait: inheritTrait,
+    inheritFailed,
+    usedMerit: slot.usedMerit,
+    meritLeft: slot.meritLeft,
+    rollsLeft: slot.rollsLeft,
+  });
+  /* attachment:// 파일명은 첨부명과 정확히 일치해야 임베드 안에 들어간다 —
+     어긋나면 이미지가 임베드 밖 별도 첨부로 떨어진다 */
+  if (portrait) embed.setImage(`attachment://life-${saved.id}.png`);
 
   await interaction.editReply({
-    embeds: [lifeEmbed({
-      life,
-      birthNo: saved.id,
-      traits: saved.traits,
-      rarityScore: saved.rarityScore,
-      summary: summary.text,
-      ownerTag: interaction.user.username,
-      firstInGuild: saved.firstInGuild,
-      inheritedTrait: inheritTrait,
-      inheritFailed,
-      usedMerit: slot.usedMerit,
-      meritLeft: slot.meritLeft,
-      rollsLeft: slot.rollsLeft,
-    })],
+    embeds: [embed],
+    files: portrait ? [new AttachmentBuilder(portrait, { name: `life-${saved.id}.png` })] : [],
     /* 다음 업 계승 버튼은 **이번 생**의 특성으로 만든다 — "직전 생 특성 이월"(§C) */
     components: karmaRow(userId, saved.traits),
   });
