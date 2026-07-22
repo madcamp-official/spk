@@ -89,7 +89,7 @@ export async function copyText(t){
    버튼 하나 → 채널 선택. 카카오는 JS 키가 있으면 톡공유 SDK를 쓰고, 없으면
    문구 복사 후 앱 열기로 대신한다(웹에서 키 없이 톡공유 창은 못 띄운다).
    인스타는 웹 공유 URL 자체가 없어서 카드 저장 + 스토리 카메라 열기가 최선이다. */
-const IS_MOBILE=/Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+export const IS_MOBILE=/Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 const KAKAO_JS_KEY="";/* developers.kakao.com JavaScript 키. 도메인 등록 후 채우면 카카오 버튼이 톡공유 창을 띄운다 */
 let kakaoReady=null;
 export function loadKakao(){
@@ -215,13 +215,6 @@ export function drawCard(l){
   const r=Math.random()*1.8+.4;
   x.beginPath();x.arc(Math.random()*W,Math.random()*H,r,0,7);x.fill();}
 
- /* 폭이 넘치면 글자를 줄여서 맞춘다 */
- function fitFont(text,size,weight,fam,maxW,min){
-  let s=size;
-  x.font=(weight?weight+" ":"")+s+"px "+fam;
-  while(s>min&&x.measureText(text).width>maxW){s--;x.font=(weight?weight+" ":"")+s+"px "+fam;}
-  return s;
- }
  /* 현재 폰트 기준, 글자 단위 줄바꿈(최대 n줄, 넘치면 말줄임) — CJK엔 단어 경계가 없다 */
  function wrapChars(text,maxW,n){
   const out=[];let line="";
@@ -290,7 +283,7 @@ export function drawCard(l){
  const pop=t("{n}명",{n:l.c.pop>=1?bigNum(l.c.pop*1e6):Math.round(l.c.pop*1e6).toLocaleString()});
  const popline=t("인구 {p}",{p:pop})+" · "+t("걸릴 확률 {p}",{p:fmtPct(l.c.pop/TOTAL)});
  x.fillStyle=MUTED;
- fitFont(popline,26,"",SANS,hw-80,18);
+ fitFont(x,popline,26,"",SANS,hw-80,18);
  x.fillText(popline,W/2,cy);
  cy+=26;
  /* 국기 (미지원이면 사이트 .code-flag 스타일의 원형 ISO 배지) */
@@ -308,21 +301,21 @@ export function drawCard(l){
  /* 국가명 (serif) */
  const cname=countryName(l.c);
  x.fillStyle=INK;
- fitFont(cname,64,"800",SERIF,hw-80,34);
+ fitFont(x,cname,64,"800",SERIF,hw-80,34);
  x.fillText(cname,W/2,cy+58);
  cy+=84;
  /* 서브라인 */
  const sub=t("{cont} · {urban}에서 {gender}로 태어났습니다",
   {cont:contName(l.c.cont),urban:t(l.urban?"도시":"농촌"),gender:t(l.male?"남자":"여자")});
  x.fillStyle=MUTED;
- fitFont(sub,30,"",SANS,hw-80,20);
+ fitFont(x,sub,30,"",SANS,hw-80,20);
  x.fillText(sub,W/2,cy+30);
  cy+=46;
  /* 운세 (있을 때만 — 사이트 .fortune-line) */
  if(l.fortune){
   const fl="🔮 "+l.fortune;
   x.fillStyle="#b78ef0";
-  fitFont(fl,26,"",SANS,hw-80,17);
+  fitFont(x,fl,26,"",SANS,hw-80,17);
   x.fillText(fl,W/2,cy+28);
   cy+=44;
  }
@@ -369,18 +362,18 @@ export function drawCard(l){
   const pad=18,tx=px+pad,maxW=cw-pad*2;
   sp("2px");
   x.fillStyle=MUTED;
-  fitFont(d.k,15,"600",SANS,maxW,11);
+  fitFont(x,d.k,15,"600",SANS,maxW,11);
   x.fillText(d.k,tx,py+(tall?34:30));
   sp("0px");
   x.fillStyle=INK;
-  fitFont(d.v,27,"700",SANS,maxW,17);
+  fitFont(x,d.v,27,"700",SANS,maxW,17);
   x.fillText(d.v,tx,py+(tall?74:66));
   x.fillStyle=MUTED;
   if(tall){ /* 설명줄 최대 2줄 */
    x.font="16px "+SANS;
    wrapChars(d.s,maxW,2).forEach((ln,j)=>x.fillText(ln,tx,py+100+j*22));
   }else if(d.s){   /* 낮은 칩: 글자를 줄여서라도 한 줄에 최대한 다 넣는다. 설명줄이 빈 칩(사인)은 건너뛴다 */
-   fitFont(d.s,16,"",SANS,maxW,12);
+   fitFont(x,d.s,16,"",SANS,maxW,12);
    x.fillText(wrapChars(d.s,maxW,1)[0],tx,py+94);
   }
  });
@@ -388,7 +381,7 @@ export function drawCard(l){
  /* ── 푸터 ── */
  x.textAlign="center";
  x.fillStyle=MUTED;
- fitFont(t("당신의 다음 생은 어디에서 시작될까요?"),26,"",SANS,W-120,18);
+ fitFont(x,t("당신의 다음 생은 어디에서 시작될까요?"),26,"",SANS,W-120,18);
  x.fillText(t("당신의 다음 생은 어디에서 시작될까요?"),W/2,H-84);
  x.fillStyle=GOLD;x.font="26px "+SANS;
  x.fillText(location.host||t("환생 시뮬레이터"),W/2,H-42);
@@ -397,6 +390,13 @@ export function drawCard(l){
 export function roundRect(x,px,py,w,h,r){
  x.beginPath();x.moveTo(px+r,py);x.arcTo(px+w,py,px+w,py+h,r);
  x.arcTo(px+w,py+h,px,py+h,r);x.arcTo(px,py+h,px,py,r);x.arcTo(px,py,px+w,py,r);x.closePath();
+}
+/* 폭이 넘치면 글자를 줄여서 맞춘다. drawCard·drawProfileCard가 공유 */
+export function fitFont(x,text,size,weight,fam,maxW,min){
+ let s=size;
+ x.font=(weight?weight+" ":"")+s+"px "+fam;
+ while(s>min&&x.measureText(text).width>maxW){s--;x.font=(weight?weight+" ":"")+s+"px "+fam;}
+ return s;
 }
 export function downloadCard(l){
  drawCard(l).toBlob(b=>{
