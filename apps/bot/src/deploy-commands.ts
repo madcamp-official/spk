@@ -29,8 +29,10 @@ main().catch((e: unknown) => {
   if (code === 50001) {
     console.error("[commands] 등록 실패: Missing Access (403)");
     console.error("  → 봇이 그 서버에 없거나 applications.commands 스코프 없이 초대됐습니다.");
+    /* 51968 = 채널 보기(1024) + 메시지 보내기(2048) + 임베드(16384) + 파일 첨부(32768)
+       — 파일 첨부는 환생 초상 이미지에 필요하다 */
     console.error(`  → 초대 링크: https://discord.com/oauth2/authorize?client_id=${env.appId}` +
-      "&permissions=19456&scope=bot%20applications.commands");
+      "&permissions=51968&scope=bot%20applications.commands");
   } else if (code === 0 || (e as { status?: number }).status === 401) {
     console.error("[commands] 등록 실패: 토큰이 거부됐습니다(401). DISCORD_TOKEN을 확인하세요.");
   } else {
