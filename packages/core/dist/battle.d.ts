@@ -15,8 +15,6 @@ export declare const AXES: readonly BattleAxis[];
 /** 축의 비교값. **항상 클수록 이긴다**로 통일한다 —
  *  희귀도만 "낮은 확률 쪽 승"(§E)이라 역수를 취해 방향을 맞춘다. */
 export declare function axisValue(s: BattleStats, axis: BattleAxis): number;
-/** 이 생이 그 축에서 얼마나 센가(정렬·자동 선발용). axisValue와 같은 방향. */
-export declare function axisRankValue(s: BattleStats, axis: BattleAxis): number;
 /** 축 n개를 중복 없이 뽑는다 (§E "랜덤 3축") */
 export declare function drawAxes(n?: number): BattleAxis[];
 /** 한 축의 사전 승률 — P(A의 보정값 > B의 보정값).
