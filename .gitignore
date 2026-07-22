@@ -10,3 +10,6 @@ apps/web/core/
 .env
 apps/bot/.env
 apps/*/dist/
+
+# 개인 GA4 서비스 계정 경로가 들어있음 — 커밋 금지]
+.mcp.json
