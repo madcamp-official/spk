@@ -170,6 +170,19 @@ function rollLimited(key, cost) {
   return n > ROLL_RATE_PER_MIN;
 }
 
+/* /api/counter/inc도 배치라(IMPROVEMENT_LOG #13) 자기 창을 쓴다. 증가분은 rollLimited와
+   같은 사람의 같은 행동(리롤)에서 나오므로 같은 한도(ROLL_RATE_PER_MIN)를 쓰되, 창은
+   따로 둔다 — 합치면 /api/roll을 많이 부른 사람의 카운터 반영이 버려진다. */
+let ciWindow = 0;
+let ciCounts = new Map();
+function counterIncLimited(key, cost) {
+  const now = Math.floor(Date.now() / 60000);
+  if (now !== ciWindow) { ciWindow = now; ciCounts = new Map(); }
+  const n = (ciCounts.get(key) || 0) + cost;
+  ciCounts.set(key, n);
+  return n > ROLL_RATE_PER_MIN;
+}
+
 /* ===== 뽑기 모듈 =====
    클라이언트 소스(ESM)를 그대로 쓴다. CJS에서는 동적 import만 가능해서 비동기로 들어온다 —
    로드 전에 들어온 요청은 503을 받고, 클라이언트는 그동안 로컬 뽑기로 버틴다. */
@@ -387,9 +400,36 @@ http.createServer((req, res) => {
   const url = u.pathname.replace(/\/+$/, '') || '/';
   if (req.method === 'GET' && url === '/api/counter') return json(res, 200, { total });
   if (req.method === 'POST' && url === '/api/counter/inc') {
-    total++;
-    dirty = true;
-    return json(res, 200, { total });
+    /* 클라이언트(counter.js)는 이제 리롤마다 즉발하지 않고 증가분을 모아 유휴/이탈
+       시점에 sendBeacon으로 { n } 하나만 보낸다(IMPROVEMENT_LOG #13). 몸통이 없는
+       옛 캐시된 클라이언트의 요청도 여전히 n=1로 동작한다(하위호환). */
+    const ip = clientIp(req);
+    let body = '';
+    let killed = false;
+    req.on('data', c => {
+      body += c;
+      if (body.length > 256) { killed = true; res.writeHead(413); res.end(); req.destroy(); }
+    });
+    req.on('end', () => {
+      if (killed) return;
+      let n = 1;
+      if (body) {
+        try {
+          const parsed = JSON.parse(body);
+          if (parsed && Number.isFinite(parsed.n)) n = parsed.n;
+        } catch (_) { /* 파싱 실패 시 n=1로 폴백 */ }
+      }
+      /* 배치 하나가 감당할 최대 리롤 수만큼만 인정한다 — sendBeacon 몸통을 손으로
+         조작해 한 번에 total을 크게 올리는 걸 막는다. */
+      n = Math.max(1, Math.min(Math.floor(n) || 1, MAX_N * 10));
+      const h = ipHash(ip);
+      if (counterIncLimited(h, n)) return json(res, 429, { total });
+      total += n;
+      dirty = true;
+      return json(res, 200, { total });
+    });
+    req.on('error', () => {});
+    return;
   }
   if (req.method === 'POST' && url === '/api/track') return handleTrack(req, res);
   if (req.method === 'POST' && url === '/api/share') return handleShare(req, res);
