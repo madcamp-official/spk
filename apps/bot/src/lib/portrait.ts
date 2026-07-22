@@ -33,9 +33,9 @@ function countryEn(code: string): string {
    문화 의상 캐리커처가 원천 차단되고, 국적은 서버가 합성하는 **실제 국기 배지**가 말한다.
    "국기를 손에 든" 구도는 실험 결과 포기했다 — SDXL이 태극기 등 대부분의 국기를
    창작해 버려서(성조기풍 짝퉁), 틀린 국기를 들려주느니 정확한 배지가 낫다. */
-const STYLE = "chibi, super deformed, big head small body, two heads tall, full body";
+const STYLE = "cute chibi mascot character, super deformed, exaggerated big head, tiny squat body, two heads tall, full body";
 const TAIL =
-  "wearing a simple crew neck white cotton t-shirt and blue denim jeans, bare neck, standing straight facing viewer, cheerful smile, " +
+  "wearing a plain blank white t-shirt with no print no logo, and blue denim jeans, bare neck, standing straight facing viewer, cheerful smile, " +
   "one hand raised in a friendly wave, plain light gray wall with horizontal height measurement lines, " +
   "simple cel-shaded illustration, soft colors";
 /* ⚠ Lightning은 guidance_scale=0이라 negative prompt가 **무효**다(CFG가 꺼지면 계산 자체가 생략).
@@ -47,15 +47,28 @@ const NEGATIVE =
   "necktie, tie, collared shirt, suit, jacket";
 
 /* 키·체형 말은 프롬프트 **맨 앞**에 둬야 반영된다(SDXL은 앞 토큰에 가중).
-   구간은 절대값 기준 — 라인업에서 눈으로 비교되는 건 상대키가 아니라 절대 인상이다. */
+   단, 형용사는 자주 무시된다(실측: 150cm/60kg이 늘씬 장신으로 나옴) — 그래서 이건 보조이고,
+   진짜 보장은 아래 warp()의 기하 변형이다. BMI 경계는 WHO 과체중(25)·비만(30) 기준. */
 function bodyDesc(life: Life): string {
   const bmi = life.weight / (life.height / 100) ** 2;
-  const build = bmi < 18.5 ? "skinny" : bmi < 23 ? "slim" : bmi < 27 ? "average build"
-    : bmi < 32 ? "chubby" : "very fat round-bellied";
+  const build = bmi < 18.5 ? "skinny" : bmi < 22 ? "slim" : bmi < 25 ? "average build"
+    : bmi < 30 ? "chubby plump" : "very fat round-bellied";
   const h = life.height;
-  const height = h < 155 ? "very short" : h < 165 ? "short" : h < 178 ? "average height"
+  const height = h < 155 ? "very short petite" : h < 165 ? "short" : h < 178 ? "average height"
     : h < 190 ? "tall" : "very tall";
   return `${height}, ${build}`;
+}
+
+/* 체형 워프 계수 — 프롬프트와 달리 **반드시** 반영된다(서버가 생성 후 기하 변형).
+   키 130~215cm → 세로 0.75~1.0 (작을수록 눌림), BMI 17~35 → 가로 0.85~1.35 (높을수록 퍼짐).
+   같은 라인업 벽 앞이라 두 생을 나란히 보면 키·덩치 차이가 그대로 읽힌다. */
+function warp(life: Life): { xscale: number; yscale: number } {
+  const bmi = life.weight / (life.height / 100) ** 2;
+  const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
+  return {
+    yscale: clamp(0.75 + 0.25 * (life.height - 130) / 85, 0.75, 1.0),
+    xscale: clamp(0.85 + 0.5 * (bmi - 17) / 18, 0.85, 1.35),
+  };
 }
 
 export function portraitPrompt(life: Life, countryCode: string): string {
@@ -88,6 +101,7 @@ export async function buildPortrait(
         seed: birthNo,
         width: 832, height: 1216,                    /* 전신 세로 컷 (SDXL 표준 버킷) */
         flag: countryCode.toLowerCase(),             /* 서버가 실제 국기 배지를 합성 */
+        ...warp(life),                               /* 키·BMI를 기하로 강제 반영 */
       }),
     });
     if (!r.ok) return null;

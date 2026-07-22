@@ -57,6 +57,11 @@ class Req(BaseModel):
     # ISO 3166-1 alpha-2 소문자(예: "kr"). 주면 실제 국기를 우하단에 합성한다.
     # SDXL이 그리는 국기는 복불복이라(태극기는 사실상 창작함) 정체성 표식은 합성으로 보장한다.
     flag: str = ""
+    # 체형 워프. 프롬프트 형용사("short", "chubby")는 SDXL이 자주 무시해서, 키·체중은
+    # 생성 후 기하 변형으로 **강제**한다: yscale<1 = 세로 압축(작은 키), xscale>1 = 가로 확장(높은 BMI).
+    # 배경이 민무늬 벽이라 비율 왜곡이 티 나지 않고, 결정론적이라 수치가 반드시 그림에 반영된다.
+    xscale: float = 1.0
+    yscale: float = 1.0
 
 
 FLAG_DIR = "/opt/imggen/flags"
@@ -77,6 +82,21 @@ def flag_png(code: str) -> Image.Image | None:
         return Image.open(path).convert("RGBA")
     except Exception:
         return None
+
+
+def body_warp(img: Image.Image, xscale: float, yscale: float) -> Image.Image:
+    """캐릭터를 키·체중 비율로 눌러/늘려 같은 크기 캔버스에 다시 앉힌다.
+    바닥 기준 정렬(발 위치 유지), 빈 곳은 벽 색(모서리 픽셀)으로 채운다."""
+    xs = max(0.5, min(1.6, xscale))
+    ys = max(0.5, min(1.2, yscale))
+    if abs(xs - 1) < 0.01 and abs(ys - 1) < 0.01:
+        return img
+    w, h = img.size
+    nw, nh = round(w * xs), round(h * ys)
+    warped = img.resize((nw, nh), Image.LANCZOS)
+    canvas = Image.new("RGB", (w, h), img.getpixel((4, 4)))
+    canvas.paste(warped, ((w - nw) // 2, h - nh))
+    return canvas
 
 
 def paste_flag(img: Image.Image, code: str) -> Image.Image:
@@ -117,7 +137,8 @@ async def generate(r: Req):
                 width=r.width, height=r.height, generator=gen,
             ).images[0]
         )
-        if r.flag:
+        img = body_warp(img, r.xscale, r.yscale)
+        if r.flag:                                   # 배지는 워프 뒤 — 국기는 찌그러지면 안 된다
             img = paste_flag(img, r.flag.lower())
         buf = io.BytesIO()
         img.save(buf, format="PNG")
