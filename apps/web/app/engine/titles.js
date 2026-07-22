@@ -98,7 +98,6 @@ export function dexProgress(){
 }
 
 /* 최고 희귀 기록 = 태어나 본 나라 중 인구가 가장 적은 나라의 확률.
-   ⚠ ST.best 를 쓰면 안 된다 — 도감과 값이 어긋나서 폐기된 필드라 갱신되지 않는다.
    updateStats()와 똑같이 seenSet에서 매번 계산해야 두 화면이 같은 숫자를 말한다. */
 export function rarestProb(){
  let r=null;
