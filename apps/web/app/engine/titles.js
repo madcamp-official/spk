@@ -164,8 +164,28 @@ export function earned(){
  return out.sort((a,b)=>b.w-a.w);
 }
 
-/* 첫 화면·공유 카드에 박히는 대표 칭호 (없으면 null) */
-export function topTitle(){ return earned()[0]||null; }
+/* 첫 화면·공유 카드에 박히는 대표 칭호 (없으면 null).
+   사용자가 고른 게 있으면 그것을 우선한다 — 단 그 칭호를 아직 갖고 있을 때만(도감을
+   더 채우다 조건에서 밀려나면 자동으로 최고 등급으로 되돌아간다). 안 골랐으면 무게 최고. */
+export function topTitle(){
+ const all=earned();
+ const p=ST.pinTitle;
+ if(p){
+  const m=all.find(x=>x.k===p.k&&(x.cont||null)===(p.cont||null));
+  if(m)return m;
+ }
+ return all[0]||null;
+}
+/* 이 칭호가 지금 사용자가 고른 대표인가 (업적 화면 표시용) */
+export function isPinned(x){
+ const p=ST.pinTitle;
+ return !!(x&&p&&p.k===x.k&&(p.cont||null)===(x.cont||null));
+}
+/* 대표로 지정/해제(토글). 이미 대표면 해제해 자동(무게 최고)으로 돌아간다. */
+export function setPin(x){
+ if(!x){ST.pinTitle=null;return;}
+ ST.pinTitle=isPinned(x)?null:{k:x.k,cont:x.cont||null};
+}
 
 /* 이번 생의 기록을 남긴다. recordLife()에서 persist() 직전에 부른다 —
    여기서 안 담으면 업적을 계산할 근거가 아예 없다(나라만 seen에 남는다). */

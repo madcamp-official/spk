@@ -14,7 +14,7 @@ import {
   type BattleStats,
 } from "@life-reroll/core";
 import {
-  countBattlesToday, ensureUser, getBattleDeck, getLife, recordBattle, type LifeRow,
+  countBattlesToday, ensureUser, getBattleDeck, recordBattle, type LifeRow,
 } from "../db/queries.js";
 import { BOT_FOOTER } from "../lib/render.js";
 import { viewFromRow } from "../lib/view.js";
@@ -24,13 +24,7 @@ export const data = new SlashCommandBuilder()
   .setName("배틀")
   .setDescription("다른 사람의 덱과 즉시 대결합니다. 상대 수락은 필요 없어요.")
   .addUserOption(o => o
-    .setName("상대").setDescription("대결할 사람").setRequired(true))
-  .addIntegerOption(o => o
-    .setName("내생").setDescription("출전시킬 내 생의 번호 (비우면 자동 선발)")
-    .setMinValue(1).setRequired(false))
-  .addIntegerOption(o => o
-    .setName("상대생").setDescription("상대의 특정 생을 지목 (비우면 자동 선발)")
-    .setMinValue(1).setRequired(false));
+    .setName("상대").setDescription("대결할 사람").setRequired(true));
 
 /** DB 기록 → 배틀에 필요한 값. 모국 인구는 국가 코드에서 되찾는다. */
 function toStats(row: LifeRow): BattleStats {
@@ -114,29 +108,16 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
 
   await interaction.deferReply();   /* 중계까지 붙으므로 defer (§C) */
 
-  /* 축을 먼저 뽑고, 그 축에 맞는 생을 각자 덱에서 고른다 (§E "축별 최적 자동 선발").
-     상대 덱을 보고 고르지 않는다 — 그러면 후공이 항상 유리해져 비동기 대결이 깨진다. */
+  /* 축을 먼저 뽑고, 그 축에 맞는 생을 각자 덱에서 자동 선발한다 (§E "축별 최적 자동 선발").
+     출전 생은 지정할 수 없다 — 상대 생을 지목하면 상대의 약한 생을 골라 붙는 셈이라
+     "상대 덱을 보고 고르지 않는다"는 비동기 대결 원칙이 깨진다. 늘 각자 덱의 최적으로 붙인다. */
   const axes = drawAxes();
-  const myNo = interaction.options.getInteger("내생");
-  const oppNo = interaction.options.getInteger("상대생");
-
-  const pickFrom = async (
-    deck: LifeRow[], no: number | null, ownerId: string, who: string,
-  ): Promise<LifeRow | string> => {
-    if (no === null) {
-      const best = pickBestLife(deck.map(toStats), axes);
-      return deck.find(r => r.id === best!.id)!;
-    }
-    const row = await getLife(no);
-    if (!row) return `#${no} 번 생을 찾지 못했어요.`;
-    if (row.user_id !== ownerId) return `#${no} 번 생은 ${who}의 생이 아니에요.`;
-    return row;
+  const pickBest = (deck: LifeRow[]): LifeRow => {
+    const best = pickBestLife(deck.map(toStats), axes);
+    return deck.find(r => r.id === best!.id)!;
   };
-
-  const mine = await pickFrom(myDeck, myNo, me.id, "당신");
-  if (typeof mine === "string") { await interaction.editReply({ content: mine }); return; }
-  const theirs = await pickFrom(oppDeck, oppNo, opponent.id, `<@${opponent.id}> 님`);
-  if (typeof theirs === "string") { await interaction.editReply({ content: theirs }); return; }
+  const mine = pickBest(myDeck);
+  const theirs = pickBest(oppDeck);
 
   const result = resolveBattle(toStats(mine), toStats(theirs), axes);
   const iWon = result.winner === "a";

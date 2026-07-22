@@ -136,7 +136,7 @@ export async function nativeShare(l,txt){
 export function openShare(){
  if(!session.currentLife)return;
  session.shareMode="life";
- document.querySelector("#shareModal h3").textContent=t("📤 공유하기");
+ document.querySelector("#shareModal h3").textContent=t("공유하기");
  track("share_open",{country:session.currentLife.c.name,prob:probPct(session.currentLife.prob)});
  $("shareModal").hidden=false;document.body.style.overflow="hidden";
 }

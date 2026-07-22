@@ -158,6 +158,20 @@ button:disabled{opacity:.45;cursor:not-allowed}
 .btn-primary:hover{transform:translateY(-2px)}
 .btn-primary:active{transform:translateY(1px)}
 .share-row{display:flex;gap:10px;justify-content:center;margin-top:14px;flex-wrap:wrap}
+/* iOS식 공유 아이콘(상자 + 위로 나가는 화살표)을 마스크로 넣는다 — 유니코드엔 표준 공유
+   글리프가 없어 SVG를 쓴다. 마스크라 currentColor를 물어 버튼·헤더 글자색을 그대로 따른다.
+   텍스트는 textContent로 갱신되고 아이콘은 ::before라, i18n이 문구를 바꿔도 아이콘이 안 지워진다. */
+.has-share-ic::before{
+  content:"";display:inline-block;width:1em;height:1em;vertical-align:-.14em;
+  background:currentColor;
+  -webkit-mask:var(--share-ic) center/contain no-repeat;
+          mask:var(--share-ic) center/contain no-repeat;
+}
+:root{--share-ic:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 15V3'/%3E%3Cpath d='M8 7l4-4 4 4'/%3E%3Cpath d='M20 13v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-6'/%3E%3C/svg%3E")}
+button.has-share-ic{display:inline-flex;align-items:center;gap:.4em}
+h3.has-share-ic{display:flex;align-items:center;gap:.4em}
+/* 아이콘 전용 버튼(프로필 공유)은 텍스트가 없어 gap이 필요 없고, 아이콘을 조금 키운다 */
+.mh-share.has-share-ic::before{width:1.1em;height:1.1em;vertical-align:-.18em}
 
 .card{
   background:var(--surface);
@@ -383,7 +397,13 @@ footer a{color:var(--gold)}
    같은 이유로 못 쓴다 — 멀티컬럼 조각 경계에서 잘린다. */
 .ach-how{font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums;
   opacity:0;transition:opacity .15s;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.ach-item.ok{cursor:help}
+/* 딴 칭호는 눌러서 상단 대표로 지정할 수 있다 — 클릭 커서 + 지금 대표는 강조·별표 */
+.ach-item.pickable{cursor:pointer}
+.ach-item.pickable:hover{border-color:var(--gold)}
+.ach-item.current{outline:1.5px solid var(--gold);outline-offset:-1px;
+  background:linear-gradient(180deg,rgba(243,201,92,.22),rgba(243,201,92,.10))}
+.ach-star{font-size:10px;color:var(--gold);font-weight:700;white-space:nowrap;margin-left:2px}
+.pin-hint{font-size:11px;color:var(--muted);margin:0 0 8px;opacity:.85}
 .ach-item.ok:hover .ach-how,.ach-item.ok:focus-visible .ach-how{opacity:.85}
 /* 터치 기기엔 hover가 없다 — 영영 못 보느니 처음부터 옅게 깔아 둔다 */
 @media (hover:none){.ach-how{opacity:.5}}

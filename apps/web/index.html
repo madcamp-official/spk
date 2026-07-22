@@ -2,6 +2,11 @@
 <html lang="ko">
 <head>
 <meta charset="utf-8">
+<!-- Google AdSense 자동 광고(사이드 레일 포함). head에 있어야 구글이 페이지에 자동 배치한다.
+     사이드 레일은 데스크톱에서 본문(.wrap) 양옆 여백에만 뜨고, AdSense 대시보드에서
+     자동광고 + 사이드 레일 형식을 켜야 실제로 노출된다. 슬롯 ID는 필요 없다(자동 배치). -->
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4305537197392945"
+     crossorigin="anonymous"></script>
 <!-- 자산을 상대경로(app/…, css/…)로 부르므로, index.html이 /en/ 같은 하위 경로로 물리면
      브라우저가 /en/app/… 로 찾아 앱이 통째로 깨진다. 항상 루트 기준으로 풀리게 못박는다.
      (ES 모듈 import는 각 모듈 URL 기준이라 영향 없음 — 이 base는 HTML 안의 상대 URL만 잡는다) -->
@@ -145,7 +150,7 @@
     </div>
     <div class="share-row" id="shareRow" hidden>
       <button id="shareImg">🖼️ 결과 카드 저장</button>
-      <button id="shareBtn">📤 공유하기</button>
+      <button id="shareBtn" class="has-share-ic">공유하기</button>
     </div>
   </div>
 
@@ -199,7 +204,7 @@
     <div class="modal-head">
       <h3>🏅 업적 · 칭호</h3>
       <div class="mh-actions">
-        <button class="mh-share" id="achShare" aria-label="내 프로필 공유하기">📤</button>
+        <button class="mh-share has-share-ic" id="achShare" aria-label="내 프로필 공유하기"></button>
         <button id="achClose" aria-label="닫기">✕</button>
       </div>
     </div>
@@ -214,7 +219,7 @@
     <div class="modal-head">
       <h3>📖 환생 도감</h3>
       <div class="mh-actions">
-        <button class="mh-share" id="dexShare" aria-label="내 프로필 공유하기">📤</button>
+        <button class="mh-share has-share-ic" id="dexShare" aria-label="내 프로필 공유하기"></button>
         <button id="dexClose" aria-label="닫기">✕</button>
       </div>
     </div>
@@ -225,7 +230,7 @@
 <div class="modal-backdrop" id="shareModal" hidden>
   <div class="modal share-modal" role="dialog" aria-modal="true" aria-label="공유하기">
     <div class="modal-head">
-      <h3>📤 공유하기</h3>
+      <h3 class="has-share-ic">공유하기</h3>
       <button id="shareClose" aria-label="닫기">✕</button>
     </div>
     <div class="share-grid">
