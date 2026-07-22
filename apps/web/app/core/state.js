@@ -2,7 +2,7 @@
 /* rec·relSeen·ethSeen 은 업적용 누적 기록이다(실험).
    나라(seen)와 달리 지금까지는 아무 데도 안 남던 값들 — 최고 IQ, 최장신, 겪어본 종교 등.
    여기 없으면 업적을 계산할 근거 자체가 없어서 상태에 추가했다. */
-export let ST={total:0,seen:[],best:null,dev:null,ab:null,vIn:null,viaIn:null,refFirst:null,metrics:{},suggests:[],fortuneDay:null,
+export let ST={total:0,seen:[],dev:null,ab:null,vIn:null,viaIn:null,refFirst:null,metrics:{},suggests:[],fortuneDay:null,
  rec:{},relSeen:[],ethSeen:[]};
 try{const s=localStorage.getItem("rebirth_state");if(s)ST=Object.assign(ST,JSON.parse(s));}catch(e){}
 /* 손상·구버전 저장 데이터 방어 */

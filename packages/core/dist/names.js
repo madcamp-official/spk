@@ -596,8 +596,6 @@ export function missingTransliterations() {
     }
     return [...miss];
 }
-/** 검증용: 어떤 문화권이 존재하고 몇 개국이 매핑됐는지 */
-export const NAME_CULTURES = Object.keys(POOLS);
 export function nameCultureOf(countryName) {
     return CULTURE_OF[countryName];
 }

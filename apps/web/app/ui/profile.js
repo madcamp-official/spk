@@ -5,7 +5,7 @@ import {topTitle,earned,dexProgress,contProgress,rarestProb} from "../engine/tit
 import {tname} from "./titlechip.js";
 import {track} from "../analytics/track.js";
 import {toast} from "./effects.js";
-import {roundRect,copyText,loadKakao,closeShare} from "./share.js";
+import {roundRect,fitFont,IS_MOBILE,copyText,loadKakao,closeShare} from "./share.js";
 
 /* ===== 영혼 프로필 공유 =====
    결과 카드가 "이번 한 생"을 내보낸다면, 이쪽은 "지금까지 쌓은 나"를 내보낸다 —
@@ -67,11 +67,6 @@ export function drawProfileCard(){
   const r=Math.random()*1.8+.4;
   x.beginPath();x.arc(Math.random()*W,Math.random()*H,r,0,7);x.fill();}
 
- function fitFont(text,size,weight,fam,maxW,min){
-  let s=size;x.font=(weight?weight+" ":"")+s+"px "+fam;
-  while(s>min&&x.measureText(text).width>maxW){s--;x.font=(weight?weight+" ":"")+s+"px "+fam;}
-  return s;
- }
  /* 진행 막대 하나 (도감·대륙 공용) */
  function bar(px,py,w,h,pct,color){
   x.fillStyle="rgba(236,233,245,.10)";roundRect(x,px,py,w,h,h/2);x.fill();
@@ -93,7 +88,7 @@ export function drawProfileCard(){
  let cy=176;
  if(top){
   const label=top.icon+" "+tname(top);
-  const fs=fitFont(label,44,"800",SERIF,W-200,28);
+  const fs=fitFont(x,label,44,"800",SERIF,W-200,28);
   const lw=x.measureText(label).width, pw=lw+56, ph=fs+34;
   roundRect(x,W/2-pw/2,cy,pw,ph,ph/2);
   x.fillStyle="rgba(243,201,92,.14)";x.fill();
@@ -115,9 +110,9 @@ export function drawProfileCard(){
   const px=tX+i*(tW+tG);
   x.fillStyle=SURFACE;roundRect(x,px,cy,tW,tH,16);x.fill();
   x.strokeStyle=LINE;x.lineWidth=2;roundRect(x,px,cy,tW,tH,16);x.stroke();
-  x.fillStyle=GOLD;fitFont(d.n,40,"800",SANS,tW-28,20);
+  x.fillStyle=GOLD;fitFont(x,d.n,40,"800",SANS,tW-28,20);
   x.fillText(d.n,px+tW/2,cy+70);
-  x.fillStyle=MUTED;fitFont(d.l,20,"",SANS,tW-24,14);
+  x.fillStyle=MUTED;fitFont(x,d.l,20,"",SANS,tW-24,14);
   x.fillText(d.l,px+tW/2,cy+110);
  });
  cy+=tH+40;
@@ -175,7 +170,7 @@ export function drawProfileCard(){
  /* ── 푸터 (결과 카드와 동일) ── */
  x.textAlign="center";
  x.fillStyle=MUTED;
- fitFont(t("당신의 다음 생은 어디에서 시작될까요?"),26,"",SANS,W-120,18);
+ fitFont(x,t("당신의 다음 생은 어디에서 시작될까요?"),26,"",SANS,W-120,18);
  x.fillText(t("당신의 다음 생은 어디에서 시작될까요?"),W/2,H-84);
  x.fillStyle=GOLD;x.font="26px "+SANS;
  x.fillText(location.host||t("환생 시뮬레이터"),W/2,H-42);
@@ -219,8 +214,6 @@ async function kakaoProfileShare(){
   return true;
  }catch(e){return false;}
 }
-
-const IS_MOBILE=/Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
 /* 프로필 공유 시트를 연다. 아직 한 생도 안 뽑았으면 프로필이 비어 있으니 먼저 유도한다. */
 export function openProfileShare(){

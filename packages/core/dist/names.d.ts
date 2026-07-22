@@ -17,7 +17,5 @@ export declare function formatLifeName(name: LifeName, lang: UiLang): string;
 export declare function altLifeName(name: LifeName, lang: UiLang): string | null;
 /** 검증용: 사전에 없는(로마자로 폴백하는) 조각 목록. 비어 있어야 한다. */
 export declare function missingTransliterations(): string[];
-/** 검증용: 어떤 문화권이 존재하고 몇 개국이 매핑됐는지 */
-export declare const NAME_CULTURES: string[];
 export declare function nameCultureOf(countryName: string): string | undefined;
 //# sourceMappingURL=names.d.ts.map

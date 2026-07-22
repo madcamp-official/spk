@@ -33,6 +33,16 @@
       B.total=Math.max(B.total||0,A.total||0);
       var sn={}; (B.seen||[]).concat(A.seen||[]).forEach(function(x){sn[x]=1;}); B.seen=Object.keys(sn).map(Number);
       if(A.best&&(!B.best||(A.best.prob!=null&&(B.best.prob==null||A.best.prob<B.best.prob)))) B.best=A.best;
+      /* 기록형 업적(ST.rec): 필드별 최고/최저를 engine/titles.js noteLife()와 같은 방향으로 병합 */
+      var RUP={iq:1,hMax:1,hMin:0,wMax:1,wMin:0,life:1,top:0};
+      B.rec=B.rec||{}; var Arec=A.rec||{};
+      Object.keys(RUP).forEach(function(k){
+       var av=Arec[k];
+       if(typeof av==="number"&&isFinite(av)&&(B.rec[k]==null||(RUP[k]?av>B.rec[k]:av<B.rec[k]))) B.rec[k]=av;
+      });
+      /* 수집형 업적(종교·민족): seen과 같은 방식으로 합집합 */
+      var rs={}; (B.relSeen||[]).concat(A.relSeen||[]).forEach(function(x){rs[x]=1;}); B.relSeen=Object.keys(rs);
+      var es={}; (B.ethSeen||[]).concat(A.ethSeen||[]).forEach(function(x){es[x]=1;}); B.ethSeen=Object.keys(es);
       if(!B.dev&&A.dev) B.dev=A.dev;
       if(!B.fortuneDay&&A.fortuneDay) B.fortuneDay=A.fortuneDay;
       if(A.suggests&&A.suggests.length) B.suggests=(B.suggests||[]).concat(A.suggests).slice(-20);

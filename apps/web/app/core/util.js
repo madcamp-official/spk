@@ -1,15 +1,14 @@
 /* 공용 헬퍼: DOM 단축, 난수원, 숫자 포맷
  *
- * 난수원과 분포(rand·gauss·phi·clamp·pickWeighted…)는 packages/core로 옮겼다.
- * 여기서 **다시 내보내는** 이유는 두 가지다:
- *   1) 이 파일을 쓰는 16개 모듈의 import 문을 건드리지 않기 위해(웹 회귀 0)
- *   2) RNG 싱글턴을 하나로 유지하기 위해 — fortune.js가 setRNG로 날짜 시드를 꽂은 동안
- *      core의 rollLife()가 같은 난수원을 봐야 "오늘의 운세"가 하루 고정된다.
- *      재수출은 같은 모듈 인스턴스를 가리키므로 이 보장이 유지된다(복사하면 깨진다).
+ * 난수원(mulberry32·strHash·setRNG)은 packages/core로 옮겼지만 여기서 다시
+ * 내보낸다 — RNG 싱글턴을 하나로 유지하기 위해서다. fortune.js가 setRNG로
+ * 날짜 시드를 꽂은 동안 core의 rollLife()가 같은 난수원을 봐야 "오늘의 운세"가
+ * 하루 고정된다. 재수출은 같은 모듈 인스턴스를 가리키므로 이 보장이 유지된다
+ * (복사하면 깨진다). isoCode도 여러 모듈이 이 파일을 통해 가져다 쓴다.
  *
  * 여기 남은 것은 브라우저에 묶인 것들뿐이다: DOM($), 환경 감지(reduceMotion·isAutomated),
  * 그리고 i18n이 런타임에 문구를 갈아끼우는 표시 포맷(L·fmtPct·fmtTop·fmtUSD·koNum). */
-export {rand,setRNG,mulberry32,strHash,gauss,erf,phi,pickWeighted,clamp,isoCode}
+export {setRNG,mulberry32,strHash,isoCode}
  from "../../core/util.js";
 
 export const $=id=>document.getElementById(id);

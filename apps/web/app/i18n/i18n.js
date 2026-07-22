@@ -149,7 +149,6 @@ const STR={
 /* ── 결과 렌더링(render.js) ── */
 "이름":["Name","名前","名字","Nombre","Nome"],
 "성별":["Gender","性別","性别","Sexo","Sexo"],
-"태어난 곳":["Birthplace","生まれた場所","出生地","Lugar de nacimiento","Local de nascimento"],
 "모국어":["Native language","母語","母语","Lengua materna","Língua materna"],
 "민족":["Ethnicity","民族","民族","Etnia","Etnia"],
 "종교":["Religion","宗教","宗教","Religión","Religião"],
@@ -205,7 +204,7 @@ const STR={
 /* ── main.js ── */
 "⚠️ 확인할 수 없는 링크예요 — 위조되었거나 오래된 링크일 수 있습니다":["⚠️ This link can't be verified — it may be forged or outdated","⚠️ 確認できないリンクです — 偽造または古いリンクの可能性があります","⚠️ 无法验证的链接 — 可能是伪造或过期的链接","⚠️ Este enlace no se puede verificar — puede estar falsificado o caducado","⚠️ Este link não pode ser verificado — pode ser falso ou antigo"],
 "친구가 받은 생입니다":["A life your friend received","友達が授かった人生です","朋友抽到的人生","Una vida que recibió tu amigo","Uma vida que seu amigo recebeu"],
-"나도 환생해 보기":["Try My Own Rebirth","私も転生してみる","我也要转世","Probar mi propia reencarnación","Fazer minha própria reencarnação"],
+"환생해 보기":["Try My Own Rebirth","私も転生してみる","我也要转世","Probar mi propia reencarnación","Fazer minha própria reencarnação"],
 "지금까지 {n}번 환생했습니다":["You've reincarnated {n} times so far","これまでに{n}回転生しました","至今已转世{n}次","Te has reencarnado {n} veces hasta ahora","Você já se reencarnou {n} vezes"],
 /* ── 오늘의 운세(fortune.js) ── */
 "낯선 나라의 음식을 먹으면 행운이 따라옵니다":["Eating food from an unfamiliar country brings luck","見知らぬ国の料理を食べると幸運が訪れます","吃一次陌生国家的美食,好运随之而来","Comer comida de un país desconocido te trae suerte","Comer comida de um país desconhecido traz sorte"],

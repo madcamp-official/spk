@@ -17,10 +17,6 @@ export function axisValue(s, axis) {
         case "rarity": return 1 / Math.max(s.rarityScore, 1e-12);
     }
 }
-/** 이 생이 그 축에서 얼마나 센가(정렬·자동 선발용). axisValue와 같은 방향. */
-export function axisRankValue(s, axis) {
-    return axisValue(s, axis);
-}
 /** 축 n개를 중복 없이 뽑는다 (§E "랜덤 3축") */
 export function drawAxes(n = BATTLE.axesPerBattle) {
     const pool = [...AXES];
@@ -102,7 +98,7 @@ export function pickBestLife(deck, axes) {
         return null;
     const score = new Map();
     for (const axis of axes) {
-        const sorted = [...deck].sort((x, y) => axisRankValue(x, axis) - axisRankValue(y, axis));
+        const sorted = [...deck].sort((x, y) => axisValue(x, axis) - axisValue(y, axis));
         sorted.forEach((life, i) => {
             /* 백분위(0~1). 덱이 1장이면 0.5로 둔다(나눗셈 0 방지) */
             const pct = sorted.length > 1 ? i / (sorted.length - 1) : 0.5;
