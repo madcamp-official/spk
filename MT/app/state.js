@@ -43,5 +43,14 @@ export function persist() {
   try { localStorage.setItem(KEY, JSON.stringify({epoch: EPOCH, total: ST.total, counts})); } catch (e) {}
 }
 
+/* 이 브라우저의 기록만 지운다. 환생 시뮬레이터(rebirth_state)는 건드리지 않는다 —
+   브라우저 설정의 "사이트 데이터 삭제"는 출처 단위라 그쪽까지 날리지만, 이건 키 하나만 지운다.
+   counts·ST 는 export 된 참조라 재할당하지 않고 제자리에서 비운다. */
+export function reset() {
+  ST.total = 0;
+  for (const k of Object.keys(counts)) delete counts[k];
+  try { localStorage.removeItem(KEY); } catch (e) {}
+}
+
 /* 이번 화면에 떠 있는 것 — 저장하지 않는다(공유·카드가 읽는다) */
 export const session = { current: null, shared: false };

@@ -3,7 +3,7 @@
    물고 있어서 끌어오면 이 페이지에 필요 없는 것이 통째로 딸려 온다. */
 import {byId} from "../people/teams.js";
 import {$} from "./util.js";
-import {ST, counts, session} from "./state.js";
+import {ST, counts, session, reset} from "./state.js";
 import {rollTeam} from "./roll.js";
 import {renderTeam, recordRoll, updateStats} from "./render.js";
 import {playSFX, preloadSFX} from "./effects.js";
@@ -30,6 +30,15 @@ function doRoll() {
   }
 }
 $("rollBtn").addEventListener("click", doRoll);
+
+/* 기록 초기화. 지운 뒤 다시 그리지 않고 새로고침한다 — 히어로에 남은 결과·"내 기록 N번째"·
+   흐르던 BGM 까지 되돌려야 하는데, 첫 화면 문구는 index.html 에만 있어서 손으로 복원하면
+   언젠가 둘이 어긋난다. 새로고침이 그 전부를 공짜로 해결한다. */
+$("tallyReset").addEventListener("click", () => {
+  if (!confirm("지금까지 나온 횟수를 모두 지웁니다. 되돌릴 수 없어요.")) return;
+  reset();
+  location.reload();
+});
 
 /* ===== 링크로 받은 팀 =====
    ?t=<팀id> 가 붙어 있으면 그 팀을 그대로 보여준다. 공유 버튼은 없앴지만 주소를 직접

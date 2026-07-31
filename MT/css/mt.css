@@ -195,7 +195,14 @@ details.card summary::marker{color:var(--gold)}
 /* 아직 안 나온 것: 목록에 남겨 두되(=나올 수 있는 전부) 눈에서는 물러나게 한다 */
 .ty-row.zero{opacity:.42}
 .ty-row.zero .ty-n{color:var(--muted);font-weight:400}
-.ty-note{color:var(--muted);font-size:12px;margin:12px 0 0}
+.ty-foot{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:12px}
+.ty-note{color:var(--muted);font-size:12px;margin:0;min-width:0}
+/* 되돌릴 수 없는 동작이라 눈에 덜 띄게 둔다 — 호버할 때만 경고색으로 선다 */
+.ty-reset{
+  flex:none;font-size:11px;padding:5px 11px;border-radius:99px;
+  background:transparent;border:1px solid var(--line);color:var(--muted);
+}
+.ty-reset:hover{border-color:#ff9c8a;color:#ff9c8a}
 
 footer{margin-top:36px;text-align:center;color:var(--muted);font-size:12px;line-height:1.7}
 footer a{color:var(--gold)}

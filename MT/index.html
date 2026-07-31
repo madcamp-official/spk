@@ -62,7 +62,12 @@
       <button type="button" class="ty-tab" data-tab="person">사람별</button>
     </div>
     <div class="ty-list" id="tallyList"></div>
-    <p class="ty-note" id="tallyNote"></p>
+    <!-- 초기화 버튼은 접힌 카드 안에 둔다 — 리롤 버튼 근처에 두면 잘못 누른다.
+         기록을 보러 들어온 사람만 만나는 자리다. -->
+    <div class="ty-foot">
+      <p class="ty-note" id="tallyNote"></p>
+      <button type="button" class="ty-reset" id="tallyReset">기록 초기화</button>
+    </div>
   </details>
 
   <footer>
