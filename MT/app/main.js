@@ -3,9 +3,9 @@
    물고 있어서 끌어오면 이 페이지에 필요 없는 것이 통째로 딸려 온다. */
 import {byId} from "../people/teams.js";
 import {$} from "./util.js";
-import {ST, counts, session, reset} from "./state.js";
+import {ST, counts, session, reset, prefs, savePrefs} from "./state.js";
 import {rollTeam} from "./roll.js";
-import {renderTeam, recordRoll, updateStats} from "./render.js";
+import {renderTeam, recordRoll, updateStats, paintPickMarks} from "./render.js";
 import {playSFX, preloadSFX} from "./effects.js";
 
 /* 리롤 버튼 클릭음. 첫 클릭부터 소리가 나야 하므로 페이지를 열 때 받아 둔다. */
@@ -30,6 +30,17 @@ function doRoll() {
   }
 }
 $("rollBtn").addEventListener("click", doRoll);
+
+/* 금주의 픽 표시 토글. 끄면 별·금색 테두리·팡파레·배지가 전부 사라져 픽이 다른 팀과
+   완전히 똑같이 보인다. 여기서는 히어로를 통째로 다시 그리지 않는다 — 설정만 바꿨는데
+   칩 연출이 다시 돌고 흐르던 BGM 이 끊기면 결과가 새로 뽑힌 것처럼 보인다. */
+$("pickToggle").checked = prefs.showPicks;
+$("pickToggle").addEventListener("change", e => {
+  prefs.showPicks = e.target.checked;
+  savePrefs();
+  paintPickMarks();   /* 히어로 테두리 + 배지 */
+  updateStats();      /* 집계 목록의 ⭐ */
+});
 
 /* 기록 초기화. 지운 뒤 다시 그리지 않고 새로고침한다 — 히어로에 남은 결과·"내 기록 N번째"·
    흐르던 BGM 까지 되돌려야 하는데, 첫 화면 문구는 index.html 에만 있어서 손으로 복원하면

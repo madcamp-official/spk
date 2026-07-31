@@ -1,6 +1,6 @@
 import {TEAMS, roundLabel, teamsOf, peopleOf, iconURL} from "../people/teams.js";
 import {$, esc} from "./util.js";
-import {ST, counts, seenCount, visibleTeams} from "./state.js";
+import {ST, counts, seenCount, visibleTeams, prefs} from "./state.js";
 
 /* 지금까지 나온 횟수 — 팀별 / 사람별. 예전의 "나왔다/안 나왔다" 목록(도감)을 대체한다.
    한 번도 안 나온 것도 0회로 남겨 둔다: 목록이 곧 "나올 수 있는 전부"라는 정보를 겸하고,
@@ -24,7 +24,8 @@ function rows() {
       .map(t => ({key: t.id,
                   ico: iconURL(t) ? '<img class="ty-ico" src="' + esc(iconURL(t)) + '" alt="">' : esc(t.emoji),
                   name: t.name,
-                  sub: (t.pick ? "⭐ " : "") + roundLabel(t), n: counts[t.id] || 0}))
+                  /* 픽 표시를 끄면 ⭐ 도 빠진다 — 목록에만 남으면 그게 곧 픽 명단이 된다 */
+                  sub: (t.pick && prefs.showPicks ? "⭐ " : "") + roundLabel(t), n: counts[t.id] || 0}))
       /* 많이 나온 순 → 같으면 주차·이름 순(원래 목록 순서)으로 고정한다. 동점을 정렬에
          맡기면 뽑을 때마다 같은 값끼리 자리를 바꿔 목록이 들썩인다. */
       .sort((a, b) => b.n - a.n || TEAMS.findIndex(t => t.id === a.key) - TEAMS.findIndex(t => t.id === b.key));

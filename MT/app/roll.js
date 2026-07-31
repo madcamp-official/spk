@@ -15,8 +15,3 @@ export function rollTeam() {
   last = t.id;
   return t;
 }
-
-/* 금주의 픽 = 이 페이지의 유일한 희귀도 축(예전의 인원수 기준은 없앴다).
-   픽이 뜨면 히어로 테두리가 금색이 되고 컨페티가 터진다 — 환생 시뮬레이터에서
-   인구 500만 미만이 하던 역할이다. 확률은 픽이든 아니든 똑같이 4%다. */
-export const rarityColor = t => (t.pick ? "#f3c95c" : "#2a3158");

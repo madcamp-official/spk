@@ -52,5 +52,19 @@ export function reset() {
   try { localStorage.removeItem(KEY); } catch (e) {}
 }
 
-/* 이번 화면에 떠 있는 것 — 저장하지 않는다(공유·카드가 읽는다) */
+/* ===== 표시 설정 =====
+   기록(mt_state)과 키를 나눈다 — "기록 초기화"도 EPOCH 상향도 설정까지 지우면 안 된다.
+   설정은 기록이 아니고, 껐던 사람에게 다시 켜져서 나타나면 그건 고장으로 읽힌다. */
+const PREF_KEY = "mt_prefs";
+let praw = {};
+try { praw = JSON.parse(localStorage.getItem(PREF_KEY)) || {}; } catch (e) { praw = {}; }
+
+/* showPicks=false 면 금주의 픽이 다른 팀과 완전히 똑같이 보인다(별·금색·팡파레·배지 전부).
+   기본값은 켜짐 — 저장된 값이 명시적으로 false 일 때만 끈다. */
+export const prefs = { showPicks: praw.showPicks !== false };
+export function savePrefs() {
+  try { localStorage.setItem(PREF_KEY, JSON.stringify(prefs)); } catch (e) {}
+}
+
+/* 이번 화면에 떠 있는 것 — 저장하지 않는다 */
 export const session = { current: null, shared: false };

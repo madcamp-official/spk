@@ -1,17 +1,34 @@
 import {PICKS, roundLabel, iconURL, bgmURL} from "../people/teams.js";
 import {$, esc, reduceMotion} from "./util.js";
-import {ST, counts, seenCount, visibleTeams, bump, session, persist} from "./state.js";
-import {rarityColor} from "./roll.js";
+import {ST, counts, seenCount, visibleTeams, bump, session, persist, prefs} from "./state.js";
 import {burstConfetti, playBGM, stopBGM} from "./effects.js";
 import {paintTally} from "./tally.js";
 
 /* 이미 나왔던 팀이 또 나왔을 때 깔리는 곡. 한글 파일명이라 주소는 인코딩해서 만든다. */
 const REPEAT_BGM = "bgm/" + encodeURIComponent("감옥에서누가돌아왔게.m4a");
 
+/* 히어로 테두리·광채 색. 금주의 픽만 금색이고 나머지는 기본 선색(--line)이다. */
+const PICK_COLOR = "#f3c95c", PLAIN_COLOR = "#2a3158";
+
+/* 금주의 픽을 "티 나게" 그릴지. 설정을 끄면 픽도 다른 팀과 완전히 똑같이 보인다 —
+   별·금색 테두리·팡파레·배지 어느 하나도 남기지 않는다. 그래서 픽 여부를 묻는 곳은
+   전부 이 함수를 거친다(t.pick 을 직접 보면 어느 한 군데가 반드시 빠진다). */
+export const showsPick = t => !!(t && t.pick && prefs.showPicks);
+
 /* 히어로 배지. 지금은 금주의 픽 하나뿐이다.
    "N팀 중"의 N은 드러난 팀 수다 — TEAMS.length 를 쓰면 아직 못 만난 히든 팀의 존재가 샌다. */
 function teamBadges(t) {
-  return t.pick ? ["⭐ 금주의 픽 · " + visibleTeams().length + "팀 중 " + PICKS.length + "팀"] : [];
+  return showsPick(t) ? ["⭐ 금주의 픽 · " + visibleTeams().length + "팀 중 " + PICKS.length + "팀"] : [];
+}
+
+/* 픽 표시(테두리·배지)만 다시 그린다. 토글을 껐다 켤 때 히어로를 통째로 다시 그리면
+   칩 등장 연출이 다시 돌고 흐르던 BGM 이 끊긴다 — 설정을 바꿨을 뿐인데 결과가
+   새로 뽑힌 것처럼 보인다. 팡파레는 여기서 안 터뜨린다(뽑은 순간의 연출이다). */
+export function paintPickMarks() {
+  const t = session.current;
+  if (!t) return;
+  $("hero").style.setProperty("--rarity-color", showsPick(t) ? PICK_COLOR : PLAIN_COLOR);
+  $("badges").innerHTML = teamBadges(t).map(b => '<span class="badge">' + esc(b) + "</span>").join("");
 }
 
 export function updateStats() {
@@ -28,7 +45,6 @@ export function renderTeam(t, opts) {
   session.current = t;
   session.shared = false;
 
-  $("hero").style.setProperty("--rarity-color", rarityColor(t));
   $("popline").hidden = false;
   /* 누적 횟수를 결과 화면에도 한 조각 얹는다 — 집계 카드를 펴 보지 않아도
      "또 얘네야?"가 바로 읽힌다. 0회(아직 안 뽑은 팀을 링크로 받은 경우)면 뺀다. */
@@ -49,7 +65,7 @@ export function renderTeam(t, opts) {
   /* 서브라인은 첫 화면 안내("아래 버튼을 누르면…") 전용이다. 결과가 나오면 접는다 —
      인원수는 바로 아래 칩 개수로 이미 보인다. */
   $("subline").hidden = true;
-  $("badges").innerHTML = teamBadges(t).map(b => '<span class="badge">' + esc(b) + "</span>").join("");
+  paintPickMarks();   /* 테두리 + 배지 */
 
   /* 열 수 = 인원수. CSS가 이 값을 그대로 받아 팀원이 늘 한 줄에 선다. */
   const chips = $("chips");
@@ -63,7 +79,7 @@ export function renderTeam(t, opts) {
   }));
 
   $("rollBtn").textContent = "다시 뽑기";
-  if (t.pick) burstConfetti(rarityColor(t));
+  if (showsPick(t)) burstConfetti(PICK_COLOR);
 
   /* 소리 우선순위: 팀 전용 BGM(히든) > "또 나왔다" > 무음.
      팀 전용이 이긴다 — 히든을 두 번째로 만났을 때 두 곡을 겹쳐 틀면 둘 다 안 들리고,
