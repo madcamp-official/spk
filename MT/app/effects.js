@@ -58,20 +58,40 @@ export function burstConfetti(color) {
   })();
 }
 
+/* ===== 효과음 =====
+   BGM과 채널(Audio 객체)을 나눈다 — 하나를 돌려쓰면 리롤 클릭음이 히든 팀 BGM을 끊는다.
+   BGM과 달리 미리 받아 둔다: 15KB로 가볍고, 첫 클릭에 소리가 늦으면 클릭음의 의미가 없다.
+   (BGM은 파일명 자체가 스포일러라 히든을 만나기 전엔 요청조차 보내지 않는다.) */
+const sfx = new Map();
+export function preloadSFX(src) { if (!sfx.has(src)) sfx.set(src, new Audio(src)); }
+export function playSFX(src) {
+  preloadSFX(src);
+  const a = sfx.get(src);
+  a.currentTime = 0;   /* 연타해도 매번 처음부터 — 클릭음은 겹치는 것보다 끊기는 게 자연스럽다 */
+  a.play().catch(() => {});
+}
+
 /* ===== BGM =====
-   Audio 객체는 처음 필요할 때 만든다 — 페이지를 열자마자 만들면 히든 팀을 영영 못 만날
-   사람도 mp3 를 내려받는다. 트랙이 하나뿐이라 객체도 하나면 충분하다. */
-let bgm = null;
+   한 번에 한 트랙만 흐르는 채널 하나. 트랙별 Audio 는 처음 필요할 때 만들어 재사용한다 —
+   페이지를 열자마자 만들면 히든 팀을 영영 못 만날 사람도 그 곡을 내려받는데,
+   파일명 자체가 스포일러다. 효과음(playSFX)은 별도 채널이라 여기에 안 걸린다. */
+const tracks = new Map();
+let current = null;
 export function playBGM(src) {
-  if (!bgm) bgm = new Audio(src);
-  bgm.currentTime = 0;
+  let a = tracks.get(src);
+  if (!a) { a = new Audio(src); tracks.set(src, a); }
+  /* 다른 곡이 흐르고 있었으면 먼저 끈다 — 두 곡이 겹치면 둘 다 안 들린다. */
+  if (current && current !== a) { current.pause(); current.currentTime = 0; }
+  current = a;
+  a.currentTime = 0;
   /* 브라우저는 사용자 조작 없이 소리를 못 낸다. 버튼을 눌러 뽑은 경우는 통과하지만
      ?t= 링크로 바로 들어온 경우는 막힌다 — 그때는 조용히 넘어간다(콘솔에 빨간 줄을
      남기지 않는다). 화면은 이미 다 그려져 있으므로 잃는 것은 소리뿐이다. */
-  bgm.play().catch(() => {});
+  a.play().catch(() => {});
 }
 export function stopBGM() {
-  if (!bgm) return;
-  bgm.pause();
-  bgm.currentTime = 0;
+  if (!current) return;
+  current.pause();
+  current.currentTime = 0;
+  current = null;
 }

@@ -33,6 +33,7 @@ const MIME = {
   ".map": "application/json; charset=utf-8",
   ".png": "image/png",
   ".mp3": "audio/mpeg",
+  ".m4a": "audio/mp4",
   ".woff2": "font/woff2",
   ".txt": "text/plain; charset=utf-8",
   ".svg": "image/svg+xml",

@@ -112,7 +112,7 @@ mapfile -t MT_ASSETS < <(
   cd "$MONO/MT" 2>/dev/null &&
   find . -type f \( -name '*.html' -o -name '*.css' -o -name '*.js' \
                     -o -name '*.png' -o -name '*.jpg' -o -name '*.webp' -o -name '*.svg' \
-                    -o -name '*.mp3' \) -printf '%P\n' | sort
+                    -o -name '*.mp3' -o -name '*.m4a' \) -printf '%P\n' | sort
 )
 if [ "${#MT_ASSETS[@]}" -eq 0 ]; then
   bad "MT/ 에 배포할 파일이 없습니다"

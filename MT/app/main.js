@@ -3,15 +3,23 @@
    물고 있어서 끌어오면 이 페이지에 필요 없는 것이 통째로 딸려 온다. */
 import {byId} from "../people/teams.js";
 import {$} from "./util.js";
-import {ST, session} from "./state.js";
+import {ST, counts, session} from "./state.js";
 import {rollTeam} from "./roll.js";
 import {renderTeam, recordRoll, updateStats} from "./render.js";
-import "./effects.js";
+import {playSFX, preloadSFX} from "./effects.js";
+
+/* 리롤 버튼 클릭음. 첫 클릭부터 소리가 나야 하므로 페이지를 열 때 받아 둔다. */
+const CLICK_SFX = "bgm/click.mp3";
+preloadSFX(CLICK_SFX);
 
 function doRoll() {
+  playSFX(CLICK_SFX);
   const t = rollTeam();
+  /* "또 나왔다" 판정은 세기 전에 해야 한다 — recordRoll 뒤에는 방금 것까지 세어져
+     무조건 1 이상이 되고, 그러면 처음 나온 팀도 재방문으로 울린다. */
+  const repeat = (counts[t.id] || 0) > 0;
   recordRoll(t);
-  renderTeam(t);
+  renderTeam(t, {repeat});
   /* 이제 내가 뽑은 팀이다. 배너를 걷고 URL의 ?t= 도 지운다 — 안 지우면 새로고침했을 때
      친구 팀이 되살아나 자기가 뽑은 걸 잃은 것처럼 보인다. */
   if (!$("sharedNote").hidden) {

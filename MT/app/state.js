@@ -4,17 +4,24 @@ import {TEAMS} from "../people/teams.js";
    같은 출처(life-reroll.com)라 localStorage를 공유하므로, 키가 겹치면 서로의 기록을 덮어쓴다. */
 const KEY = "mt_state";
 
+/* ===== 기록 초기화 세대 =====
+   MT는 서버에 아무것도 저장하지 않는다 — 기록은 전부 방문자 브라우저의 localStorage 다.
+   그래서 "모두의 기록을 한 번에 지운다"는 이 숫자를 올리는 것뿐이다. 세대가 다르면 다음
+   방문 때 저장분을 통째로 버린다.
+   ⚠ 올리면 리롤 횟수·팀별 횟수뿐 아니라 히든 팀 발견 기록도 함께 사라진다(같은 곳에 산다).
+     즉 모두가 Synsory 를 다시 처음부터 찾게 된다.
+   1 → 2 : 2026-07-31 첫 일괄 초기화 */
+const EPOCH = 2;
+
 let raw = {};
 try { raw = JSON.parse(localStorage.getItem(KEY)) || {}; } catch (e) { raw = {}; }
+/* 세대가 다르면 통째로 버린다. 횟수를 세기 전에 쓰던 옛 형식({seen:[…]})도 여기서 함께 사라진다. */
+if (Number(raw.epoch) !== EPOCH) raw = {};
 
-/* 팀별로 뽑힌 횟수. {팀id: 횟수}
-   예전 형식({seen:[id,…]})은 "한 번씩 나왔다"로 옮긴다 — 횟수를 세기 전에 쌓인 기록이라
-   1보다 정확히 알 방법이 없다. 안 옮기면 이미 놀아 본 사람의 기록이 통째로 0이 된다. */
+/* 팀별로 뽑힌 횟수. {팀id: 횟수} */
 export const counts = {};
 if (raw.counts && typeof raw.counts === "object") {
   for (const [k, v] of Object.entries(raw.counts)) if (typeof k === "string" && +v > 0) counts[k] = Math.floor(+v);
-} else if (Array.isArray(raw.seen)) {
-  for (const id of raw.seen) if (typeof id === "string") counts[id] = 1;
 }
 
 export const ST = { total: Number(raw.total) || 0 };
@@ -33,7 +40,7 @@ export const seenCount = () => visibleTeams().filter(t => counts[t.id] > 0).leng
 export const bump = id => { counts[id] = (counts[id] || 0) + 1; };
 
 export function persist() {
-  try { localStorage.setItem(KEY, JSON.stringify({total: ST.total, counts})); } catch (e) {}
+  try { localStorage.setItem(KEY, JSON.stringify({epoch: EPOCH, total: ST.total, counts})); } catch (e) {}
 }
 
 /* 이번 화면에 떠 있는 것 — 저장하지 않는다(공유·카드가 읽는다) */

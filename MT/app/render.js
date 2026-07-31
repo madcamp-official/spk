@@ -5,6 +5,9 @@ import {rarityColor} from "./roll.js";
 import {burstConfetti, playBGM, stopBGM} from "./effects.js";
 import {paintTally} from "./tally.js";
 
+/* 이미 나왔던 팀이 또 나왔을 때 깔리는 곡. 한글 파일명이라 주소는 인코딩해서 만든다. */
+const REPEAT_BGM = "bgm/" + encodeURIComponent("감옥에서누가돌아왔게.m4a");
+
 /* 히어로 배지. 지금은 금주의 픽 하나뿐이다.
    "N팀 중"의 N은 드러난 팀 수다 — TEAMS.length 를 쓰면 아직 못 만난 히든 팀의 존재가 샌다. */
 function teamBadges(t) {
@@ -19,7 +22,9 @@ export function updateStats() {
   paintTally();
 }
 
-export function renderTeam(t) {
+/* opts.repeat = 이번에 뽑은 팀이 전에도 나왔던 팀인가. 판정은 부르는 쪽(main.js)이 한다 —
+   여기서 counts 로 판정하면 링크(?t=)로 들어온 화면에서도 "또 나왔다"가 울린다. */
+export function renderTeam(t, opts) {
   session.current = t;
   session.shared = false;
 
@@ -60,10 +65,14 @@ export function renderTeam(t) {
   $("rollBtn").textContent = "다시 뽑기";
   if (t.pick) burstConfetti(rarityColor(t));
 
-  /* 전용 BGM이 있는 팀(히든)이면 틀고, 아니면 틀어져 있던 것을 끈다 — 안 끄면
-     다음 팀을 뽑아도 소리가 남아 엉뚱한 팀의 배경음처럼 들린다. */
+  /* 소리 우선순위: 팀 전용 BGM(히든) > "또 나왔다" > 무음.
+     팀 전용이 이긴다 — 히든을 두 번째로 만났을 때 두 곡을 겹쳐 틀면 둘 다 안 들리고,
+     그 팀의 시그니처가 반복음에 묻힌다. 아무것도 아니면 틀어져 있던 것을 끈다(안 끄면
+     다음 팀을 뽑아도 소리가 남아 엉뚱한 팀의 배경음처럼 들린다). */
   const bgm = bgmURL(t);
-  if (bgm) playBGM(bgm); else stopBGM();
+  if (bgm) playBGM(bgm);
+  else if (opts && opts.repeat) playBGM(REPEAT_BGM);
+  else stopBGM();
 }
 
 export function recordRoll(t) {
