@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>팀끼리 한잔해~!</title>
+<meta name="description" content="몰입캠프 4주간의 25개 팀 중 하나가 뽑힙니다.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="MT 팀 리롤 · 어느 팀이 나올까?">
+<meta property="og:description" content="몰입캠프 4주간의 25개 팀 중 하나를 뽑습니다.">
+<meta property="og:url" content="https://life-reroll.com/MT/">
+<!-- og:image 은 일부러 두지 않는다. 루트의 og-image.png 는 환생 시뮬레이터 배너라
+     이 페이지 링크에 붙으면 다른 서비스를 공유한 것처럼 보인다. -->
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎲</text></svg>">
+<!-- 자산을 상대경로(app/…, css/…)로 부르므로, 슬래시 없이 /MT 로 들어오면 브라우저가
+     루트 기준으로 풀어 /css/mt.css(404) · /app/main.js(환생 시뮬레이터 것!)를 물고
+     스타일도 스크립트도 없는 맨 HTML이 뜬다. 항상 /MT/ 기준으로 풀리게 못박는다.
+     ⚠ 루트 index.html 과 달리 "/" 가 아니라 "/MT/" 다 — 배포 경로가 곧 이 값이다.
+     (ES 모듈 import는 각 모듈 URL 기준이라 영향 없음 — 이 base는 HTML 안의 상대 URL만 잡는다) -->
+<base href="/MT/">
+<link rel="stylesheet" href="css/mt.css?v=1">
+</head>
+<body>
+
+<canvas id="stars"></canvas>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Madcamp Team Reroll</div>
+    <h1>팀끼리 한잔해~!</h1>
+    <p class="tagline">몰입캠프 4주간의 25개 팀 중 하나가 나옵니다. 아마도?</p>
+    <p class="rollno" id="rollNo"></p>
+  </header>
+
+  <section class="hero" id="hero">
+    <p class="shared-note" id="sharedNote" hidden>🔗 친구가 공유한 팀 — 아래 버튼으로 직접 뽑아 보세요</p>
+    <p class="popline" id="popline" hidden></p>
+    <div class="emoji" id="emoji">🎲</div>
+    <h2 class="team" id="teamName">아직 뽑기 전입니다</h2>
+    <p class="subline" id="subline">아래 버튼을 누르면 팀 하나가 나옵니다</p>
+    <div class="badges" id="badges"></div>
+  </section>
+
+  <!-- 뽑기가 핵심 루프라 버튼은 결과 바로 아래. 칩이 사이에 있으면 모바일에서 밀려난다. -->
+  <div class="controls">
+    <button class="btn-primary" id="rollBtn">팀 뽑기</button>
+  </div>
+
+  <section class="chips" id="chips" hidden></section>
+
+  <section class="stats">
+    <div class="stat"><div class="n" id="stTotal">0</div><div class="l">나의 리롤 횟수</div></div>
+    <div class="stat"><div class="n" id="stSeen">0/25</div><div class="l">나온 팀</div><div class="bar"><i id="seenBar"></i></div></div>
+  </section>
+
+  <!-- 팀별·사람별 누적 횟수. 접어 두는 이유는 25+15줄이라 펴 두면 뽑기 화면을 밀어내기 때문이고,
+       그래서 요약줄(summary)이 접힌 상태에서도 "몇 팀 · 총 몇 번"을 스스로 말한다. -->
+  <details class="card tally">
+    <summary id="tallySummary">📊 지금까지 나온 횟수</summary>
+    <div class="ty-tabs" id="tallyTabs">
+      <button type="button" class="ty-tab on" data-tab="team">팀별</button>
+      <button type="button" class="ty-tab" data-tab="person">사람별</button>
+    </div>
+    <div class="ty-list" id="tallyList"></div>
+    <p class="ty-note" id="tallyNote"></p>
+  </details>
+
+  <footer>
+    🌏 <a href="/">환생 시뮬레이터</a> · 💬 <a href="https://github.com/madcamp-official/spk/issues" target="_blank" rel="noopener">GitHub Issues</a>
+  </footer>
+</div>
+
+<canvas id="confetti"></canvas>
+
+<script type="module" src="app/main.js"></script>
+</body>
+</html>

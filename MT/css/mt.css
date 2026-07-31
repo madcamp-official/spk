@@ -1,0 +1,236 @@
+/* /MT 팀 리롤 — 환생 시뮬레이터(apps/web/css/style.css)에서 이 페이지가 쓰는 것만 옮겨 왔다.
+   복사한 이유: MT/ 는 레포 루트에 따로 사는 자립 페이지라 apps/web/css/ 를 경로로 물면
+   로컬(dev-server)과 배포(/var/www)에서 서로 다른 파일을 보게 된다.
+   빠진 것: 국기 폰트(이모지만 쓴다)·도감·업적·광고·i18n 관련 규칙. 값(색·반경·간격)은 원본 그대로다. */
+:root{
+  --void:#0a0d1c;
+  --surface:#141a33;
+  --surface2:#1c2445;
+  --line:#2a3158;
+  --ink:#ece9f5;
+  --muted:#9a98b5;
+  --gold:#f3c95c;
+  --gold-dim:rgba(243,201,92,.14);
+  --serif:"Nanum Myeongjo","Noto Serif KR","Apple SD Gothic Neo",Batang,serif;
+  --sans:"Pretendard Variable",Pretendard,"Apple SD Gothic Neo","Malgun Gothic","Segoe UI",system-ui,sans-serif;
+}
+*{box-sizing:border-box}
+/* .chips{display:grid} 같은 작성자 규칙은 UA의 [hidden]{display:none}을 무조건 이긴다. */
+[hidden]{display:none !important}
+html,body{margin:0;padding:0}
+body{
+  background:var(--void);
+  color:var(--ink);
+  font-family:var(--sans);
+  line-height:1.6;
+  min-height:100vh;
+  overflow-x:hidden;
+}
+#stars{position:fixed;inset:0;z-index:0;pointer-events:none}
+#confetti{position:fixed;inset:0;z-index:50;pointer-events:none}
+.wrap{position:relative;z-index:1;max-width:720px;margin:0 auto;padding:40px 20px 60px}
+
+header{text-align:center;margin-bottom:28px}
+.eyebrow{font-size:11px;letter-spacing:.35em;color:var(--gold);text-transform:uppercase;margin-bottom:10px}
+h1{
+  font-family:var(--serif);
+  font-size:clamp(30px,6vw,44px);
+  font-weight:800;
+  margin:0 0 8px;
+  text-wrap:balance;
+  text-shadow:0 0 40px rgba(243,201,92,.25);
+}
+.tagline{color:var(--muted);font-size:14px;margin:0}
+.rollno{color:var(--gold);font-size:13px;margin:10px 0 0;font-variant-numeric:tabular-nums;min-height:20px}
+
+.hero{
+  --rarity-color:var(--line);
+  background:linear-gradient(180deg,var(--surface) 0%,#10152b 100%);
+  border:1px solid var(--rarity-color);
+  border-radius:20px;
+  padding:34px 24px 28px;
+  text-align:center;
+  box-shadow:0 0 0 1px rgba(255,255,255,.02),0 0 46px -18px var(--rarity-color);
+  transition:border-color .5s,box-shadow .5s;
+}
+.shared-note{
+  font-size:12px;color:var(--gold);background:var(--gold-dim);
+  border:1px solid rgba(243,201,92,.3);border-radius:99px;
+  padding:6px 14px;margin:0 auto 14px;display:inline-block;
+}
+.shared-note.bad{color:#ff9c8a;background:rgba(255,120,100,.12);border-color:rgba(255,120,100,.4)}
+.popline{font-size:13px;color:var(--muted);margin:0 0 14px;min-height:20px}
+.pop-prob{font-size:.85em;opacity:.75;white-space:nowrap}
+.emoji{
+  font-size:clamp(72px,16vw,104px);
+  line-height:1.15;
+  filter:drop-shadow(0 6px 24px rgba(0,0,0,.5));
+  min-height:1.15em;
+}
+/* 팀 아이콘. 이모지가 차지하던 자리를 그대로 물려받되 정사각형으로 못박는다 —
+   원본 이미지 비율이 제각각이라 안 박으면 팀마다 히어로 높이가 달라져
+   아래 "다시 뽑기" 버튼이 뽑을 때마다 오르내린다. */
+.emoji img{
+  display:block;margin:0 auto;
+  width:clamp(84px,18vw,118px);height:clamp(84px,18vw,118px);
+  object-fit:cover;
+  border-radius:24px;
+  border:1px solid rgba(236,233,245,.14);
+  background:var(--surface2);
+}
+.team{
+  font-family:var(--serif);
+  font-size:clamp(24px,5vw,36px);
+  font-weight:800;margin:10px 0 4px;text-wrap:balance;
+}
+.subline{color:var(--muted);font-size:14px;margin:0 0 4px}
+/* 배지는 뜰 때도 있고 안 뜰 때도 있다. 자리를 미리 잡아두지 않으면 리롤할 때마다
+   아래 "다시 뽑기" 버튼이 배지 한 줄만큼 오르내린다. */
+.badges{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:14px;min-height:29px}
+.badge{
+  font-size:12px;padding:4px 12px;border-radius:99px;
+  background:var(--gold-dim);border:1px solid rgba(243,201,92,.4);color:var(--gold);
+}
+
+/* 팀은 2~4명이라 칩이 늘 한 줄에 들어간다. auto-fit 을 쓰면 2인 팀에서 칩 두 개가
+   720px을 반씩 나눠 먹어 이름 하나가 접시만큼 커진다 — 인원수를 그대로 열 수로 쓴다. */
+.chips{
+  display:grid;
+  grid-template-columns:repeat(var(--cols,3),minmax(0,1fr));
+  gap:10px;margin:14px auto 0;
+  /* 1인 팀이면 칩 하나가 680px을 통째로 먹어 이름 세 글자가 접시만 해진다 — 열 수에 맞춰 묶는다.
+     2열 이상에서는 계산값이 이미 컨테이너보다 넓어서 기존 레이아웃 그대로다. */
+  max-width:calc(var(--cols,3) * 340px + (var(--cols,3) - 1) * 10px);
+}
+.chip{
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:14px 12px;
+  text-align:center;
+  opacity:0;transform:translateY(10px);
+}
+.chip.reveal{opacity:1;transform:none;transition:opacity .45s,transform .45s}
+.chip .k{font-size:11px;letter-spacing:.14em;color:var(--muted);text-transform:uppercase}
+/* 이 페이지에서 칩의 주인공은 이름 하나다 — 원본(16px)보다 키운다 */
+.chip .v{font-size:19px;font-weight:700;margin-top:4px;line-height:1.35;font-family:var(--serif)}
+
+.controls{margin-top:22px;text-align:center}
+button{
+  font-family:var(--sans);cursor:pointer;
+  border-radius:14px;border:1px solid var(--line);
+  background:var(--surface2);color:var(--ink);
+  font-size:14px;padding:10px 18px;
+}
+button:hover{border-color:var(--gold)}
+button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+button:disabled{opacity:.45;cursor:not-allowed}
+.btn-primary{
+  font-size:19px;font-weight:800;
+  padding:16px 44px;border-radius:99px;border:none;
+  background:linear-gradient(135deg,#f3c95c,#e09b3d);
+  color:#241a05;
+  box-shadow:0 8px 34px -8px rgba(243,201,92,.55);
+  transition:transform .15s;
+}
+.btn-primary:hover{transform:translateY(-2px)}
+.btn-primary:active{transform:translateY(1px)}
+
+.card{
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:18px;
+  padding:20px 22px;
+  margin-top:22px;
+}
+.card h3{margin:0 0 6px;font-size:16px}
+.card .hint{color:var(--muted);font-size:13px;margin:0 0 14px}
+
+/* 통계는 2칸(리롤 횟수·나온 팀)이라 원본의 3칸 그리드를 쓰지 않는다 */
+.stats{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:22px}
+.stat{
+  background:var(--surface);border:1px solid var(--line);border-radius:14px;
+  padding:14px 12px;text-align:center;
+}
+.stat .n{font-size:20px;font-weight:800;color:var(--gold);font-variant-numeric:tabular-nums;line-height:1.3}
+.stat .l{font-size:11px;color:var(--muted);letter-spacing:.1em;margin-top:2px}
+.stat .bar{margin-top:8px;height:5px;border-radius:99px;background:rgba(236,233,245,.12);overflow:hidden}
+.stat .bar i{display:block;height:100%;width:0;border-radius:99px;
+  background:linear-gradient(90deg,#6fb1e8,#f3c95c);transition:width .5s ease}
+
+details.card summary{cursor:pointer;font-weight:700;font-size:15px}
+details.card summary::marker{color:var(--gold)}
+/* ===== 누적 횟수 (팀별 · 사람별) =====
+   한 행 = 이름 / 부가정보 / 막대 / 횟수. 막대는 가장 많이 나온 것을 100%로 잡는다 —
+   확률(4%)이 아니라 "내 기록 안에서 누가 자주 나왔나"를 보는 목록이라 상대 비교가 맞다. */
+.tally summary{font-variant-numeric:tabular-nums}
+.ty-tabs{display:flex;gap:6px;margin:14px 0 10px}
+.ty-tab{
+  background:rgba(236,233,245,.06);border:1px solid rgba(236,233,245,.12);
+  color:var(--muted);border-radius:99px;padding:6px 14px;font-size:12px;
+}
+.ty-tab.on{background:var(--gold-dim);border-color:rgba(243,201,92,.5);color:var(--gold);font-weight:700}
+
+/* 40행이라 카드가 통째로 길어지면 아래 푸터가 저 멀리 밀린다 — 목록만 따로 스크롤한다 */
+.ty-list{max-height:46vh;overflow-y:auto;padding-right:4px}
+.ty-row{
+  display:grid;grid-template-columns:minmax(0,1fr) auto 84px 44px;
+  align-items:center;gap:10px;
+  padding:7px 0;border-bottom:1px solid var(--line);font-size:14px;
+}
+.ty-row:last-child{border-bottom:none}
+/* 아이콘이 이미지라 baseline 정렬은 못 쓴다(이미지 밑동이 글자 밑동이라 이름이 위로 들린다) */
+.ty-name{display:flex;gap:8px;align-items:center;min-width:0}
+.ty-name>span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ty-ico{
+  width:22px;height:22px;flex:none;
+  object-fit:cover;border-radius:6px;
+  border:1px solid rgba(236,233,245,.12);background:var(--surface2);
+}
+.ty-sub{color:var(--muted);font-size:11px;white-space:nowrap}
+.ty-bar{height:6px;border-radius:99px;background:rgba(236,233,245,.10);overflow:hidden}
+.ty-bar i{display:block;height:100%;border-radius:99px;
+  background:linear-gradient(90deg,#6fb1e8,#f3c95c);transition:width .4s ease}
+.ty-n{color:var(--gold);font-weight:700;font-variant-numeric:tabular-nums;text-align:right}
+/* 아직 안 나온 것: 목록에 남겨 두되(=나올 수 있는 전부) 눈에서는 물러나게 한다 */
+.ty-row.zero{opacity:.42}
+.ty-row.zero .ty-n{color:var(--muted);font-weight:400}
+.ty-note{color:var(--muted);font-size:12px;margin:12px 0 0}
+
+footer{margin-top:36px;text-align:center;color:var(--muted);font-size:12px;line-height:1.7}
+footer a{color:var(--gold)}
+
+/* ===== 휴대폰: 팀 이름 + 칩 + 다시 뽑기를 한 화면에 =====
+   원본과 같은 원칙 — 헤더·장식을 먼저 버리고 값(이름)은 남긴다. */
+@media (max-width:480px), (max-height:720px){
+  .wrap{padding:14px 16px 32px}
+  .eyebrow,.tagline{display:none}
+  h1{font-size:26px;margin-bottom:4px}
+  header{margin-bottom:10px}
+  .rollno{font-size:12px;margin-top:4px;min-height:16px}
+
+  .hero{padding:14px 14px 12px;border-radius:16px}
+  .popline{font-size:11px;margin-bottom:6px;min-height:0}
+  .emoji{font-size:44px}
+  .emoji img{width:64px;height:64px;border-radius:15px}
+  .team{font-size:24px;margin:4px 0 2px}
+  .subline{display:none}
+  .badges{margin-top:8px;min-height:24px}
+  .badge{font-size:11px;padding:3px 9px}
+
+  .controls{margin-top:12px}
+  .btn-primary{padding:12px 26px;font-size:15px}
+
+  .chips{gap:6px;margin-top:10px}
+  .chip{padding:8px 4px;border-radius:10px}
+  .chip .k{font-size:9px;letter-spacing:.06em}
+  .chip .v{font-size:15px;margin-top:1px;line-height:1.25}
+
+  /* 좁은 화면에서는 막대를 접는다 — 이름과 횟수가 먼저다 */
+  .ty-row{grid-template-columns:minmax(0,1fr) auto 40px;gap:8px;font-size:13px}
+  .ty-bar{display:none}
+}
+@media (prefers-reduced-motion:reduce){
+  .chip,.chip.reveal{opacity:1;transform:none;transition:none}
+  .btn-primary{transition:none}
+}

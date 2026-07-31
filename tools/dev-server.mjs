@@ -18,6 +18,10 @@ import { fileURLToPath } from "node:url";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const WEB = path.join(ROOT, "apps", "web");
+/* /MT 팀 리롤은 apps/web 밖(레포 루트 MT/)에 산다. 프로덕션에서 nginx가
+   /var/www/life-reroll/MT 로 서빙하는 것과 같은 URL이 되도록 여기서도 얹어 준다
+   (deploy.sh 의 "정적 파일 → MT" 절과 짝이다). */
+const MOUNTS = [{ prefix: "MT", dir: path.join(ROOT, "MT") }];
 const PORT = Number(process.env.PORT) || 8791;
 
 const MIME = {
@@ -28,6 +32,7 @@ const MIME = {
   ".json": "application/json; charset=utf-8",
   ".map": "application/json; charset=utf-8",
   ".png": "image/png",
+  ".mp3": "audio/mpeg",
   ".woff2": "font/woff2",
   ".txt": "text/plain; charset=utf-8",
   ".svg": "image/svg+xml",
@@ -39,8 +44,13 @@ const server = http.createServer((req, res) => {
   /* 경로 이탈 차단 */
   if (rel.split(path.sep).includes("..")) { res.writeHead(403).end("forbidden"); return; }
 
-  let file = path.join(WEB, rel === "" ? "index.html" : rel);
-  if (!file.startsWith(WEB)) { res.writeHead(403).end("forbidden"); return; }
+  const seg = rel.split(path.sep);
+  const mount = MOUNTS.find(m => seg[0] === m.prefix);
+  const base = mount ? mount.dir : WEB;
+  const sub = mount ? seg.slice(1).join(path.sep) : rel;
+
+  let file = path.join(base, sub === "" ? "index.html" : sub);
+  if (!file.startsWith(base)) { res.writeHead(403).end("forbidden"); return; }
   if (fs.existsSync(file) && fs.statSync(file).isDirectory()) file = path.join(file, "index.html");
 
   if (!fs.existsSync(file)) {
@@ -64,4 +74,5 @@ const server = http.createServer((req, res) => {
 server.listen(PORT, "127.0.0.1", () => {
   const ok = fs.existsSync(path.join(WEB, "core"));
   console.log(`  웹  http://127.0.0.1:${PORT}/   ← apps/web${ok ? "" : "  (core 없음! npm run build:core)"}`);
+  for (const m of MOUNTS) console.log(`  웹  http://127.0.0.1:${PORT}/${m.prefix}/  ← ${path.relative(ROOT, m.dir)}`);
 });
