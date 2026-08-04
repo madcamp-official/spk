@@ -103,37 +103,13 @@ else
   [ "$same" -gt 0 ] && ok "$same개 파일 변경 없음"
 fi
 
-# ── 2-1. /MT 팀 리롤 ─────────────────────────────────────────────
-# 레포 루트 MT/ 는 apps/web 밖에 살아서 위 ASSETS 목록에 안 잡힌다(자립 페이지라
-# core도 i18n도 안 쓴다). 트리를 통째로 $WWW/MT 로 옮긴다 — 대문자 MT 그대로여야
-# life-reroll.com/MT 가 열린다(리눅스 파일시스템은 대소문자를 구분한다).
-say "2-1. /MT 팀 리롤 → $WWW/MT"
-mapfile -t MT_ASSETS < <(
-  cd "$MONO/MT" 2>/dev/null &&
-  find . -type f \( -name '*.html' -o -name '*.css' -o -name '*.js' \
-                    -o -name '*.png' -o -name '*.jpg' -o -name '*.webp' -o -name '*.svg' \
-                    -o -name '*.mp3' -o -name '*.m4a' \) -printf '%P\n' | sort
-)
-if [ "${#MT_ASSETS[@]}" -eq 0 ]; then
-  bad "MT/ 에 배포할 파일이 없습니다"
-elif [ "$CHECK_ONLY" -eq 1 ]; then
-  mt_diff=0
-  for f in "${MT_ASSETS[@]}"; do
-    cmp -s "$MONO/MT/$f" "$WWW/MT/$f" 2>/dev/null || { bad "MT/$f 배포본과 다름 (배포 필요)"; mt_diff=1; }
-  done
-  [ "$mt_diff" -eq 0 ] && ok "${#MT_ASSETS[@]}개 파일 동일"
-else
-  mt_same=0
-  for f in "${MT_ASSETS[@]}"; do
-    if cmp -s "$MONO/MT/$f" "$WWW/MT/$f" 2>/dev/null; then
-      mt_same=$((mt_same+1))
-    else
-      install -D -m 644 -o www-data -g www-data "$MONO/MT/$f" "$WWW/MT/$f"
-      chg "MT/$f 갱신"
-    fi
-  done
-  [ "$mt_same" -gt 0 ] && ok "$mt_same개 파일 변경 없음"
-fi
+# ── /MT 팀 리롤: 배포하지 않는다 ──────────────────────────────────
+# 레포의 MT/ 는 그대로 두고(코드·아이콘·음원 전부 유지) 배포 대상에서만 뺐다.
+# 로컬에서는 계속 볼 수 있다 — tools/dev-server.mjs 가 /MT 를 그대로 얹어 준다.
+# 다시 올리려면 이 절을 되살리는 대신 git 이력에서 되돌리는 편이 안전하다
+# (자산 목록·확장자 화이트리스트·검증 블록이 한 커밋에 같이 있다).
+# ⚠ 이미 올라간 배포본은 이 스크립트가 지우지 않는다 — 서버에서 직접 지워야
+#   /MT 가 404 가 된다:  rm -rf /var/www/life-reroll/MT
 
 # ── 3. 카운터 서버 ───────────────────────────────────────────────
 # 소스가 그대로면 재시작하지 않는다. 재시작해도 값은 보존되지만(디스크에 저장),
@@ -209,24 +185,6 @@ if [ -z "$missing" ]; then
   ok "오리진 css·js      ${n}개 모두 정상 타입"
 else
   bad "오리진 css·js      잘못된 응답:$missing"
-fi
-
-# /MT 도 같은 이유로 오리진에서 본다. 모듈 하나가 없으면 페이지가 통째로 안 뜬다.
-mt_code=$(curl -s -o /dev/null -w '%{http_code}' -H "Host: $HOST" "$LOCAL/MT/" || echo 000)
-mt_missing=""
-mt_n=0
-for f in $(cd "$MONO/MT" && find . -type f \( -name '*.css' -o -name '*.js' \) -printf '%P\n' | sort); do
-  mt_n=$((mt_n+1))
-  ct=$(curl -s -o /dev/null -w '%{content_type}' -H "Host: $HOST" "$LOCAL/MT/$f" || echo "?")
-  case "$f:$ct" in
-    *.css:text/css*|*.js:*javascript*) ;;
-    *) mt_missing="$mt_missing $f($ct)" ;;
-  esac
-done
-if [ "$mt_code" = 200 ] && [ -z "$mt_missing" ]; then
-  ok "오리진 /MT        HTTP 200 · css·js ${mt_n}개 정상 타입"
-else
-  bad "오리진 /MT        HTTP $mt_code${mt_missing:+ · 잘못된 응답:$mt_missing}"
 fi
 
 api=$(curl -s --max-time 20 "$LIVE/api/counter" || true)
