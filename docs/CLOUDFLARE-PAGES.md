@@ -80,23 +80,22 @@ npx wrangler pages secret put LIFE_SECRET --project-name life-reroll
 - 실브라우저: ko 자동 선택 · 카운터 타일 표시 · 리롤 서명 · 공유 코드 발급 · 콘솔 에러 0
 - 원격 D1: probe 이벤트 저장 확인, dwell 은 저장 안 됨(설계대로)
 
-### 5. 컷오버 (도메인 연결)
+### 5. 컷오버 (완료 — 2026-08-05)
 
-```bash
-# ① 시드 갱신 — VM 이 마지막 순간까지 세던 값을 가져온다
-curl -s https://life-reroll.com/api/counter        # 값 확인
-node tools/make-d1-seed.mjs <백업>/shares.jsonl <그 값>
-npx wrangler d1 execute life-reroll --remote --file=server/d1/seed.sql
-#   (UPDATE 가 max() 라 여러 번 실행해도 값이 뒤로 가지 않는다)
-```
+실행된 순서와 결과. 다시 할 일은 없고, 존을 초기화하게 되면 이 순서를 재현한다.
 
-② 대시보드에서 기존 **터널의 public hostname 제거**
-   (Zero Trust → Tunnels → life-reroll.com 항목 삭제 — 안 지우면 DNS 레코드 충돌)
-
-③ Pages 프로젝트 → Custom domains → `life-reroll.com` 과 `www.life-reroll.com` 추가
-   (존이 같은 계정에 있으므로 CNAME 이 자동 생성된다)
-
-④ 확인: `curl -s https://life-reroll.com/api/counter` 값이 ①과 같거나 크면 완료.
+1. **시드 갱신** — VM 마지막 카운터(1,841,126)로 `make-d1-seed.mjs` 재생성 후 적용.
+   D1 이 이미 더 컸고(검증 트래픽) `max()` 라 값 손실 0.
+2. **터널 라우트 제거** — Zero Trust → Tunnels → life-reroll → Published application
+   routes 에서 life-reroll.com·www 행 삭제(터널 자체는 VM 회수와 함께 소멸).
+3. **DNS 확인** — 남은 레코드는 MX 5 + TXT(SPF) 뿐 = Namecheap 이메일 포워딩. 유지.
+4. **Custom domains** — Pages 프로젝트에 `life-reroll.com`·`www.life-reroll.com` 추가.
+5. **⚠ 존 Browser Cache TTL** — Caching → Configuration 에서 **Respect Existing
+   Headers** 로 변경. 4 hours 로 남아 있으면 존이 `_headers` 의 no-cache 를
+   `max-age=14400` 으로 **덮어써서**, JS 를 고쳐도 방문자가 4시간 옛 코드를 본다
+   (README 의 "4시간 낡은 JS" 사고의 진짜 범인이 이 존 설정이었다).
+6. **검증** — 정본·www 200, health(total 보존·서명 켜짐), roll↔verify, 옛 공유 코드,
+   geo 쿠키, no-cache/immutable 헤더, /MT 404(의도) 전부 확인.
 
 ### 6. (선택) WAF 레이트리밋
 
