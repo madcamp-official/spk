@@ -37,39 +37,48 @@ npx wrangler d1 execute life-reroll --remote --file=server/d1/schema.sql
 npx wrangler d1 execute life-reroll --remote --file=server/d1/seed.sql
 ```
 
-### 2. Pages 프로젝트 만들기 (대시보드)
+### 2. Pages 프로젝트 (완료 — 직접 업로드 방식)
 
-Workers & Pages → Create → Pages → **Connect to Git** → `madcamp-official/spk` 선택
-(GitHub 앱 권한 승인 필요).
+~~Git 연결~~ 은 쓰지 않는다. 레포가 `madcamp-official` 조직 소유라 Cloudflare GitHub 앱
+설치에 **조직 소유자 승인**이 필요했고, 직접 업로드는 GitHub 권한이 아예 필요 없다.
+프로젝트는 이미 만들어져 있다:
 
-| 설정 | 값 |
-|---|---|
-| Production branch | `main` |
-| Build command | `pnpm run build:core` |
-| Build output directory | `apps/web` (wrangler.toml 이 이미 선언 — 자동 인식됨) |
+```bash
+npx wrangler pages project create life-reroll --production-branch main   # 이미 됨
+```
 
-빌드 명령을 빼먹으면 **앱이 통째로 죽는다** — `apps/web/core/` 는 .gitignore 라
-레포에 없고 빌드가 만든다.
+**배포 = 로컬에서 한 줄.** push 자동 배포 대신 이걸 쓴다:
 
-### 3. 시크릿
+```bash
+npm run deploy      # = build:core + wrangler pages deploy apps/web --branch main
+```
+
+`build:core` 가 반드시 먼저 돌아야 한다 — `apps/web/core/` 는 .gitignore 라 빌드가
+만들고, 이게 없으면 앱도 /api/roll 도 통째로 죽는다(npm run deploy 가 순서를 보장한다).
+`--branch main` 이 아니면 미리보기로 올라간다 — 실험할 땐 오히려 그걸 쓰면 된다
+(`--branch 실험이름` → 별도 URL, 구 lab 의 역할).
+
+> 나중에 조직 소유자가 GitHub 앱을 승인해 주면 대시보드에서 Git 연결로 갈아탈 수 있다
+> (빌드 명령 `pnpm run build:core`, 출력 `apps/web`). 그때까진 직접 업로드로 충분하다.
+
+### 3. 시크릿 (완료)
 
 ```bash
 npx wrangler pages secret put LIFE_SECRET --project-name life-reroll
 ```
 
-값은 **VM 백업(`life-reroll-vm-backup/counter.env`)의 LIFE_SECRET 그대로.**
+값은 **VM 백업(`life-reroll-vm-backup/counter.env`)의 LIFE_SECRET 그대로** 넣었다.
 새로 만들면 이미 뿌린 공유 링크(?s=·?l=&sig=)의 서명이 전부 깨져 "위조된 링크"로 뜬다.
 
-### 4. 첫 배포 확인 (`*.pages.dev` 주소에서)
+### 4. 첫 배포 확인 (완료 — 2026-08-04)
 
-```bash
-curl -s https://life-reroll.pages.dev/api/counter/health
-#  → {"ok":true,"total":1841126,"roll":true,"signing":true}
-#  roll/signing 이 false 면 3번(시크릿)이 안 먹은 것
-```
+`https://life-reroll.pages.dev` 에서 전부 검증됐다:
 
-사이트를 열어 리롤·공유·운세가 도는지 눈으로 확인.
-받은 공유 링크 하나(`?s=옛코드`)도 열어 본다 — 시드가 제대로 들어갔으면 생이 그려진다.
+- `/api/counter/health` → `{"ok":true,"total":1841126,"roll":true,"signing":true}`
+- roll→verify 왕복(진짜 ok / 위조 거부) · 운세 결정성 · **VM 에서 뿌린 옛 공유 코드 조회**
+- geo 쿠키·no-cache·immutable·`/en/`→301·없는 .js 404 (nginx 규칙 재현 전부)
+- 실브라우저: ko 자동 선택 · 카운터 타일 표시 · 리롤 서명 · 공유 코드 발급 · 콘솔 에러 0
+- 원격 D1: probe 이벤트 저장 확인, dwell 은 저장 안 됨(설계대로)
 
 ### 5. 컷오버 (도메인 연결)
 
@@ -96,7 +105,8 @@ Security → WAF → Rate limiting rules (무료 1개): `/api/*` 에 IP 당 분�
 
 ## 운영 메모
 
-- **배포 = git push.** main 푸시가 프로덕션, 다른 브랜치·PR 은 미리보기 URL (lab 의 후계).
+- **배포 = `npm run deploy`** (직접 업로드 — git push 는 배포를 일으키지 않는다).
+  미리보기는 `wrangler pages deploy apps/web --branch 이름` (lab 의 후계).
 - 무료 한도에서 실제로 가까운 것은 **함수 호출 10만/일** 이다. `_routes.json` 이
   정적 자산을 함수 밖으로 절였기 때문에 호출 = API + HTML 페이지뷰뿐. 7월 피크
   (리롤 30만/일) 재현 시 3~5만/일로 추정 — 그보다 크게 터지면 여기가 먼저 막힌다.

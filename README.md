@@ -519,8 +519,9 @@ python3 tools/make_share.py         # → en.html … pt.html
 캠프 VM 회수로 **Cloudflare Pages + Pages Functions + D1** 으로 옮겼다.
 절차·구조·컷오버는 [docs/CLOUDFLARE-PAGES.md](docs/CLOUDFLARE-PAGES.md) 가 정본이다.
 
-- **배포 = `main` 푸시.** Pages 가 `pnpm run build:core` 를 돌리고 `apps/web` 을 올린다.
-  다른 브랜치·PR 은 자동으로 미리보기 URL 을 받는다.
+- **배포 = `npm run deploy`** (wrangler 직접 업로드 — 레포가 조직 소유라 Git 자동 배포는
+  조직 소유자의 GitHub 앱 승인이 필요해서 쓰지 않는다). git push 는 배포를 일으키지 않는다.
+  미리보기: `npx wrangler pages deploy apps/web --branch 이름` → 별도 URL.
 - `/api/` 11종은 [functions/api/](functions/api/) (구 `server/counter.js` 의 이식본),
   저장은 D1. **`/api/track` 은 dwell·roll 을 저장하지 않는다** — 둘이 트래픽의 98%라
   무료 쓰기 한도를 넘기고, 실제 분석은 전부 나머지 2%에서 나왔다.
