@@ -110,8 +110,8 @@ Security → WAF → Rate limiting rules (무료 1개): `/api/*` 에 IP 당 분�
   정적 자산을 함수 밖으로 절였기 때문에 호출 = API + HTML 페이지뷰뿐. 7월 피크
   (리롤 30만/일) 재현 시 3~5만/일로 추정 — 그보다 크게 터지면 여기가 먼저 막힌다.
 - D1 이 진실의 원천이다. 가끔 백업: `npx wrangler d1 export life-reroll --remote --output=backup.sql`
-- 이벤트 분석(`tools/analyze.py`)은 JSONL 대신 D1 을 본다:
-  `npx wrangler d1 execute life-reroll --remote --command "SELECT ..." --json`
+- 이벤트 분석: `node tools/fetch-events.mjs` 가 D1 을 VM 시절과 같은 events.jsonl 로
+  내려준다(`--merge` 로 백업 병합) → `python3 tools/analyze.py events.jsonl` 그대로.
 - Discord 봇은 별도 작업(HTTP Interactions 전환 예정). VM 이 죽으면 봇도 멈춘다 —
   사이트와는 무관하다.
 

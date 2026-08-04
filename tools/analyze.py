@@ -18,6 +18,11 @@ import re
 import statistics
 import sys
 
+# Windows 콘솔은 기본 인코딩이 cp949 라 —·█ 같은 문자에서 UnicodeEncodeError 로 죽는다.
+# VM(리눅스)에서만 돌던 시절엔 안 드러났지만, Pages 이전 후엔 로컬 실행이 유일한 길이다.
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+
 DEFAULT_PATHS = [
     "/var/lib/life-reroll/events.jsonl",
     "./events.jsonl",

@@ -399,18 +399,23 @@ tail -f /var/lib/life-reroll/events.jsonl    # 리롤 2~3회 → visit/roll/dwel
 ### 지표 보기
 
 [tools/analyze.py](tools/analyze.py)가 `events.jsonl`을 읽어 AARRR 퍼널을 한 번에 뽑는다.
-의존성 없음(표준 라이브러리만) — VM에 jq나 pip 없이도 돈다.
+의존성 없음(표준 라이브러리만).
+
+이벤트는 이제 D1 에 쌓이므로 [tools/fetch-events.mjs](tools/fetch-events.mjs) 가
+같은 JSONL 모양으로 내려준다 — analyze.py 는 한 줄도 안 바뀌었다:
 
 ```bash
-# VM에서 바로
-python3 tools/analyze.py                      # /var/lib/life-reroll/events.jsonl 자동 탐색
-python3 tools/analyze.py --since 2026-07-18   # 그 날짜부터만
-python3 tools/analyze.py --suggests           # 사용자 제안 전문까지
-
-# 로컬에서 보려면 파일만 내려받아서
-scp camp-15:/var/lib/life-reroll/events.jsonl .
+node tools/fetch-events.mjs                   # D1 → ./events.jsonl
+node tools/fetch-events.mjs --since 2026-08-05
+node tools/fetch-events.mjs --merge <백업>/events.jsonl.gz   # VM 시절(~08-02) 로그와 병합
 python3 tools/analyze.py events.jsonl
+python3 tools/analyze.py --suggests           # 사용자 제안 전문까지
 ```
+
+⚠ 2026-08-02(VM 마지막 백업) 이후의 **dwell·roll 은 어디에도 없다** — Pages 의 track 이
+저장하지 않기로 한 설계다(트래픽의 98%가 그 둘이라 D1 무료 쓰기를 넘긴다). analyze.py 의
+dwell·리롤 리듬·결과 분포 절은 병합한 백업 구간만 반영되고, 퍼널·채널·A/B·바이럴·제안은
+계속 쌓인다. 리롤 총량의 정답은 `/api/counter` 다.
 
 출력에 들어가는 것: 채널별 유입(`ref`) · 활성화율과 첫 리롤까지 걸린 시간 ·
 세션당 리롤 수 · 바이럴 계수 · 문구 A/B(`vin`) · 희귀도 구간별 체류 시간 ·

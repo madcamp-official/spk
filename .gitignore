@@ -17,3 +17,6 @@ apps/*/dist/
 # wrangler 로컬 상태·시크릿 — 커밋 금지
 .dev.vars
 .wrangler/
+
+# fetch-events.mjs 산출물 — 방문자 해시가 들어 있어 커밋 금지
+events.jsonl
