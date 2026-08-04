@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>404 · 환생 시뮬레이터</title>
+<meta name="robots" content="noindex">
+<!-- 이 파일이 있어야 Pages 가 SPA 폴백을 끈다. 없으면 없는 경로마다 index.html 이
+     200 으로 나가는데, 그걸 .js 주소로 받으면 앱이 통째로 죽고 CDN 이 그 HTML 을
+     .js URL 에 캐시한다 — nginx 시절 try_files $uri =404 가 막던 바로 그 사고다. -->
+<style>
+  body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;
+    background:#0a0d1c;color:#ece9f5;font-family:"Pretendard Variable",Pretendard,"Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;text-align:center}
+  .e{font-size:72px;margin:0}
+  h1{font-size:22px;margin:12px 0 6px}
+  p{color:#9a98b5;font-size:14px;margin:0 0 20px}
+  a{display:inline-block;padding:12px 28px;border-radius:99px;text-decoration:none;
+    background:linear-gradient(135deg,#f3c95c,#e09b3d);color:#241a05;font-weight:800}
+</style>
+</head>
+<body>
+<div>
+  <p class="e">🌌</p>
+  <h1>이 생은 존재하지 않습니다</h1>
+  <p>주소가 잘못되었거나, 이미 소멸한 페이지예요.</p>
+  <a href="/">환생하러 가기</a>
+</div>
+</body>
+</html>

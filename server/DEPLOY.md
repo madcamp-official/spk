@@ -1,7 +1,11 @@
-# 배포 노트 (camp-15 VM)
+# 배포 노트 (구 camp-15 VM — 역사 문서)
+
+> ⚠ **이 문서는 VM 시절의 기록이다.** 캠프 VM 회수로 배포는 Cloudflare Pages 로 옮겼다 —
+> 현재 절차는 [docs/CLOUDFLARE-PAGES.md](../docs/CLOUDFLARE-PAGES.md) 가 정본이다.
+> 아래 내용은 nginx·systemd 구성의 "왜"를 담고 있어 남겨 둔다(Pages Functions 이
+> 재현해야 했던 규칙들의 출처).
 
 > `/api/track`·`/api/roll` 추가에 따라 **서버 쪽에서 손봐야 하는 것**만 적는다.
-> 아래 nginx·systemd 스니펫은 VM에서 검증하지 못했다 (로컬에는 VM이 없다).
 > 코드 자체(`counter.js` + 클라이언트)는 실제로 띄워서 브라우저로 검증했다.
 
 ## 0. ⚠ 이번 배포에 반드시 필요한 환경변수 2개
@@ -140,83 +144,11 @@ curl -s "localhost:1558/api/verify?l=MC-1-1-1-0-0-106-999999999-150-215-2000&sig
 `copytruncate`인 이유: `counter.js`는 파일 핸들을 계속 들고 있지 않고 매번
 `fs.appendFile`로 열고 닫지만, 로테이션 중 쓰기가 겹칠 수 있어 안전한 쪽을 택한다.
 
-## 6. 실험판(lab) 인프라
+## 6. 실험판(lab) 인프라 — 제거됨
 
-`lab.sh`가 쓰는 서버 쪽 구성. **레포 밖(`/etc`)에 사는 것들이라 여기에 적어 둔다** —
-VM을 갈아엎으면 이 절만 보고 되살릴 수 있어야 한다. 사용법은 README의 "실험판(lab)" 참고.
-
-### systemd — 실험판 전용 카운터 (`life-reroll-counter-lab`)
-
-프로덕션과 **겹치는 것이 하나도 없어야 한다.** 포트·카운터·이벤트·공유·서명키 전부 별도다.
-특히 `LIFE_SECRET`을 프로덕션과 공유하면 실험판에서 만든 서명이 프로덕션에서도 유효해진다.
-
-```ini
-# /etc/systemd/system/life-reroll-counter-lab.service
-[Unit]
-Description=life-reroll 실험판(lab) 카운터/롤 API
-After=network.target
-
-[Service]
-User=www-data
-ExecStart=/usr/bin/node /opt/life-reroll-lab/counter.js
-Environment=COUNTER_PORT=1559
-Environment=COUNTER_FILE=/var/lib/life-reroll-lab/counter.json
-Environment=EVENTS_FILE=/var/lib/life-reroll-lab/events.jsonl
-Environment=SHARES_FILE=/var/lib/life-reroll-lab/shares.jsonl
-Environment=APP_JS_DIR=/var/www/life-reroll/lab/app
-Environment=LIFE_SECRET=<openssl rand -hex 32 — 프로덕션 키와 반드시 다르게>
-Environment=ROLL_RATE_PER_MIN=600
-Restart=on-failure
-RestartSec=3s
-
-[Install]
-WantedBy=multi-user.target
-```
-
-```bash
-sudo install -d -o www-data -g www-data /var/lib/life-reroll-lab
-sudo systemctl daemon-reload && sudo systemctl enable --now life-reroll-counter-lab
-```
-
-### nginx — `/lab/`, `/lab-api/`
-
-```nginx
-# 기존 location / 보다 앞. ^~ 라야 하위 자산(.js/.css)까지 이 블록이 처리한다
-location ^~ /lab/ {
-    add_header X-Robots-Tag "noindex, nofollow" always;
-    add_header Cache-Control "no-store" always;   # 실험은 늘 최신이어야 한다
-    # ⚠ 이 줄을 빠뜨리면 실험판만 geo를 못 읽어 항상 영어로 뜬다(location / 과 달라진다).
-    #    언어 관련 실험이 통째로 왜곡되므로 프로덕션과 반드시 같이 둔다.
-    add_header Set-Cookie "geo=$http_cf_ipcountry; Path=/; Max-Age=86400; SameSite=Lax" always;
-    try_files $uri $uri.html $uri/ =404;
-}
-
-location ^~ /lab-api/ {
-    limit_req zone=liferoll_api burst=15 nodelay;
-    limit_req_status 429;
-    proxy_set_header CF-IPCountry $http_cf_ipcountry;
-    rewrite ^/lab-api/(.*)$ /api/$1 break;        # 실험판 앱은 빌드 시 /api/ → /lab-api/ 로 치환된다
-    proxy_pass http://127.0.0.1:1559;
-    proxy_http_version 1.1;
-    proxy_set_header Host $host;
-    proxy_set_header X-Real-IP $remote_addr;
-}
-```
-
-`/lab-api/`는 `/lab/`에 안 걸린다(`/lab-` ≠ `/lab/`)이므로 순서 걱정은 없다.
-
-### git worktree
-
-```bash
-git -C /root/spk worktree add /root/spk-lab -b lab main
-```
-
-### 되살린 뒤 확인
-
-```bash
-sudo /root/spk/lab.sh up     # 저장소·API 격리까지 스스로 검사하고, 뚫려 있으면 멈춘다
-curl -s localhost:1559/api/counter    # 프로덕션(1558)과 값이 달라야 정상
-```
+VM 회수와 함께 실험판을 없앴다(`lab.sh` 삭제 커밋 참고). Cloudflare Pages 의 브랜치
+미리보기 배포가 같은 역할(배포 전에 띄워 보고 채택/폐기 + 별도 오리진 격리)을 대신한다.
+마지막 systemd·nginx 구성은 git 이력과 VM 백업(`life-reroll-vm-backup/conf/`)에 있다.
 
 ## 남은 것 (코드 아님)
 

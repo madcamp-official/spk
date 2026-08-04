@@ -1,0 +1,8 @@
+# nginx 의  location ~ ^/(en|ja|zh|es|pt)/+$ { return 301 /$1; }  대응.
+# 언어 랜딩은 en.html 같은 파일이라 Pages 가 /en 으로 서빙한다(클린 URL).
+# 트레일링 슬래시로 들어온 링크를 정본으로 돌린다.
+/en/ /en 301
+/ja/ /ja 301
+/zh/ /zh 301
+/es/ /es 301
+/pt/ /pt 301

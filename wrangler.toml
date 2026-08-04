@@ -1,0 +1,21 @@
+# Cloudflare Pages 설정. 대시보드에서 프로젝트를 만들고 이 레포를 연결하면
+# 이 파일이 빌드 출력·바인딩의 정본이 된다.
+#
+#   빌드 명령(대시보드에서 설정): pnpm run build:core
+#   출력 디렉터리:               이 파일의 pages_build_output_dir
+#   함수:                        레포 루트 functions/ (자동 인식)
+#
+# 시크릿(코드·레포에 절대 넣지 않는다):
+#   npx wrangler pages secret put LIFE_SECRET
+#   값은 VM systemd 유닛에 있던 것 그대로 — 새로 만들면 이미 뿌린 공유 링크의 서명이
+#   전부 깨진다("위조된 링크"로 표시됨).
+
+name = "life-reroll"
+compatibility_date = "2026-08-01"
+pages_build_output_dir = "apps/web"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "life-reroll"
+# wrangler d1 create life-reroll 이 출력한 uuid 로 바꾼다
+database_id = "REPLACE_WITH_D1_DATABASE_ID"

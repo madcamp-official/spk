@@ -1,0 +1,18 @@
+# nginx 캐시 규칙의 Pages 대응.
+# Pages 는 배포마다 CDN 캐시를 스스로 무효화하므로 VM 시절의 "4시간 낡은 JS" 사고는
+# 구조적으로 없다. 그래도 no-cache 를 명시하는 이유: 브라우저 휴리스틱 캐시가 임의로
+# 오래 들고 있는 것을 막고(빌드가 없어 파일명에 해시가 없다), ETag 재검증(대부분 304)으로
+# 항상 최신을 보게 한다 — nginx 설정과 같은 의도다.
+
+/css/*
+  Cache-Control: no-cache
+
+/app/*
+  Cache-Control: no-cache
+
+/core/*
+  Cache-Control: no-cache
+
+# 국기 폰트는 불변 — nginx 의 max-age=31536000, immutable 그대로
+/TwemojiCountryFlags.woff2
+  Cache-Control: public, max-age=31536000, immutable

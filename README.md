@@ -6,8 +6,9 @@
 - **라이브**: https://life-reroll.com/ (구주소 life-reroll.madcamp-kaist.org 는 리다이렉트)
 - **레포**: https://github.com/madcamp-official/spk (몰입캠프 26s-w3-c1-03)
 - **스택**: 정적 HTML + CSS + ES 모듈. 웹에는 프레임워크·번들러가 없다 — 파일을 그대로 서빙한다.
-  "모두의 환생 횟수"와 이벤트 수집 때문에 의존성 없는 Node 서버([server/counter.js](server/counter.js))가 붙는다 —
-  이것만 서버가 필요하고, 없으면 해당 타일만 숨겨진 채 나머지는 그대로 동작한다.
+  "모두의 환생 횟수"와 이벤트 수집은 Cloudflare Pages Functions + D1([functions/api/](functions/api/))이
+  맡는다 — API 가 없으면 해당 타일만 숨겨진 채 나머지는 그대로 동작한다.
+  (구 VM 시절의 [server/counter.js](server/counter.js) 가 이식 원본이다.)
 - **구조**: pnpm workspace 모노레포. 국가 데이터·확률 로직은 [packages/core](packages/core)(TypeScript)에 있고
   웹·카운터 서버·Discord 봇([DiscordBot.md](DiscordBot.md))이 같은 소스를 쓴다. 빌드가 필요한 건 core뿐이다.
 
@@ -95,11 +96,13 @@ apps/bot/             Discord 봇 (독립 프로세스). 기준 문서는 Discor
   src/lib/            인생 요약(템플릿+LLM) · 임베드 · 표시 문구
   src/verify.ts       WASM Postgres로 도는 자체 검증 (비밀값 불필요)
 
-server/counter.js   카운터·이벤트 수집 (VM에서만 동작). CommonJS 고정.
-tools/              dev-server.mjs · sync-core.mjs · make_og.py · make_share.py · analyze.py
-deploy.sh           웹·카운터 배포
-deploy-bot.sh       Discord 봇 배포 (systemd 상주)
-lab.sh              실험판(lab) — 배포 전에 띄워 보고 채택/폐기
+functions/          Cloudflare Pages Functions — /api/* (D1 사용). server/counter.js 의 후계
+server/counter.js   카운터·이벤트 수집 (구 VM 전용 — Pages 이전 후 참조용으로만 남김)
+server/d1/          D1 스키마·시드 (schema.sql · seed.sql)
+tools/              dev-server.mjs · sync-core.mjs · make-d1-seed.mjs · make_og.py · make_share.py · analyze.py
+wrangler.toml       Pages 설정 (출력 디렉터리 · D1 바인딩)
+deploy.sh           (구 VM 배포 — Pages 전환 후 안 씀)
+deploy-bot.sh       Discord 봇 배포 (systemd 상주 — HTTP Interactions 전환 예정)
 ```
 
 ### core를 브라우저가 어떻게 찾는가 (중요)
@@ -113,8 +116,9 @@ lab.sh              실험판(lab) — 배포 전에 띄워 보고 채택/폐기
 웹:    app/ui/render.js 의 `../../core/roll.js`  →  /core/roll.js
 ```
 
-- 상대 경로(`../../core/`)를 쓰는 이유: `lab.sh`가 실험판을 `/lab/` 하위에 통째로 얹는다.
-  절대 경로 `/core/`를 쓰면 실험판이 **프로덕션 core**를 물어 격리가 깨진다.
+- 상대 경로(`../../core/`)를 쓰는 이유(유래): 실험판(lab)을 `/lab/` 하위에 얹을 때 절대
+  경로 `/core/`면 프로덕션 core 를 물어 격리가 깨졌다. lab 은 없어졌지만 상대 경로는
+  하위 경로 어디에 얹어도 동작하므로 그대로 둔다.
 - `apps/web/core`는 산출물이라 `.gitignore`에 있다. 커밋되는 정본은 `packages/core/dist`다.
 - **core 소스를 고치면 `npm run build:core`를 반드시 다시 돌린다.** 안 그러면 웹은 옛 core를 본다.
 
@@ -510,79 +514,34 @@ python3 tools/make_share.py         # → en.html … pt.html
 > `index.html`의 `<base href="/">`를 지우지 말 것. 위 사고를 막는 안전망이다
 > (ES 모듈 import는 각 모듈 URL 기준이라 영향 없고, HTML 안의 상대 URL만 잡는다).
 
-### 실제 배포 (life-reroll.com)
+### 실제 배포 (life-reroll.com) — Cloudflare Pages
 
-캠프 VM(`camp-15`)에서 nginx가 `/var/www/life-reroll`를 서빙하고, Cloudflare Tunnel이
-그 앞에 붙어 있다. **`git pull`만으로는 반영되지 않는다** — 레포가 아니라 `/var/www`에서
-서빙하기 때문이다. [deploy.sh](deploy.sh)가 그 복사와 배포 후 검증까지 한다:
+캠프 VM 회수로 **Cloudflare Pages + Pages Functions + D1** 으로 옮겼다.
+절차·구조·컷오버는 [docs/CLOUDFLARE-PAGES.md](docs/CLOUDFLARE-PAGES.md) 가 정본이다.
 
-```bash
-sudo ./deploy.sh --pull    # git pull 하고 배포
-sudo ./deploy.sh           # 이미 pull 했다면 작업트리 그대로 배포
-./deploy.sh --check        # 아무것도 바꾸지 않고 라이브가 최신인지만 점검 (sudo 불필요)
-```
+- **배포 = `main` 푸시.** Pages 가 `pnpm run build:core` 를 돌리고 `apps/web` 을 올린다.
+  다른 브랜치·PR 은 자동으로 미리보기 URL 을 받는다.
+- `/api/` 11종은 [functions/api/](functions/api/) (구 `server/counter.js` 의 이식본),
+  저장은 D1. **`/api/track` 은 dwell·roll 을 저장하지 않는다** — 둘이 트래픽의 98%라
+  무료 쓰기 한도를 넘기고, 실제 분석은 전부 나머지 2%에서 나왔다.
+- 옛 GitHub Pages 금지 사유("정적만 되니 API 가 죽는다")는 **Functions 로 해소**됐다.
 
-바뀐 파일만 복사하고, `server/counter.js`가 그대로면 카운터를 재시작하지 않는다
-(재시작해도 값은 보존되지만 굳이 끊지 않는다). 마지막에 로컬 nginx → 라이브 → 카운터 API를
-차례로 찔러 보고, 하나라도 어긋나면 0이 아닌 코드로 끝난다.
+VM 시절 nginx 가 지키던 규칙은 전부 파일로 옮겨져 레포에 산다 — 지우면 그때의 사고가 돌아온다:
 
-nginx가 `/api/`를 카운터(`127.0.0.1:1558`)로 프록시하며, 터널 뒤라 모든 요청이
-`127.0.0.1`에서 오므로 `CF-Connecting-IP`로 실제 IP를 복원해 IP당 레이트리밋을 건다.
-
-**nginx에 두 가지가 반드시 있어야 한다** — 없으면 조용히 사고가 난다:
-
-- `.css/.js` 에 `Cache-Control: no-cache`. 없으면 Cloudflare가 확장자만 보고 **4시간** 캐시를
-  걸어서, JS를 고쳐 배포해도 4시간 동안 옛 코드가 나간다. 빌드가 없어 파일명에 해시를 못 붙이므로
-  항상 재검증시킨다(ETag 덕에 대부분 304).
-- 자산 경로는 `try_files $uri =404`. `location /` 의 SPA 폴백이 잡으면 없는 모듈에
-  index.html이 200 `text/html`로 실려 나가고 브라우저는 앱 전체를 못 띄운다. 게다가 CDN이
-  그 HTML을 `.js` URL에 캐시해 버려서 파일을 올려도 한동안 복구되지 않는다.
-
-> **GitHub Pages는 쓰지 않는다.** 배포 대상은 위의 VM 하나뿐이다.
->
-> 카운터와 계측이 동작하는 건 **이 VM이 `/api/`를 서빙하기 때문**이다. Pages는 정적
-> 파일만 올릴 수 있어 `counter.js`(node 프로세스)를 돌릴 수 없다. 즉 **Pages로 가면**
-> `/api/counter`·`/api/track`이 전부 404가 되고 "모두의 환생 횟수"와 모든 계측이 죽는다.
-> 계측을 유지하려면 VM이어야 한다는 뜻이고, 그래서 Pages 워크플로와 `CNAME`을 제거했다
-> (`CNAME`은 Pages 전용 규약이라 nginx·Cloudflare는 읽지 않는다).
-
-### 실험판(lab) — 배포 전에 띄워 보고 채택/폐기
-
-**프로덕션에 바로 배포하지 않는다.** 먼저 실험판에 올려 눈으로 확인하고, 채택하면 그때
-main에 머지·배포한다. [lab.sh](lab.sh)가 그 흐름을 명령 5개로 고정한다:
-
-```bash
-sudo ./lab.sh new 칭호시스템   # 실험 시작 — lab 브랜치를 main 최신으로 리셋
-sudo ./lab.sh up              # 빌드·배포 → https://life-reroll.com/lab/ 에서 확인
-     ./lab.sh status          # 프로덕션 대비 뭐가 달라졌나 (sudo 불필요)
-sudo ./lab.sh adopt           # 채택: main 머지 + deploy.sh + 실험판 초기화
-sudo ./lab.sh discard         # 폐기: 실험 버리고 실험판을 프로덕션 상태로 되돌림
-```
-
-**코드는 `/root/spk-lab`에서 고친다** (git worktree, `lab` 브랜치). 프로덕션 소스인
-`/root/spk`(main)는 실험 내내 손대지 않으므로, 폐기해도 흔적이 남지 않는다.
-
-평가용 시드: `/lab/?seed=47&total=200` → 도감 47개국·환생 200회 상태로 시작한다.
-칭호·진행률처럼 **누적 상태가 있어야 보이는 기능은 빈 상태로는 평가가 안 되기 때문**이다.
-
-#### 격리 — 실험이 프로덕션 데이터를 건드릴 수 없다
-
-터널이 토큰 기반(원격 관리형)이라 `lab.` 서브도메인을 VM에서 만들 수 없어 **하위 경로**로 갔다.
-같은 origin이면 `localStorage`가 그대로 새므로, **빌드할 때 배포 사본만** 치환해 막는다:
-
-| | 프로덕션 | 실험판 |
+| 파일 | 구 nginx | 지키는 것 |
 |---|---|---|
-| 저장소 | `rebirth_state` / `rebirth_lang` | `lab_rebirth_state` / `lab_rebirth_lang` |
-| API | `/api/` → 포트 1558 | `/lab-api/` → 포트 1559 (데이터·서명키 전부 별도) |
-| 자산 기준 | `<base href="/">` | `<base href="/lab/">` |
-| 노출 | 검색엔진 허용 | `noindex, nofollow` + `no-store` |
+| [apps/web/_headers](apps/web/_headers) | `.css/.js` no-cache | 낡은 JS 가 캐시에 박히는 것 |
+| [apps/web/404.html](apps/web/404.html) | `try_files $uri =404` | 없는 `.js` 에 index.html 이 200 으로 나가 CDN 을 오염시키는 것 |
+| [apps/web/_redirects](apps/web/_redirects) | `/en/` → `/en` 301 | `/en/` 폴백으로 자산 경로가 깨져 앱이 죽는 것 |
+| [functions/_middleware.js](functions/_middleware.js) | geo 쿠키 | 접속 국가 기반 언어 자동 선택 (없으면 전부 영어) |
+| [apps/web/_routes.json](apps/web/_routes.json) | — | 정적 자산이 함수 호출을 태워 무료 한도(10만/일)를 새게 하는 것 |
 
-치환은 **소스가 아니라 배포 사본에만** 걸린다. 그래서 채택할 때 lab 전용 코드가 main으로
-새어 들어가지 않는다. 실험판 카운터의 `APP_JS_DIR`이 실험판 `app/`을 가리키므로
-**서버 뽑기 로직 변경까지 실험된다.**
+### 실험판(lab) — 제거됨
 
-> ⚠ 격리를 믿고 넘어가지 말 것. `lab.sh up`이 매번 저장소·API 격리를 실제로 확인하고
-> 하나라도 뚫리면 배포를 멈춘다. 이 검사를 지우면 실험이 실사용자 도감을 날릴 수 있다.
+VM 전용 인프라(`lab.sh` · `/lab/` · `/lab-api/` · git worktree)였고 VM 회수와 함께 없앴다.
+Cloudflare Pages 는 **모든 PR·브랜치에 미리보기 URL 을 자동 발급**하므로 같은 역할을
+훨씬 싸게 대신한다 — 격리(별도 오리진 = 별도 localStorage)도 공짜로 따라온다.
+마지막 구현은 git 이력(`lab.sh` 삭제 커밋 직전)에 있다.
 
 ## 광고 (Google AdSense)
 
