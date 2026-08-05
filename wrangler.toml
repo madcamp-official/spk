@@ -12,6 +12,9 @@
 
 name = "life-reroll"
 compatibility_date = "2026-08-01"
+# nodejs_compat: Discord 봇(functions/discord.js)의 pg(node-postgres)가 요구한다.
+# 기존 /api/* 함수에는 영향 없다 — node 내장 모듈이 추가로 보일 뿐이다.
+compatibility_flags = ["nodejs_compat"]
 pages_build_output_dir = "apps/web"
 
 [[d1_databases]]
@@ -19,3 +22,13 @@ binding = "DB"
 database_name = "life-reroll"
 # wrangler d1 create life-reroll 이 출력한 uuid 로 바꾼다
 database_id = "7795b4bd-46c3-40e1-8c0f-9924620856d9"
+
+# Discord 봇의 Supabase 연결 — Hyperdrive 를 거친다.
+# workerd 안에서 Postgres TLS 를 직접 여는 건 드라이버(pg·postgres.js) 양쪽 다
+# 실패했다(연결 루프 → 서브리퀘스트 한도). Hyperdrive 가 TLS·풀링을 인프라에서
+# 처리하고 워커는 로컬 바인딩에 평문으로 붙는다 — Cloudflare 의 표준 경로.
+# ⚠ 캐싱은 꺼서 만들었다(--caching-disabled): countRollsToday 가 방금 넣은 행을
+#   못 보면 "1일 3회"가 뚫린다.
+[[hyperdrive]]
+binding = "HYPERDRIVE"
+id = "a51c3eca1cc342d1a40732d97e09e6b0"

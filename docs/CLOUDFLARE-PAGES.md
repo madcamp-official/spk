@@ -112,8 +112,39 @@ Security → WAF → Rate limiting rules (무료 1개): `/api/*` 에 IP 당 분�
 - D1 이 진실의 원천이다. 가끔 백업: `npx wrangler d1 export life-reroll --remote --output=backup.sql`
 - 이벤트 분석: `node tools/fetch-events.mjs` 가 D1 을 VM 시절과 같은 events.jsonl 로
   내려준다(`--merge` 로 백업 병합) → `python3 tools/analyze.py events.jsonl` 그대로.
-- Discord 봇은 별도 작업(HTTP Interactions 전환 예정). VM 이 죽으면 봇도 멈춘다 —
-  사이트와는 무관하다.
+- Discord 봇도 이 프로젝트에 산다(아래 절) — VM 과 무관해졌다.
+
+## Discord 봇 — HTTP Interactions (functions/discord.js)
+
+게이트웨이 상주(discord.js) 대신 Discord 가 `https://life-reroll.com/discord` 로 인터랙션을
+POST 한다. 커맨드 6종(환생·여권·덱·명명·도감·배틀)+버튼 3종 전부 이식했고, **라이브에서
+26개 항목 e2e 통과**(서명·전 커맨드·버튼 권한·일일 한도·트랜잭션 부수효과, 스모크 데이터는
+정리함). 슬래시 커맨드는 Discord 에 이미 등록돼 있어 재등록이 필요 없다.
+
+- DB: Workers → **Hyperdrive**(캐싱 꺼짐) → Supabase. workerd 에서 Postgres TLS 직결은
+  pg·postgres.js 둘 다 연결 루프로 실패한다 — Hyperdrive 가 TLS·풀링을 대신한다.
+  캐싱을 끈 이유: `countRollsToday` 가 방금 넣은 행을 못 보면 "1일 3회"가 뚫린다.
+- 시크릿: `DATABASE_URL`(폴백)·`DISCORD_TOKEN`(도감 제목의 서버 이름 조회용)은 넣어 뒀다.
+  LLM_* 은 선택(미설정 = 템플릿 요약 — VM 운영과 동일). 초상(camp-4 GPU)은 VM 운영에서도
+  꺼져 있었고 이식하지 않았다.
+- 로컬 한계: 이 개발 머신의 wrangler 로컬 workerd 는 외부 TCP 가 안 붙는다 — DB 경로는
+  라이브에서 검증한다(비 DB 경로는 서명 하네스로 로컬 검증 가능).
+
+### 봇 컷오버 — 사람이 할 일 (사이트와 독립, 원할 때)
+
+1. **진짜 공개키로 교체** — 지금 `DISCORD_PUBLIC_KEY` 는 e2e 용 테스트 키다(그래서 실제
+   Discord 요청은 401 로 거절된다 = 휴면). [developer portal](https://discord.com/developers/applications)
+   → 해당 앱 → General Information → **Public Key** 복사 후:
+   ```bash
+   npx wrangler pages secret put DISCORD_PUBLIC_KEY --project-name life-reroll
+   ```
+2. 같은 페이지의 **Interactions Endpoint URL** 에 `https://life-reroll.com/discord` 입력 → Save.
+   Discord 가 PING + 위조 서명 검사를 통과해야 저장된다(둘 다 구현·검증돼 있다).
+3. 저장되는 순간이 컷오버다 — 이후 모든 인터랙션이 여기로 온다. VM 의 게이트웨이 봇은
+   더 이상 인터랙션을 받지 않는다(따로 끌 필요도 없지만, 정리한다면
+   `systemctl disable --now life-reroll-bot`).
+4. 서버에서 `/환생` 한 번 눌러 확인. 문제가 생기면 Interactions Endpoint URL 을 비우면
+   즉시 게이트웨이 방식으로 돌아간다(VM 봇이 살아 있는 동안).
 
 ## 옛 VM 에서 가져온 것 (레포 밖, `life-reroll-vm-backup/`)
 

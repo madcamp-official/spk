@@ -3,6 +3,14 @@
 > life-reroll.com의 Discord 봇 확장. 이 문서는 구현 기준 문서다.
 > 단계별로 진행하며, 각 단계는 별도 지시로 착수한다. **이 문서를 읽었다고 모든 단계를 한 번에 구현하지 말 것.**
 
+> **⚠ 2026-08-05 전송 계층 변경.** 캠프 VM 회수로 §A.1 의 "게이트웨이 상주 프로세스"를
+> 유지할 수 없게 되어 **HTTP Interactions**(Cloudflare Pages Functions, `functions/discord.js`
+> + `functions/_bot/`)로 이식했다. 게임 규칙(§C·§D·§E)·DB 스키마(§G)·톤 가이드(§F)·커맨드
+> 정의는 그대로다 — 바뀐 것은 전송 계층뿐이다(defer→editReply 가 type:5→PATCH @original 로).
+> DB 는 Workers→Hyperdrive→Supabase 로 붙는다(workerd 직결 TLS 불가— functions/_bot/db.js).
+> `apps/bot/` 은 이식 원본·스키마 마이그레이션·커맨드 등록(sync-commands)·검증(verify) 용도로
+> 남긴다. 절차는 [docs/CLOUDFLARE-PAGES.md](docs/CLOUDFLARE-PAGES.md) 의 봇 절 참고.
+
 ---
 
 ## A. 아키텍처 결정 (변경 불가)

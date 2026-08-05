@@ -15,10 +15,13 @@
     "watch:core": "tsc -p packages/core/tsconfig.json --watch",
     "check": "tsc -p packages/core/tsconfig.json --noEmit",
     "serve": "node tools/dev-server.mjs",
-    "deploy": "npm run build:core && wrangler pages deploy apps/web --branch main",
-    "pages:dev": "npm run build:core && wrangler pages dev apps/web --port 8792"
+    "deploy": "npm run build:core && npx wrangler pages deploy apps/web --branch main",
+    "pages:dev": "npm run build:core && npx wrangler pages dev apps/web --port 8792"
   },
   "devDependencies": {
     "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "postgres": "^3.4.9"
   }
 }

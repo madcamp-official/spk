@@ -9,7 +9,7 @@
 export async function onRequest(context) {
   const { request, next } = context;
   const url = new URL(request.url);
-  if (url.pathname.startsWith("/api/")) return next();
+  if (url.pathname.startsWith("/api/") || url.pathname === "/discord") return next();
 
   const res = await next();
   const country = request.headers.get("cf-ipcountry")
