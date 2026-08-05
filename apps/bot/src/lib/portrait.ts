@@ -33,11 +33,13 @@ function countryEn(code: string): string {
    문화 의상 캐리커처가 원천 차단되고, 국적은 서버가 합성하는 **실제 국기 배지**가 말한다.
    "국기를 손에 든" 구도는 실험 결과 포기했다 — SDXL이 태극기 등 대부분의 국기를
    창작해 버려서(성조기풍 짝퉁), 틀린 국기를 들려주느니 정확한 배지가 낫다. */
-const STYLE = "cute chibi mascot character, super deformed, exaggerated big head, tiny squat body, two heads tall, full body";
+/* "two heads tall"(2등신)은 제거 — "머리 두 개"로 문자 해석돼 클론·다중 인물을 부추긴 정황(33번 생).
+   solo를 선두에 — 단독 인물 지시는 앞 토큰이라야 먹힌다. */
+const STYLE = "solo, one single chibi mascot character, super deformed, exaggerated big head, tiny squat body, full body";
 const TAIL =
   "wearing a plain blank white t-shirt with no print no logo, and blue denim jeans, bare neck, standing straight facing viewer, cheerful smile, " +
-  "one hand raised in a friendly wave, plain light gray wall with horizontal height measurement lines, " +
-  "simple cel-shaded illustration, soft colors";
+  "one hand raised in a friendly wave, standing alone centered on a pure solid white background, " +
+  "nothing else in frame, sticker style, simple cel-shaded illustration, soft colors";
 /* ⚠ Lightning은 guidance_scale=0이라 negative prompt가 **무효**다(CFG가 꺼지면 계산 자체가 생략).
    그래서 의상·소품 통제는 전부 positive 서술로 한다. NEGATIVE는 나중에 CFG 있는 모델로
    갈아탈 때를 위해 계속 보낸다 — 지금은 관성 비용 0인 보험이다. */
@@ -102,6 +104,7 @@ export async function buildPortrait(
         width: 832, height: 1216,                    /* 전신 세로 컷 (SDXL 표준 버킷) */
         flag: countryCode.toLowerCase(),             /* 서버가 실제 국기 배지를 합성 */
         ...warp(life),                               /* 키·BMI를 기하로 강제 반영 */
+        isolate: true,                               /* 인물만 남겨 순백 배경에 — 클론·잡배경 구조적 제거 */
       }),
     });
     if (!r.ok) return null;
